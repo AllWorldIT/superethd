@@ -2,6 +2,17 @@
 #define PACKET_H
 
 #include <stdint.h>
+#include "buffers.h"
+
+
+
+/*
+ * Useful constants
+ */
+
+#define ETHERNET_FRAME_SIZE 14
+
+
 
 /*
  * Compile-time endianness detection
@@ -127,6 +138,7 @@ typedef uint64_t stap_le64_t;
 #define STAP_PACKET_VERSION_V1 0x1
 
 #define STAP_PACKET_FORMAT_ENCAP 0x1
+#define STAP_PACKET_FORMAT_COMPRESSED 0x2
 
 #define STAP_PACKET_HEADER_SIZE sizeof(PacketHeader)
 
@@ -153,7 +165,36 @@ typedef struct __stap_packed {
 	uint32_t opts[];
 } PacketHeader;
 
+
+
+/*
+
+   Packet Payload Header:
+	  |               |               |               |               |
+	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	  |  Ver  |  SEQ  |
+	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+
+typedef struct __stap_packed {
+} PacketPayloadHeader;
+
+
+
+
+// Packet decoder state
+typedef struct {
+	int first_packet;
+	uint32_t last_seq;
+} PacketDecoderState;
+
+
+
+
+
 // Our own functions
 extern int sequence_wrapping(uint32_t cur, uint32_t prev);
+extern int packet_encoder(BufferList *wbuffers, Buffer *cbuffer, Buffer *pbuffer, uint16_t mss, uint32_t seq);
+extern int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *cbuffer, Buffer *pbuffer, uint16_t mtu);
 
 #endif

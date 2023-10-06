@@ -1,6 +1,7 @@
 #include "tunnel.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <lz4.h>
 #include <netinet/in.h>
 #include <netinet/sctp.h>
@@ -14,11 +15,13 @@
 
 #include "buffers.h"
 #include "common.h"
+#include "debug.h"
 #include "packet.h"
 #include "tap.h"
 #include "threads.h"
 #include "util.h"
 
+// Reads data from the TAP interface and queues packets for sending over the tunnel.
 void *tunnel_read_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
@@ -28,37 +31,23 @@ void *tunnel_read_tap_handler(void *arg) {
 		// Grab buffer
 		BufferNode *buffer_node = get_buffer_node_head(&tdata->available_buffers);
 		if (!buffer_node) {
-			fprintf(stderr, "tunnel_read_tap_handler(): Failed to get buffer");
+			fprintf(stderr, "%s(): Failed to get buffer\n", __func__);
 			exit(EXIT_FAILURE);
 		}
 		// Set the buffer variable so we can access it more easily
 		Buffer *buffer = buffer_node->buffer;
 
-		// Clear packet header
-		memset((void *) buffer->contents, 0, STAP_PACKET_HEADER_SIZE);
-
 		// Read data from TAP interface
-		DEBUG_PRINT("%s: before read\n", __func__);
-		buffer->length =
-			read(tdata->tap_device.fd, buffer->contents + STAP_PACKET_HEADER_SIZE, STAP_MAX_PACKET_SIZE - STAP_PACKET_HEADER_SIZE);
+		buffer->length = read(tdata->tap_device.fd, buffer->contents, STAP_MAX_PACKET_SIZE);
 		if (buffer->length == -1) {
-			perror("tunnel_read_tap_handler(): Got an error on read()");
+			fprintf(stderr, "%s(): tunnel_read_tap_handler(): Got an error on read(): %s\n", __func__, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
-		DEBUG_PRINT("%s: AVAIL Buffer size: %li\n", __func__, get_buffer_list_size(&tdata->available_buffers));
-		DEBUG_PRINT("%s: QUEUE Buffer size: %li\n", __func__, get_buffer_list_size(&tdata->tx_packet_queue));
+		DEBUG_PRINT("AVAIL Buffer size: %li\n", get_buffer_list_size(&tdata->available_buffers));
+		DEBUG_PRINT("QUEUE Buffer size: %li\n", get_buffer_list_size(&tdata->tx_packet_queue));
 
-		DEBUG_PRINT("tunnel_read_tap_handler(): Read %li bytes from TAP\n", buffer->length);
-
-		if (buffer->length > tdata->mss) {
-			fprintf(stderr, "tunnel_read_tap_handler(): Ethernet frame %li > %u MSS, DROPPING!!!!", buffer->length, tdata->mss);
-			append_buffer_node(&tdata->available_buffers, buffer_node);
-			continue;
-		}
-
-		// Bump the buffer length with the header size
-		buffer->length += STAP_PACKET_HEADER_SIZE;
+		DEBUG_PRINT("Read %li bytes from TAP\n", buffer->length);
 
 		// Append buffer node to queue
 		append_buffer_node(&tdata->tx_packet_queue, buffer_node);
@@ -67,78 +56,105 @@ void *tunnel_read_tap_handler(void *arg) {
 	return NULL;
 }
 
+// Write data from the TX packet queue to the tunnel socket.
 void *tunnel_write_socket_handler(void *arg) {
+	// Thread data
 	struct ThreadData *tdata = (struct ThreadData *)arg;
+	// Constant used below
 	socklen_t addrlen = sizeof(struct sockaddr_in6);
-	PacketHeader *pkthdr;
-
+	// Just a stat
 	ssize_t max_queue_size = 0;
-	int flags = 0;
+	// Packet sequence number
 	uint32_t seq = 0;
+	// sendto() flags
+	int flags = 0;
 
+	// START - packet encoder buffers
+	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
+	int wbuffer_count = ((STAP_MAX_PACKET_SIZE + tdata->mss - 1) / tdata->mss) + 1;
+	BufferList wbuffers;
+	initialize_buffer_list(&wbuffers, wbuffer_count, STAP_BUFFER_SIZE);
+	// Allocate buffer used for compression
+	Buffer cbuffer;
+	cbuffer.contents = (char *)malloc(STAP_BUFFER_SIZE_COMPRESSION);
+	// END - packet encoder buffers
+
+	// Main IO loop
 	while (1) {
 		if (*tdata->stop_program) break;
 
 		// Grab buffer
 		BufferNode *buffer_node;
 		int result = get_buffer_node_head_wait(&tdata->tx_packet_queue, &buffer_node, 0, 0);
+		// Check we actually got something
+		if (result != 0) {
+			fprintf(stderr, "%s(): pthread_cond_wait() seems to of failed?\n", __func__);
+			exit(EXIT_FAILURE);
+		}
+		if (!buffer_node) {
+			fprintf(stderr, "%s(): Failed to get buffer, list probably empty\n", __func__);
+			exit(EXIT_FAILURE);
+		}
+
 		// Grab buffer list size
 		int cur_queue_size = get_buffer_list_size(&tdata->tx_packet_queue);
 		if (cur_queue_size > max_queue_size) {
 			max_queue_size = cur_queue_size;
-			fprintf(stderr, "tunnel_write_socket_handler(): Max packet queue size %li\n", max_queue_size);
+			fprintf(stderr, "%s(): Max packet queue size %li\n", __func__, max_queue_size);
 		}
-		// Check we actually got something
-		if (result != 0) {
-			fprintf(stderr, "tunnel_write_socket_handler(): pthread_cond_wait() seems to of failed?");
-			exit(EXIT_FAILURE);
-		}
-		if (!buffer_node) {
-			fprintf(stderr, "tunnel_write_socket_handler(): Failed to get buffer, list probably empty");
-			exit(EXIT_FAILURE);
-		}
-		// Set the buffer variable so we can access it more easily
-		Buffer *buffer = buffer_node->buffer;
 
-		// Set up packet header, we point it to the buffer
-		pkthdr = (PacketHeader *)buffer->contents;
-		// Build packet header, all fields were blanked in the reader
-		pkthdr->ver = STAP_PACKET_VERSION_V1;
-		pkthdr->format = STAP_PACKET_FORMAT_ENCAP;
-		pkthdr->channel = 1;
-		pkthdr->sequence = stap_cpu_to_be_32(seq);
+		// TODO: loop with queue size to allow chunking of packets, we probably want to start with a clean state, with a flush state
 
-		// We keep the data locked while we do our write though
-		ssize_t bytes_written =
-			sendto(tdata->udp_socket, buffer->contents, buffer->length, flags, (struct sockaddr *)&tdata->remote_addr, addrlen);
-		if (bytes_written == -1) {
-			perror("tunnel_write_socket_handler(): Got an error on sendto()");
-			exit(EXIT_FAILURE);
-		}
-		DEBUG_PRINT("tunnel_write_socket_handler(): Wrote %li bytes to tunnel\n", bytes_written);
-
+		// Encode packet and get number of resulting packets generated, these are stored in our wbuffers
+		int pktcount = packet_encoder(&wbuffers, &cbuffer, buffer_node->buffer, tdata->mss, seq);
+		DEBUG_PRINT("Got %i packets back from packet encoder\n", pktcount);
 		// Add buffer back to available list
 		append_buffer_node(&tdata->available_buffers, buffer_node);
+
+		// Loop with our buffers and write them out
+		BufferNode *wbuffer_node = wbuffers.head;
+		for (int i = 0; i < pktcount; ++i) {
+			// Write data out
+			ssize_t bytes_written = sendto(tdata->udp_socket, wbuffer_node->buffer->contents, wbuffer_node->buffer->length, flags,
+										   (struct sockaddr *)&tdata->remote_addr, addrlen);
+			if (bytes_written == -1) {
+				fprintf(stderr, "%s(): Got an error on sendto(): %s", __func__, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+			DEBUG_PRINT("Wrote %li bytes to tunnel [%i/%i]\n", bytes_written, i + 1, pktcount);
+			// Go to next buffer
+			wbuffer_node = wbuffer_node->next;
+		}
 
 		// Check if the counter is wrapping
 		if (seq == UINT32_MAX)
 			seq = 0;
 		else
-			seq++;
+			seq += pktcount;
 	}
 
 	return NULL;
 }
 
+/**
+ * @brief Tunnel read thread.
+ *
+ * Reads data from the tunnel socket and queues them to be delivered over the TAP interface.
+ *
+ * @param arg Thread data.
+ * @return void*
+ */
 void *tunnel_read_socket_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
-	struct mmsghdr *msgs;
-	struct iovec *iovecs;
 	struct sockaddr_in6 *controls;
 	ssize_t sockaddr_len = sizeof(struct sockaddr_in6);
 	BufferNode **buffer_nodes;
+	struct mmsghdr *msgs;
+	struct iovec *iovecs;
 	PacketHeader *pkthdr;
+
+	// START - IO vector buffers
 
 	// Allocate memory for our buffers and IO vectors
 	buffer_nodes = (BufferNode **)malloc(STAP_MAX_RECVMM_MESSAGES * sizeof(BufferNode));
@@ -147,7 +163,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	controls = (struct sockaddr_in6 *)calloc(1, STAP_MAX_RECVMM_MESSAGES * sizeof(struct sockaddr_in6));
 	// Make sure memory allocation succeeded
 	if (msgs == NULL || iovecs == NULL || controls == NULL || buffer_nodes == NULL) {
-		perror("tunnel_read_socket_handler(): Memory allocation failed");
+		fprintf(stderr, "%s(): Memory allocation failed: %s", __func__, strerror(errno));
 		// Clean up previously allocated memory
 		free(buffer_nodes);
 		free(msgs);
@@ -155,12 +171,11 @@ void *tunnel_read_socket_handler(void *arg) {
 		free(controls);
 		exit(EXIT_FAILURE);
 	}
-
 	// Set up iovecs and mmsghdrs
 	for (int i = 0; i < STAP_MAX_RECVMM_MESSAGES; ++i) {
 		buffer_nodes[i] = get_buffer_node_head(&tdata->available_buffers);
 		if (buffer_nodes[i] == NULL) {
-			perror("tunnel_read_socket_handler(): Could not get available buffer node");
+			perror("%s(): Could not get available buffer node");
 			// Clean up allocated memory
 			for (int j = 0; j < i; ++j) {
 				append_buffer_node(&tdata->available_buffers, buffer_nodes[i]);
@@ -171,7 +186,6 @@ void *tunnel_read_socket_handler(void *arg) {
 			free(controls);
 			return NULL;
 		}
-
 		// Setup IO vectors
 		iovecs[i].iov_base = buffer_nodes[i]->buffer->contents;
 		iovecs[i].iov_len = STAP_MAX_PACKET_SIZE;
@@ -181,7 +195,7 @@ void *tunnel_read_socket_handler(void *arg) {
 		msgs[i].msg_hdr.msg_name = (void *)&controls[i];
 		msgs[i].msg_hdr.msg_namelen = sockaddr_len;
 	}
-
+	// END - IO vector buffers
 
 	while (1) {
 		if (*tdata->stop_program) break;
@@ -189,21 +203,21 @@ void *tunnel_read_socket_handler(void *arg) {
 		int num_received = recvmmsg(tdata->udp_socket, msgs, STAP_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
 		// fprintf(stderr, "Read something\n");
 		if (num_received == -1) {
-			perror("tunnel_read_socket_handler(): recvmmsg failed");
+			fprintf(stderr, "%s(): recvmmsg failed: %s", __func__, strerror(errno));
 			break;
 		}
 
 		for (int i = 0; i < num_received; ++i) {
 			char ipv6_str[INET6_ADDRSTRLEN];
 			if (inet_ntop(AF_INET6, &controls[i].sin6_addr, ipv6_str, sizeof(ipv6_str)) == NULL) {
-				perror("inet_ntop failed");
+				fprintf(stderr, "%s(): inet_ntop failed: %s", __func__, strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			DEBUG_PRINT("tunnel_read_socket_handler(): Received %u bytes from %s:%d with flags %i\n", msgs[i].msg_len, ipv6_str,
-						ntohs(controls[i].sin6_port), msgs[i].msg_hdr.msg_flags);
+			DEBUG_PRINT("Received %u bytes from %s:%d with flags %i\n", msgs[i].msg_len, ipv6_str, ntohs(controls[i].sin6_port),
+						msgs[i].msg_hdr.msg_flags);
 			// Compare to see if this is the remote system IP
 			if (memcmp(&tdata->remote_addr.sin6_addr, &controls[i].sin6_addr, sizeof(struct in6_addr))) {
-				fprintf(stderr, "tunnel_read_socket_handler(): Source address is incorrect %s!", ipv6_str);
+				fprintf(stderr, "%s(): Source address is incorrect %s!", __func__, ipv6_str);
 				continue;
 			}
 
@@ -213,24 +227,20 @@ void *tunnel_read_socket_handler(void *arg) {
 
 			// Overlay packet header and do basic header checks
 			pkthdr = (PacketHeader *)buffer_node->buffer->contents;
-			if (pkthdr->opt_len != 0) {
-				fprintf(stderr, "tunnel_read_socket_handler(): Packet should not have options, it has %u, DROPPING!",
-						pkthdr->opt_len);
-				continue;
-			}
 			if (pkthdr->reserved != 0) {
-				fprintf(stderr, "tunnel_read_socket_handler(): Packet should not have any reserved its set, it is %u, DROPPING!",
+				fprintf(stderr, "%s(): Packet should not have any reserved its set, it is %u, DROPPING!", __func__,
 						pkthdr->opt_len);
 				continue;
 			}
 			// First thing we do is validate the header
-			if (pkthdr->format != STAP_PACKET_FORMAT_ENCAP) {
-				fprintf(stderr, "tunnel_read_socket_handler(): Packet in invalid format %x, DROPPING!", pkthdr->format);
+			int valid_format_mask = STAP_PACKET_FORMAT_ENCAP | STAP_PACKET_FORMAT_COMPRESSED;
+			if (pkthdr->format & ~valid_format_mask) {
+				fprintf(stderr, "%s(): Packet in invalid format %x, DROPPING!", __func__, pkthdr->format);
 				continue;
 			}
 			// Next check the channel is set to 1
 			if (pkthdr->channel != 1) {
-				fprintf(stderr, "tunnel_read_socket_handler(): Packet specifies invalid channel %d, DROPPING!", pkthdr->channel);
+				fprintf(stderr, "%s(): Packet specifies invalid channel %d, DROPPING!", __func__, pkthdr->channel);
 				continue;
 			}
 
@@ -256,13 +266,30 @@ void *tunnel_read_socket_handler(void *arg) {
 	return NULL;
 }
 
+/**
+ * @brief Ethernet device write thread.
+ *
+ * Process packets in the RX queue, decode and send them to the TAP device.
+ *
+ * @param arg Thread data.
+ * @return void*
+ */
 void *tunnel_write_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 	ssize_t max_queue_size = 0;
-	PacketHeader *pkthdr;
-	int first_packet = 1;
-	uint32_t seq = 0;
-	uint32_t last_seq = 0;
+	PacketDecoderState state = {.first_packet = 1, .last_seq = 0};
+
+	// START - packet decoder buffers
+	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
+	int wbuffer_count = ((STAP_MAX_PACKET_SIZE + tdata->mss - 1) / tdata->mss) + 1;
+	BufferList wbuffers;
+	initialize_buffer_list(&wbuffers, wbuffer_count, STAP_BUFFER_SIZE);
+	// Allocate buffer used for compression
+	Buffer cbuffer;
+	cbuffer.contents = (char *)malloc(STAP_BUFFER_SIZE_COMPRESSION);
+	// END - packet decoder buffers
+
+	// TODO: init decoder state   packet_decoder_init(&state)
 
 	while (1) {
 		if (*tdata->stop_program) break;
@@ -270,62 +297,40 @@ void *tunnel_write_tap_handler(void *arg) {
 		// Grab buffer
 		BufferNode *buffer_node;
 		int result = get_buffer_node_head_wait(&tdata->rx_packet_queue, &buffer_node, 0, 0);
+		// Check we actually got something
+		if (result != 0) {
+			fprintf(stderr, "%s(): pthread_cond_wait() seems to of failed?", __func__);
+			exit(EXIT_FAILURE);
+		}
+		if (!buffer_node) {
+			fprintf(stderr, "%s(): Failed to get buffer, list probably empty", __func__);
+			exit(EXIT_FAILURE);
+		}
+
 		// Grab buffer list size
 		int cur_queue_size = get_buffer_list_size(&tdata->rx_packet_queue);
 		if (cur_queue_size > max_queue_size) {
 			max_queue_size = cur_queue_size;
-			fprintf(stderr, "tunnel_write_tap_handler(): Max RX packet queue size %li\n", max_queue_size);
-		}
-		// Check we actually got something
-		if (result != 0) {
-			fprintf(stderr, "tunnel_write_tap_handler(): pthread_cond_wait() seems to of failed?");
-			exit(EXIT_FAILURE);
-		}
-		if (!buffer_node) {
-			fprintf(stderr, "tunnel_write_tap_handler(): Failed to get buffer, list probably empty");
-			exit(EXIT_FAILURE);
-		}
-		// Set the buffer variable so we can access it more easily
-		Buffer *buffer = buffer_node->buffer;
-
-		// Set up packet header, we point it to the buffer
-		pkthdr = (PacketHeader *)buffer->contents;
-
-		// Grab sequence
-		seq = stap_be_to_cpu_32(pkthdr->sequence);
-		// If this is not the first packet...
-		if (!first_packet) {
-			// Check if we've lost packets
-			if (seq > last_seq + 1) {
-				fprintf(stderr, "tunnel_read_socket_handler(): PACKET LOST: last=%u, seq=%u, total_lost=%u\n", last_seq, seq,
-						seq - last_seq);
-			}
-			// If we we have an out of order one
-			if (seq < last_seq + 1) {
-				fprintf(stderr, "tunnel_read_socket_handler(): PACKET OOO : last=%u, seq=%u\n", last_seq, seq);
-			}
+			fprintf(stderr, "%s(): Max RX packet queue size %li\n", __func__, max_queue_size);
 		}
 
-		// Write data to TAP interface
-		ssize_t wbytes = write(tdata->tap_device.fd, buffer->contents + STAP_PACKET_HEADER_SIZE, buffer->length - STAP_PACKET_HEADER_SIZE);
-		if (wbytes == -1) {
-			perror("tunnel_read_socket_handler(): Error writing TAP device");
-			exit(EXIT_FAILURE);
-		}
-		DEBUG_PRINT("%s: write %li bytes to TAP\n", __func__, wbytes);
-
-		// Add buffer back to available buffer list
+		// Encode packet and get number of resulting packets generated, these are stored in our wbuffers
+		int pktcount = packet_decoder(&state, &wbuffers, &cbuffer, buffer_node->buffer, tdata->mtu);
+		// Add buffer back to available list
 		append_buffer_node(&tdata->available_buffers, buffer_node);
 
-		// If this was the first packet, reset the first packet indicator
-		if (first_packet) {
-			first_packet = 0;
-			last_seq = seq;
-			// We only bump the last sequence if its smaller than the one we're on
-		} else if (last_seq < seq) {
-			last_seq = seq;
-		} else if (last_seq > seq && sequence_wrapping(seq, last_seq)) {
-			last_seq = seq;
+		// Loop with our buffers and write them out
+		BufferNode *wbuffer_node = wbuffers.head;
+		for (int i = 0; i < pktcount; ++i) {
+			// Write data to TAP interface
+			ssize_t bytes_written = write(tdata->tap_device.fd, wbuffer_node->buffer->contents, wbuffer_node->buffer->length);
+			if (bytes_written == -1) {
+				fprintf(stderr, "%s(): Error writing TAP device: %s", __func__, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+			DEBUG_PRINT("Wrote %li bytes to TAP [%i/%i]\n", bytes_written, i + 1, pktcount);
+			// Go to next buffer
+			wbuffer_node = wbuffer_node->next;
 		}
 	}
 
