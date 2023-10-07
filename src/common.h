@@ -2,6 +2,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define STAP_VERSION 1
+
 #define STAP_BUFFER_COUNT 5000
 
 #define STAP_MAX_PACKET_SIZE 9216

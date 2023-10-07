@@ -2,17 +2,14 @@
 #define PACKET_H
 
 #include <stdint.h>
+
 #include "buffers.h"
-
-
 
 /*
  * Useful constants
  */
 
 #define ETHERNET_FRAME_SIZE 14
-
-
 
 /*
  * Compile-time endianness detection
@@ -165,36 +162,72 @@ typedef struct __stap_packed {
 	uint32_t opts[];
 } PacketHeader;
 
-
-
 /*
-
-   Packet Payload Header:
-	  |               |               |               |               |
-	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-	  |  Ver  |  SEQ  |
-	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * Packet Payload Header:
+ *    |               |               |               |               |
+ *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *	  |     Type      |           Packet Size         |      RSVD     |
+ *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *                      PARTIAL ADDITIONAL SECTION
+ *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *	  |         Payload Length        |      SEQ      |      RSVD     |
+ *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *	  MARK is set to 0xFF which indicates a continuation.
  */
 
+#define STAP_PACKET_PAYLOAD_HEADER_SIZE 4
+
+#define STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET 1
+#define STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET 2
+
 typedef struct __stap_packed {
-} PacketPayloadHeader;
+	uint8_t type;
+	stap_be16_t payload_size;
+	uint8_t reserved;
+} PacketPayloadHeaderComplete;
+
+typedef struct __stap_packed {
+	stap_be16_t payload_length;
+	uint8_t seq;
+	uint8_t reserved2;
+} PacketPayloadHeaderPartial;
 
 
+// Packet encoder state
+typedef struct {
+	// Store the current packet sequence number
+	uint32_t seq;
 
+	// Write buffer info
+	BufferNode *wbuffer_node; // Current write buffer node
+	uint16_t wbuffer_count;	 // Number of write buffers filled
+
+	// Compression buffer
+	Buffer cbuffer;
+
+	// Payload and current pointer position for chunking
+	Buffer *payload;
+	ssize_t payload_pos; // Position in payload we're currently at
+	uint8_t payload_seq; // Payload sequence
+
+} PacketEncoderState;
 
 // Packet decoder state
 typedef struct {
 	int first_packet;
 	uint32_t last_seq;
+	Buffer cbuffer;
 } PacketDecoderState;
-
-
-
-
 
 // Our own functions
 extern int sequence_wrapping(uint32_t cur, uint32_t prev);
-extern int packet_encoder(BufferList *wbuffers, Buffer *cbuffer, Buffer *pbuffer, uint16_t mss, uint32_t seq);
-extern int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *cbuffer, Buffer *pbuffer, uint16_t mtu);
+extern int init_packet_encoder(PacketEncoderState *state);
+extern void reset_packet_encoder(PacketEncoderState *state);
+extern int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t mss);
+extern int init_packet_decoder(PacketDecoderState *state);
+extern int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t mtu);
 
 #endif

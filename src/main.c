@@ -123,6 +123,8 @@ int main(int argc, char *argv[]) {
 
 	// Work out REAL maximum packet payload size
 	tdata.max_payload_size = tdata.mss;
+	// Ethernet frame size
+	tdata.max_payload_size -= 14;
 	// Reduce by IP header size
 	if (is_ipv4_mapped_ipv6(&tdata.remote_addr.sin6_addr))
 		tdata.max_payload_size -= 20;

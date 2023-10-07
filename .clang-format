@@ -6,4 +6,5 @@
     TabWidth: 4,
     SeparateDefinitionBlocks: Always,
     EmptyLineBeforeAccessModifier: LogicalBlock,
+    ReflowComments: true,
 }
