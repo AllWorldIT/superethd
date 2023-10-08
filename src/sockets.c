@@ -20,7 +20,7 @@ int create_udp_socket(struct ThreadData *tdata) {
 	}
 
 	// Set the send buffer size (SO_SNDBUF)
-	int buffer_size = 1024 * 1024 * 8;
+	int buffer_size = 1024 * 1024 * 64;
 	if (setsockopt(tdata->udp_socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)) < 0) {
 		perror("Error setting send buffer size");
 		close(tdata->udp_socket);

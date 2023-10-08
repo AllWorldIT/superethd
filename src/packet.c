@@ -72,7 +72,7 @@ void reset_packet_encoder(PacketEncoderState *state) {
 int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t max_wbuffer_size) {
 	// Packet header pointer
 	PacketHeader *pkthdr;
-	PacketPayloadHeaderComplete *pktphdr;
+	PacketPayloadHeader *pktphdr;
 
 	// Header changes
 	uint8_t header_format = 0;
@@ -149,7 +149,7 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 		if (!wbuffer->length) {
 			// Set up packet header, we point it to the buffer
 			pkthdr = (PacketHeader *)wbuffer->contents;
-			FPRINTF("NEW Header @wbuffer->length=%lu", wbuffer->length);
+			DEBUG_PRINT("NEW Header @wbuffer->length=%lu", wbuffer->length);
 			// Build packet header
 			pkthdr->ver = STAP_PACKET_VERSION_V1;
 			pkthdr->oam = 0;
@@ -167,16 +167,16 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 
 			// Bump the wbuffer length past the header, so we can write the packet payload header below
 			wbuffer->length += STAP_PACKET_HEADER_SIZE;
-			FPRINTF("bumping wbuffer->length=%lu after pkthdr setup (first header in new packet)", wbuffer->length);
+			DEBUG_PRINT("bumping wbuffer->length=%lu after pkthdr setup (first header in new packet)", wbuffer->length);
 		}
 
 		// Write the packet payload header
-		pktphdr = (PacketPayloadHeaderComplete *)(wbuffer->contents + wbuffer->length);
+		pktphdr = (PacketPayloadHeader *)(wbuffer->contents + wbuffer->length);
 		pktphdr->type = payload_header_type;
 		pktphdr->packet_size = stap_cpu_to_be_16(state->payload->length);
 		pktphdr->reserved = 0;
-		FPRINTF("NEW payload header @wbuffer->length=%lu, type=%i, packet_size=%i", wbuffer->length, pktphdr->type,
-				pktphdr->packet_size);
+		DEBUG_PRINT("NEW payload header @wbuffer->length=%lu, type=%i, packet_size=%i", wbuffer->length, pktphdr->type,
+					pktphdr->packet_size);
 		wbuffer->length += STAP_PACKET_PAYLOAD_HEADER_SIZE;
 
 		// If this is a partial header, we overlay the partial header struct and set the additional values
@@ -186,14 +186,10 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 			pktphdr_partial->payload_length = stap_cpu_to_be_16(chunk_size);
 			pktphdr_partial->part = state->payload_part;
 			pktphdr_partial->reserved = 0;
-			FPRINTF("NEW partial header @wbuffer->length=%lu, payload_length=%i, part=%i", wbuffer->length,
-					pktphdr_partial->payload_length, pktphdr_partial->part);
 			wbuffer->length += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
-			FPRINTF("Partial packet, adding partial packet header: payload_length=%i, payload_part=%i, wbuffer->length=%lu",
+			DEBUG_PRINT("Partial packet, adding partial packet header: payload_length=%i, payload_part=%i, wbuffer->length=%lu",
 					chunk_size, state->payload_part, wbuffer->length);
 		}
-
-		DEBUG_PRINT("BEFORE: payload_pos=%i, wbuffer->length=%lu, chunk_size=%i", state->payload_pos, wbuffer->length, chunk_size);
 
 		// Copy chunk into buffer
 		memcpy(wbuffer->contents + wbuffer->length, state->payload->contents + state->payload_pos, chunk_size);
@@ -202,11 +198,9 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 		wbuffer->length += chunk_size;
 		state->payload_part++;
 
-		DEBUG_PRINT("AFTER: payload_pos=%i, wbuffer->length=%lu, payload_part=%i : encap next seq=%i", state->payload_pos,
-					wbuffer->length, state->payload_part, state->seq);
-
-		FPRINTF("FINAL payload header @wbuffer->length=%lu, type=%i, packet_size=%i", wbuffer->length, pktphdr->type,
-				pktphdr->packet_size);
+		DEBUG_PRINT(
+			"Dumped chunk to wbuffer: payload_pos=%i, chunk_size=%i, wbuffer->length=%lu, payload_part=%i : encap next seq=%i",
+			state->payload_pos, chunk_size, wbuffer->length, state->payload_part, state->seq);
 
 		// Check if we have finished our payload, or finished the buffer
 		// TODO: this bumps the wbuffer, we don't really need to do it if the payload is done, we can wait for a timeout
@@ -257,6 +251,176 @@ static inline void _clear_packet_decoder_partial_state(PacketDecoderState *state
 	state->partial_packet_size = 0;
 }
 
+static int _decode_complete_packet(PacketDecoderState *state, PacketDecoderEncapPacket *epkt) {
+	// Sanity check of options
+	if (epkt->decoded_packet_size > epkt->payload.length - epkt->pos) {
+		FPRINTF("Packet size %u exceeds available payload length of %lu in header %i, DROPPING!", epkt->decoded_packet_size,
+				epkt->payload.length - epkt->pos, epkt->cur_header);
+		return -1;
+	}
+
+	// Make accessing the write buffer a bit easier
+	Buffer *wbuffer = state->wbuffer_node->buffer;
+
+	// Copy payload into the wbuffer
+	memcpy(wbuffer->contents, epkt->payload.contents + epkt->pos, epkt->decoded_packet_size);
+	epkt->pos += epkt->decoded_packet_size;
+	wbuffer->length = epkt->decoded_packet_size;
+	DEBUG_PRINT("Dumped packet to wbuffer: payload_pos=%u, wbuffer->length=%lu : seq=%i", epkt->pos, wbuffer->length, epkt->seq);
+
+	// Bump buffer counter
+	state->wbuffer_count++;
+	// If we've processed this payload, we can reset the buffer node as we're done here
+	if (epkt->pos != epkt->payload.length) state->wbuffer_node = state->wbuffer_node->next;
+
+	return 0;
+}
+
+static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapPacket *epkt) {
+	// Overlay the partial packet header and move onto checking the partial packet below
+	PacketPayloadHeaderPartial *pktphdr_partial = (PacketPayloadHeaderPartial *)(epkt->payload.contents + epkt->pos);
+	// Bump the payload contents pointer past the partial header
+	epkt->pos += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
+	DEBUG_PRINT("Moved payload_pos=%i past partial header", epkt->pos);
+
+	if (state->partial_packet_size)
+		DEBUG_PRINT("Re-assembling: part=%i, packet_size=%lu/%i, lastseq=%i", state->partial_packet_part,
+					state->partial_packet.length, state->partial_packet_size, state->partial_packet_lastseq);
+
+	// Make sure we have space to overlay the partial packet header
+	if (epkt->payload.length - epkt->pos <= STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE * 2) {
+		FPRINTF("Invalid payload length %lu, should be > %i to fit partial packet header %i, DROPPING!", epkt->payload.length,
+				STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, epkt->cur_header);
+		// Something is pretty wrong here, so clear partial packet state and go to next encap packet
+		_clear_packet_decoder_partial_state(state);
+		return -1;
+	}
+
+	// Make sure its reserved field is also cleared
+	if (pktphdr_partial->reserved != 0) {
+		FPRINTF("Partial packet header should not have any reserved its set, it is %u, DROPPING!", pktphdr_partial->reserved);
+		// Something is probably corrupted, so clear the state and continue to next encap packet
+		_clear_packet_decoder_partial_state(state);
+		return -1;
+	}
+
+	// Set the partial packet size
+	uint16_t partial_packet_payload_length = stap_be_to_cpu_16(pktphdr_partial->payload_length);
+
+	// Check that this partial packet size does not exceed the encap payload memory space left
+	if (partial_packet_payload_length > epkt->payload.length - epkt->pos) {
+		FPRINTF("Partial packet payload size %u exceeds available payload length of %lu in header %i, DROPPING!",
+				epkt->decoded_packet_size, epkt->payload.length - epkt->pos, epkt->cur_header);
+		// The partial packet size can never exceed the memory left in the payload, if this is true, something is wrong
+		// clear the state and move to the next encap packet.
+		_clear_packet_decoder_partial_state(state);
+		return -1;
+	}
+
+	/*
+	 * The below checks are based on this specific re-assembly, it could be we had packet loss, so we can probably
+	 * continue onto the next packet header incase other packets were packed into this payload.
+	 */
+
+	// Check that the partial packet size matches what we got originally
+	if (state->partial_packet_size && state->partial_packet_size != epkt->decoded_packet_size) {
+		FPRINTF(
+			"Partial packet size does not match the one in the first header state->partial_packet_size=%i, "
+			"partial_packet_size=%i, DROPPING!",
+			state->partial_packet_size, epkt->decoded_packet_size);
+		// The original packet size we got does not match what we got now, this shouldn't happen, drop packet and
+		// continue onto the next encap packet.
+		_clear_packet_decoder_partial_state(state);
+		epkt->pos += epkt->decoded_packet_size;
+		return 0;
+	}
+
+	// Check encap packet sequence is in order
+	if (state->partial_packet_lastseq && state->partial_packet_lastseq != epkt->seq - 1) {
+		FPRINTF("Partial packet encap sequence mismatch partial_packet_lastseq=%i, (sequence - 1)=%i, DROPPING!",
+				state->partial_packet_lastseq, epkt->seq - 1);
+		// We obviously lost data, so reset the partial packet assembly
+		_clear_packet_decoder_partial_state(state);
+		epkt->pos += epkt->decoded_packet_size;
+		return 0;
+	}
+
+	// Verify packet part is in numerical order
+	if (state->partial_packet_size && state->partial_packet_part != pktphdr_partial->part - 1) {
+		FPRINTF("Partial packet part mismatch partial_packet_part=%i, (partial_packet_part - 1)=%i, DROPPING!",
+				state->partial_packet_part, pktphdr_partial->part - 1);
+		// Payload part did not match what it should be, probably corruption?
+		_clear_packet_decoder_partial_state(state);
+		return -1;
+	}
+
+	// We can now make sure that our part starts at 1 aswell...
+	if (!state->partial_packet_size && pktphdr_partial->part != 0) {
+		FPRINTF("Partial packet part should start at 0? part=%i, DROPPING!", pktphdr_partial->part);
+		// Odd, our packet part should start at 1, lets try the next packet
+		_clear_packet_decoder_partial_state(state);
+		epkt->pos += epkt->decoded_packet_size;
+		return 0;
+	}
+
+	// Make sure if we add this payload, the packet will not exceed the size it said it was
+	if (state->partial_packet.length + partial_packet_payload_length > epkt->decoded_packet_size) {
+		FPRINTF("Partial packet size will exceed packet size in header %i with payload %i, DROPPING!", epkt->decoded_packet_size,
+				partial_packet_payload_length);
+		// This should never happen, so maybe its corruption? clear start and discard rest of encap packet
+		_clear_packet_decoder_partial_state(state);
+		return -1;
+	}
+
+	// Copy payload into the partial packet buffer
+	memcpy(state->partial_packet.contents + state->partial_packet.length, epkt->payload.contents + epkt->pos,
+		   partial_packet_payload_length);
+	// Bump the positions of the encap and also partial packet
+	epkt->pos += partial_packet_payload_length;
+	// If we didn't catch the full packet, we need to update all the state below...
+	state->partial_packet.length += partial_packet_payload_length;
+
+	DEBUG_PRINT("Partial packet: part=%i, size=%i [payload: %i, cur=%lu] : encap seq=%i [encap pos: %i]", pktphdr_partial->part,
+				epkt->decoded_packet_size, partial_packet_payload_length, state->partial_packet.length, epkt->seq, epkt->pos);
+
+	/*
+	 * Check if we got the full packet
+	 */
+
+	// Lets check if we have the full packet now...
+	if (state->partial_packet.length == epkt->decoded_packet_size) {
+		// Make accessing the write buffer a bit easier
+		Buffer *wbuffer = state->wbuffer_node->buffer;
+
+		// Copy payload into the wbuffer
+		memcpy(wbuffer->contents, state->partial_packet.contents, state->partial_packet.length);
+		wbuffer->length = state->partial_packet.length;
+		DEBUG_PRINT("Dumped assembled partial packet to wbuffer, wbuffer->length=%lu", wbuffer->length);
+
+		// Clear state for next packet
+		_clear_packet_decoder_partial_state(state);
+
+		// Bump buffer counter
+		state->wbuffer_count++;
+		state->wbuffer_node = state->wbuffer_node->next;
+
+		return 0;
+	}
+
+	/*
+	 * If we did not get the packet, we need to update the state
+	 */
+
+	// If this is the first partial packet, we can set its size
+	if (pktphdr_partial->part == 0) state->partial_packet_size = epkt->decoded_packet_size;
+
+	// Update the state for this partial payload
+	state->partial_packet_lastseq = epkt->seq;
+	state->partial_packet_part = pktphdr_partial->part;
+
+	return 0;
+}
+
 /**
  * @brief Decode packets received over the tunnel.
  *
@@ -265,31 +429,33 @@ static inline void _clear_packet_decoder_partial_state(PacketDecoderState *state
  * @param state Decoder state.
  * @param wbuffers List of buffers used to write to TAP device.
  * @param pbuffer Packet buffer, this is the packet we're processing.
- * @param mtu Maximum MTU of our ethernet device.
+ * @param emtu Maximum MTU of our ethernet device.
  * @return Number of packets ready in the wbuffers.
  */
-int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t mtu) {
+int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t emtu) {
+	// Packet we're working on
+	PacketDecoderEncapPacket epkt;
+
 	// Packet header pointer
 	PacketHeader *pkthdr = (PacketHeader *)pbuffer->contents;
-	PacketPayloadHeaderComplete *pktphdr;
+	PacketPayloadHeader *pktphdr;
 
-	// Grab sequence
-	uint32_t seq = stap_be_to_cpu_32(pkthdr->sequence);
+	// Maximum MTU for resulting packet
+	epkt.mtu = emtu;
+	// Decode sequence
+	epkt.seq = stap_be_to_cpu_32(pkthdr->sequence);
 
 	// If this is not the first packet...
 	if (!state->first_packet) {
 		// Check if we've lost packets
-		if (seq > state->last_seq + 1) {
-			FPRINTF("PACKET LOST: last=%u, seq=%u, total_lost=%u", state->last_seq, seq, seq - state->last_seq);
+		if (epkt.seq > state->last_seq + 1) {
+			FPRINTF("PACKET LOST: last=%u, seq=%u, total_lost=%u", state->last_seq, epkt.seq, epkt.seq - state->last_seq);
 		}
 		// If we we have an out of order one
-		if (seq < state->last_seq + 1) {
-			FPRINTF("PACKET OOO : last=%u, seq=%u", state->last_seq, seq);
+		if (epkt.seq < state->last_seq + 1) {
+			FPRINTF("PACKET OOO : last=%u, seq=%u", state->last_seq, epkt.seq);
 		}
 	}
-
-	// This will hold the pointer to the start of the actual payload containing packet(s)
-	Buffer encap_payload;
 
 	// Depending on the format of the buffer we need to set up the payload pointer and size
 	if (pkthdr->format == (STAP_PACKET_FORMAT_ENCAP & STAP_PACKET_FORMAT_COMPRESSED)) {
@@ -303,13 +469,13 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 		}
 		DEBUG_PRINT("Decompressed data size = %lu => %lu", pbuffer->length - STAP_PACKET_HEADER_SIZE, state->cbuffer.length);
 		// If all is still good, set the payload to point to the decompressed data
-		encap_payload.contents = state->cbuffer.contents;
-		encap_payload.length = state->cbuffer.length;
+		epkt.payload.contents = state->cbuffer.contents;
+		epkt.payload.length = state->cbuffer.length;
 		// Plain uncompressed encapsulated packets
 	} else if (pkthdr->format == STAP_PACKET_FORMAT_ENCAP) {
 		// If the packet is not compressed, we just set the payload to point to the data following our packet header
-		encap_payload.contents = pbuffer->contents + STAP_PACKET_HEADER_SIZE;
-		encap_payload.length = pbuffer->length - STAP_PACKET_HEADER_SIZE;
+		epkt.payload.contents = pbuffer->contents + STAP_PACKET_HEADER_SIZE;
+		epkt.payload.length = pbuffer->length - STAP_PACKET_HEADER_SIZE;
 		// Something unknown?
 	} else {
 		FPRINTF("Unknown packet format: %u", pkthdr->format);
@@ -328,254 +494,75 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 	state->wbuffer_count = 0;
 
 	// Count how many packet headers we've processed
-	int packet_header_num = 1;
-	int encap_payload_pos = 0;
+	epkt.cur_header = 1;
+	epkt.pos = 0;
 	// Loop while we have data
-	while (encap_payload_pos < encap_payload.length) {
-		DEBUG_PRINT("Decoder loop: encap_payload.length=%lu, payload_pos=%i, packet_header_num=%u", encap_payload.length,
-					encap_payload_pos, packet_header_num);
+	while (epkt.pos < epkt.payload.length) {
+		DEBUG_PRINT("Decoder loop: epkt.payload.length=%lu, payload_pos=%i, header_num=%u", epkt.payload.length, epkt.pos,
+					epkt.cur_header);
 
 		// Make sure we have space to overlay the optional packet header
-		if (encap_payload.length - encap_payload_pos <= STAP_PACKET_PAYLOAD_HEADER_SIZE) {
-			FPRINTF("Invalid payload length %lu, should be > %i to fit header %i, DROPPING!", encap_payload.length,
-					STAP_PACKET_PAYLOAD_HEADER_SIZE, packet_header_num);
+		if (epkt.payload.length - epkt.pos <= STAP_PACKET_PAYLOAD_HEADER_SIZE) {
+			FPRINTF("Invalid payload length %lu, should be > %i to fit header %i, DROPPING!", epkt.payload.length,
+					STAP_PACKET_PAYLOAD_HEADER_SIZE, epkt.cur_header);
 			goto bump_seq;
 		}
 
 		// Overlay packet payload header
-		pktphdr = (PacketPayloadHeaderComplete *)(encap_payload.contents + encap_payload_pos);
+		pktphdr = (PacketPayloadHeader *)(epkt.payload.contents + epkt.pos);
 		// Bump the payload contents pointer
-		encap_payload_pos += STAP_PACKET_PAYLOAD_HEADER_SIZE;
-		DEBUG_PRINT("Moved payload_pos=%i past header", encap_payload_pos);
-
-		// Unknown packet type
-		if (pktphdr->type != STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET && pktphdr->type != STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET) {
-			// If we don't understand what type of packet this is, drop it
-			FPRINTF("I don't understand the payload header type %u, DROPPING!", pktphdr->type);
-			goto bump_seq;
-		}
+		epkt.pos += STAP_PACKET_PAYLOAD_HEADER_SIZE;
+		DEBUG_PRINT("Moved payload_pos=%i past header", epkt.pos);
 
 		// This is the packet size of the final packet after reassembly
-		uint16_t payload_packet_size = stap_be_to_cpu_16(pktphdr->packet_size);
-		FPRINTF("Final packet size: payload_packet_size=%i", payload_packet_size);
+		epkt.decoded_packet_size = stap_be_to_cpu_16(pktphdr->packet_size);
+		DEBUG_PRINT("Final packet size: decoded_packet_size=%i", epkt.decoded_packet_size);
 
-		/*
-		 * Complete packet handling
-		 */
-		if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET) {
-			// Sanity check of options
-			if (payload_packet_size > encap_payload.length - encap_payload_pos) {
-				FPRINTF("Packet size %u exceeds available payload length of %lu in header %i, DROPPING!", payload_packet_size,
-						encap_payload.length - encap_payload_pos, packet_header_num);
-				goto bump_seq;
-			}
-			// Packets should be at least ETHERNET_FRAME_SIZE bytes in size
-			if (payload_packet_size < ETHERNET_FRAME_SIZE) {
-				FPRINTF("Packet size %u is too small to be an ethernet frame in header %i, DROPPING!", payload_packet_size,
-						packet_header_num);
-				goto bump_seq;
-			}
-			// Do a few sanity checks on the packet
-			if (payload_packet_size > STAP_MAX_PACKET_SIZE) {
-				FPRINTF("Packet size %i exceeds maximum supported size %i, DROPPING!", payload_packet_size, STAP_MAX_PACKET_SIZE);
-				goto bump_seq;
-			}
-			if (payload_packet_size > mtu + ETHERNET_FRAME_SIZE) {
-				FPRINTF("DROPPING PACKET! packet size %i bigger than MTU %i, DROPPING!", payload_packet_size, mtu);
-				goto next_packet;
-			}
-
-			// Make accessing the write buffer a bit easier
-			Buffer *wbuffer = state->wbuffer_node->buffer;
-
-			// Copy payload into the wbuffer
-			memcpy(wbuffer->contents, encap_payload.contents + encap_payload_pos, payload_packet_size);
-			encap_payload_pos += payload_packet_size;
-			wbuffer->length = payload_packet_size;
-			DEBUG_PRINT("Dumped packet to wbuffer: payload_pos=%u, wbuffer->length=%lu : seq=%i", encap_payload_pos,
-						wbuffer->length, seq);
-
-			// Bump buffer counter
-			state->wbuffer_count++;
-			// If we've processed this payload, we can reset the buffer node as we're done here
-			if (encap_payload_pos != encap_payload.length) state->wbuffer_node = state->wbuffer_node->next;
-
-			/*
-			 * Partial packet handling
-			 */
-		} else if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET) {
-			// Overlay the partial packet header and move onto checking the partial packet below
-			PacketPayloadHeaderPartial *pktphdr_partial =
-				(PacketPayloadHeaderPartial *)(encap_payload.contents + encap_payload_pos);
-			// Bump the payload contents pointer past the partial header
-			encap_payload_pos += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
-			DEBUG_PRINT("Moved payload_pos=%i past partial header", encap_payload_pos);
-
-			if (state->partial_packet_size)
-				DEBUG_PRINT("Re-assembling: part=%i, packet_size=%lu/%i, lastseq=%i", state->partial_packet_part,
-							state->partial_packet.length, state->partial_packet_size, state->partial_packet_lastseq);
-
-			// Make sure we have space to overlay the partial packet header
-			if (encap_payload.length - encap_payload_pos <= STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE * 2) {
-				FPRINTF("Invalid payload length %lu, should be > %i to fit partial packet header %i, DROPPING!",
-						encap_payload.length, STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, packet_header_num);
-				// Something is pretty wrong here, so clear partial packet state and go to next encap packet
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			// Packets should be at least ETHERNET_FRAME_SIZE bytes in size
-			if (payload_packet_size < ETHERNET_FRAME_SIZE) {
-				FPRINTF("Packet size %u is too small to be an ethernet frame in header %i, DROPPING!", payload_packet_size,
-						packet_header_num);
-				// Something is probably pretty wrong here too, so lets again clear the state and continue to the next encap
-				// packet
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-			// Do a few sanity checks on the packet
-			if (payload_packet_size > STAP_MAX_PACKET_SIZE) {
-				FPRINTF("Packet size %i exceeds maximum supported size %i, DROPPING!", payload_packet_size, STAP_MAX_PACKET_SIZE);
-				// Again, probably something pretty wrong here, this cannot be the case, so we discard the encap packet and
-				// clear state
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-			if (payload_packet_size > mtu + ETHERNET_FRAME_SIZE) {
-				FPRINTF("DROPPING PACKET! packet size %i bigger than MTU %i, DROPPING!", payload_packet_size, mtu);
-				// Things should be properly setup, so this should not be able to happen, clear state and contine to next encap
-				// packet
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			// Make sure its reserved field is also cleared
-			if (pktphdr_partial->reserved != 0) {
-				FPRINTF("Partial packet header should not have any reserved its set, it is %u, DROPPING!",
-						pktphdr_partial->reserved);
-				// Something is probably corrupted, so clear the state and continue to next encap packet
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			// Set the partial packet size
-			uint16_t partial_packet_payload_length = stap_be_to_cpu_16(pktphdr_partial->payload_length);
-
-			// Check that this partial packet size does not exceed the encap payload memory space left
-			if (partial_packet_payload_length > encap_payload.length - encap_payload_pos) {
-				FPRINTF("Partial packet payload size %u exceeds available payload length of %lu in header %i, DROPPING!",
-						payload_packet_size, encap_payload.length - encap_payload_pos, packet_header_num);
-				// The partial packet size can never exceed the memory left in the payload, if this is true, something is wrong
-				// clear the state and move to the next encap packet.
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			/*
-			 * The below checks are based on this specific re-assembly, it could be we had packet loss, so we can probably
-			 * continue onto the next packet header incase other packets were packed into this payload.
-			 */
-
-			// Check that the partial packet size matches what we got originally
-			if (state->partial_packet_size && state->partial_packet_size != payload_packet_size) {
-				FPRINTF(
-					"Partial packet size does not match the one in the first header state->partial_packet_size=%i, "
-					"partial_packet_size=%i, DROPPING!",
-					state->partial_packet_size, payload_packet_size);
-				// The original packet size we got does not match what we got now, this shouldn't happen, drop packet and
-				// continue onto the next encap packet.
-				_clear_packet_decoder_partial_state(state);
-				encap_payload_pos += payload_packet_size;
-				goto next_packet;
-			}
-
-			// Check encap packet sequence is in order
-			if (state->partial_packet_lastseq && state->partial_packet_lastseq != seq - 1) {
-				FPRINTF("Partial packet encap sequence mismatch partial_packet_lastseq=%i, (sequence - 1)=%i, DROPPING!",
-						state->partial_packet_lastseq, pkthdr->sequence - 1);
-				// We obviously lost data, so reset the partial packet assembly
-				_clear_packet_decoder_partial_state(state);
-				encap_payload_pos += payload_packet_size;
-				goto next_packet;
-			}
-
-			// Verify packet part is in numerical order
-			if (state->partial_packet_size && state->partial_packet_part != pktphdr_partial->part - 1) {
-				FPRINTF("Partial packet part mismatch partial_packet_part=%i, (partial_packet_part - 1)=%i, DROPPING!",
-						state->partial_packet_part, pktphdr_partial->part - 1);
-				// Payload part did not match what it should be, probably corruption?
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			// We can now make sure that our part starts at 1 aswell...
-			if (!state->partial_packet_size && pktphdr_partial->part != 0) {
-				FPRINTF("Partial packet part should start at 1? part=%i, DROPPING!", pktphdr_partial->part);
-				// Odd, our packet part should start at 1, lets try the next packet
-				_clear_packet_decoder_partial_state(state);
-				encap_payload_pos += payload_packet_size;
-				goto next_packet;
-			}
-
-			// Make sure if we add this payload, the packet will not exceed the size it said it was
-			if (state->partial_packet.length + partial_packet_payload_length > payload_packet_size) {
-				FPRINTF("Partial packet size will exceed packet size in header %i with payload %i, DROPPING!", payload_packet_size,
-						partial_packet_payload_length);
-				// This should never happen, so maybe its corruption? clear start and discard rest of encap packet
-				_clear_packet_decoder_partial_state(state);
-				goto bump_seq;
-			}
-
-			// Copy payload into the partial packet buffer
-			memcpy(state->partial_packet.contents + state->partial_packet.length, encap_payload.contents + encap_payload_pos, partial_packet_payload_length);
-			// Bump the positions of the encap and also partial packet
-			encap_payload_pos += partial_packet_payload_length;
-			// If we didn't catch the full packet, we need to update all the state below...
-			state->partial_packet.length += partial_packet_payload_length;
-
-			FPRINTF("Partial packet: part=%i, size=%i [payload: %i, cur=%lu] : encap seq=%i [encap pos: %i]", pktphdr_partial->part,
-					payload_packet_size, partial_packet_payload_length, state->partial_packet.length, seq, encap_payload_pos);
-
-			/*
-			 * Check if we got the full packet
-			 */
-
-			// Lets check if we have the full packet now...
-			if (state->partial_packet.length == payload_packet_size) {
-				// Make accessing the write buffer a bit easier
-				Buffer *wbuffer = state->wbuffer_node->buffer;
-
-				// Copy payload into the wbuffer
-				memcpy(wbuffer->contents, state->partial_packet.contents, state->partial_packet.length);
-				wbuffer->length = state->partial_packet.length;
-				DEBUG_PRINT("Dumped assembled partial packet to wbuffer, wbuffer->length=%lu", wbuffer->length);
-
-				// Clear state for next packet
-				_clear_packet_decoder_partial_state(state);
-
-				// Bump buffer counter
-				state->wbuffer_count++;
-				state->wbuffer_node = state->wbuffer_node->next;
-
-				goto next_packet;
-			}
-
-			/*
-			 * If we did not get the packet, we need to update the state
-			 */
-
-			// If this is the first partial packet, we can set its size
-			if (pktphdr_partial->part == 0) state->partial_packet_size = payload_packet_size;
-
-			// Update the state for this partial payload
-			state->partial_packet_lastseq = seq;
-			state->partial_packet_part = pktphdr_partial->part;
+		// Packets should be at least ETHERNET_FRAME_SIZE bytes in size
+		if (epkt.decoded_packet_size < ETHERNET_FRAME_SIZE) {
+			FPRINTF("Packet size %u is too small to be an ethernet frame in header %i, DROPPING!", epkt.decoded_packet_size,
+					epkt.cur_header);
+			// Something is probably pretty wrong here too, so lets again clear the state and continue to the next encap
+			// packet
+			_clear_packet_decoder_partial_state(state);
+			return -1;
+		}
+		// Do a few sanity checks on the packet
+		if (epkt.decoded_packet_size > STAP_MAX_PACKET_SIZE) {
+			FPRINTF("Packet size %i exceeds maximum supported size %i, DROPPING!", epkt.decoded_packet_size, STAP_MAX_PACKET_SIZE);
+			// Again, probably something pretty wrong here, this cannot be the case, so we discard the encap packet and
+			// clear state
+			_clear_packet_decoder_partial_state(state);
+			return -1;
+		}
+		if (epkt.decoded_packet_size > epkt.mtu + ETHERNET_FRAME_SIZE) {
+			FPRINTF("DROPPING PACKET! packet size %i bigger than MTU %i, DROPPING!", epkt.decoded_packet_size, epkt.mtu);
+			// Things should be properly setup, so this should not be able to happen, clear state and contine to next encap
+			// packet
+			_clear_packet_decoder_partial_state(state);
+			return -1;
 		}
 
-	next_packet:
+		/*
+		 * Packet decoding
+		 */
+		int res;
+		if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET) res = _decode_complete_packet(state, &epkt);
+		// Partial packet handling
+		else if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET)
+			res = _decode_partial_packet(state, &epkt);
+		else {
+			// If we don't understand what type of packet this is, drop it
+			FPRINTF("I don't understand the payload header type %u, DROPPING!", pktphdr->type);
+			res = -1;
+		}
+
+		// Check result of decode operation
+		if (res == -1) goto bump_seq;
+
 		// Bump header number
-		packet_header_num += 1;
-		FPRINTF("End loop: encap_payload_pos=%i", encap_payload_pos);
+		epkt.cur_header += 1;
+		DEBUG_PRINT("End loop: epkt.pos=%i, epkt.cur_header=%i", epkt.pos, epkt.cur_header);
 	}
 
 bump_seq:
@@ -585,12 +572,12 @@ bump_seq:
 	// If this was the first packet, reset the first packet indicator
 	if (state->first_packet) {
 		state->first_packet = 0;
-		state->last_seq = seq;
+		state->last_seq = epkt.seq;
 		// We only bump the last sequence if its smaller than the one we're on
-	} else if (state->last_seq < seq) {
-		state->last_seq = seq;
-	} else if (state->last_seq > seq && sequence_wrapping(seq, state->last_seq)) {
-		state->last_seq = seq;
+	} else if (state->last_seq < epkt.seq) {
+		state->last_seq = epkt.seq;
+	} else if (state->last_seq > epkt.seq && sequence_wrapping(epkt.seq, state->last_seq)) {
+		state->last_seq = epkt.seq;
 	}
 
 	return state->wbuffer_count;

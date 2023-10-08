@@ -187,7 +187,7 @@ typedef struct __stap_packed {
 	uint8_t type;
 	stap_be16_t packet_size;
 	uint8_t reserved;
-} PacketPayloadHeaderComplete;
+} PacketPayloadHeader;
 
 typedef struct __stap_packed {
 	stap_be16_t payload_length;
@@ -213,6 +213,18 @@ typedef struct {
 	uint8_t payload_part;  // Payload sequence
 
 } PacketEncoderState;
+
+
+typedef struct {
+	uint16_t mtu; // Ethernet device MTU
+	uint32_t seq; // Sequence number of the packet we're processing
+	uint16_t decoded_packet_size; // Current payload header packet size
+
+	int pos; // Encapsulating packet position
+	int cur_header; // Counter of the header number we're processing in the encapsulating packet
+
+	Buffer payload; // Pointer to the payload
+} PacketDecoderEncapPacket;
 
 // Packet decoder state
 typedef struct {
