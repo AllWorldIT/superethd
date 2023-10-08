@@ -10,7 +10,7 @@ configure_file(input: 'config.h.in', output: 'config.h', configuration: conf_dat
 deps = [dependency('threads')]
 deps = [dependency('liblz4')]
 
-sources = ['main.c', 'buffers.c', 'packet.c', 'sockets.c', 'tunnel.c', 'tap.c', 'util.c']
+sources = ['main.c', 'buffers.c', 'packet.c', 'sockets.c', 'superethd.c', 'tunnel.c', 'tap.c', 'util.c']
 
 
 # FIXME does not work we need this for clang-includes-fixer
@@ -26,6 +26,9 @@ executable('stap_debug', sources, dependencies: deps,
     link_args: ['-pg', '-no-pie'],
 )
 
-executable('stap', [sources], dependencies: deps, c_args: ['-D_GNU_SOURCE'])
+executable('superethd', [sources], dependencies: deps, c_args: ['-D_GNU_SOURCE'])
 
 executable('tst', ['test.c'])
+executable('tst-crc32', ['fcs-crc32.c'])
+executable('tst-crc32b', ['fcs-crc32b.c'])
+executable('tst-crc32c', ['fcs-crc32c.c'])
