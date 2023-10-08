@@ -238,6 +238,10 @@ void *tunnel_read_socket_handler(void *arg) {
 				FPRINTF("Packet not supported, version %i vs. our version %i, DROPPING!", pkthdr->ver, STAP_VERSION);
 				continue;
 			}
+			if (pkthdr->reserved != 0) {
+				FPRINTF("Packet header should not have any reserved its set, it is %u, DROPPING!", pkthdr->reserved);
+				continue;
+			}
 			// First thing we do is validate the header
 			int valid_format_mask = STAP_PACKET_FORMAT_ENCAP | STAP_PACKET_FORMAT_COMPRESSED;
 			if (pkthdr->format & ~valid_format_mask) {
@@ -322,6 +326,7 @@ void *tunnel_write_tap_handler(void *arg) {
 
 		// Encode packet and get number of resulting packets generated, these are stored in our wbuffers
 		int pktcount = packet_decoder(&state, &wbuffers, buffer_node->buffer, tdata->mtu);
+		DEBUG_PRINT("Got %i packets back from packet decoder", pktcount);
 		// Add buffer back to available list
 		append_buffer_node(&tdata->available_buffers, buffer_node);
 

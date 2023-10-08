@@ -53,13 +53,12 @@ void initialize_buffer_list(BufferList* buffer_list, size_t count, size_t buffer
 	}
 }
 
-
 // Return buffer list size
 ssize_t get_buffer_list_size(BufferList* buffer_list) {
-	 pthread_mutex_lock(&buffer_list->mutex);
-	 ssize_t size = buffer_list->size;
-	 pthread_mutex_unlock(&buffer_list->mutex);
-	 return size;
+	pthread_mutex_lock(&buffer_list->mutex);
+	ssize_t size = buffer_list->size;
+	pthread_mutex_unlock(&buffer_list->mutex);
+	return size;
 }
 
 // Internal function with no locking to grab the buffer node head
@@ -87,7 +86,6 @@ BufferNode* _get_buffer_node_head(BufferList* buffer_list) {
 
 	return node;
 }
-
 
 // Return the buffer node head
 BufferNode* get_buffer_node_head(BufferList* buffer_list) {

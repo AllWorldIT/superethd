@@ -137,7 +137,7 @@ typedef uint64_t stap_le64_t;
 #define STAP_PACKET_FORMAT_ENCAP 0x1
 #define STAP_PACKET_FORMAT_COMPRESSED 0x2
 
-#define STAP_PACKET_HEADER_SIZE sizeof(PacketHeader)
+#define STAP_PACKET_HEADER_SIZE 8
 
 typedef struct __stap_packed {
 #if STAP_BYTE_ORDER == STAP_BIG_ENDIAN
@@ -172,29 +172,28 @@ typedef struct __stap_packed {
  *
  *                      PARTIAL ADDITIONAL SECTION
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *	  |         Payload Length        |      SEQ      |      RSVD     |
+ *	  |         Payload Length        |     PART      |      RSVD     |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- *	  MARK is set to 0xFF which indicates a continuation.
  */
-
-#define STAP_PACKET_PAYLOAD_HEADER_SIZE 4
 
 #define STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET 1
 #define STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET 2
 
+#define STAP_PACKET_PAYLOAD_HEADER_SIZE 4
+#define STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE 4
+
 typedef struct __stap_packed {
 	uint8_t type;
-	stap_be16_t payload_size;
+	stap_be16_t packet_size;
 	uint8_t reserved;
 } PacketPayloadHeaderComplete;
 
 typedef struct __stap_packed {
 	stap_be16_t payload_length;
-	uint8_t seq;
-	uint8_t reserved2;
+	uint8_t part;
+	uint8_t reserved;
 } PacketPayloadHeaderPartial;
-
 
 // Packet encoder state
 typedef struct {
@@ -202,24 +201,38 @@ typedef struct {
 	uint32_t seq;
 
 	// Write buffer info
-	BufferNode *wbuffer_node; // Current write buffer node
-	uint16_t wbuffer_count;	 // Number of write buffers filled
+	BufferNode *wbuffer_node;  // Current write buffer node
+	uint16_t wbuffer_count;	   // Number of write buffers filled
 
 	// Compression buffer
 	Buffer cbuffer;
 
 	// Payload and current pointer position for chunking
 	Buffer *payload;
-	ssize_t payload_pos; // Position in payload we're currently at
-	uint8_t payload_seq; // Payload sequence
+	uint16_t payload_pos;  // Position in payload we're currently at
+	uint8_t payload_part;  // Payload sequence
 
 } PacketEncoderState;
 
 // Packet decoder state
 typedef struct {
+	// Flag to indicate this is the first packet we're receiving
 	int first_packet;
+	// Last packet sequence number
 	uint32_t last_seq;
+
+	// Write buffer info
+	BufferNode *wbuffer_node;  // Current write buffer node
+	uint16_t wbuffer_count;	   // Number of write buffers filled
+
+	// Compression buffer
 	Buffer cbuffer;
+
+	// Partial packet
+	Buffer partial_packet;
+	uint8_t partial_packet_part;	  // Payload sequence
+	uint32_t partial_packet_lastseq;  // Last encap packet sequence
+	uint16_t partial_packet_size;	  // The size of the partial packet we originally got
 } PacketDecoderState;
 
 // Our own functions

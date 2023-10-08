@@ -16,7 +16,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-
 #include "common.h"
 #include "config.h"
 #include "packet.h"
@@ -28,9 +27,8 @@
 
 #define TAP_INTERFACE_NAME "t0p0"
 
-#include "sys/gmon.h"
 #include "buffers.h"
-
+#include "sys/gmon.h"
 
 int stop_program = 0;
 
@@ -38,9 +36,8 @@ void handleSIGUSR1(int signum) {
 	// Handle SIGUSR1
 	printf("Received SIGUSR1. Exiting...\n");
 	stop_program = 1;
-	//exit(EXIT_SUCCESS);
+	// exit(EXIT_SUCCESS);
 }
-
 
 int main(int argc, char *argv[]) {
 	if (argc != 5) {
@@ -56,7 +53,6 @@ int main(int argc, char *argv[]) {
 
 	char ifname[IFNAMSIZ];
 	struct ThreadData tdata;
-
 
 	// Register the signal handler for SIGUSR1
 	if (signal(SIGUSR1, handleSIGUSR1) == SIG_ERR) {
@@ -148,8 +144,7 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "INTERFACE: %s\n", tdata.tap_device.ifname);
 	fprintf(stderr, "MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", tdata.tap_device.hwaddr[0], tdata.tap_device.hwaddr[1],
-		   tdata.tap_device.hwaddr[2], tdata.tap_device.hwaddr[3], tdata.tap_device.hwaddr[4],
-		   tdata.tap_device.hwaddr[5]);
+			tdata.tap_device.hwaddr[2], tdata.tap_device.hwaddr[3], tdata.tap_device.hwaddr[4], tdata.tap_device.hwaddr[5]);
 
 	// Create UDP socket
 	if (create_udp_socket(&tdata) != 0) {
@@ -186,7 +181,7 @@ int main(int argc, char *argv[]) {
 	start_tap_interface(&tdata);
 
 	// Wait for threads to finish (should never happen)
-	//pthread_join(send_thread, NULL);
+	// pthread_join(send_thread, NULL);
 	pthread_join(tunnel_read_tap_thread, NULL);
 	pthread_join(tunnel_write_socket_thread, NULL);
 	pthread_join(tunnel_read_socket_thread, NULL);

@@ -10,11 +10,22 @@ configure_file(input: 'config.h.in', output: 'config.h', configuration: conf_dat
 deps = [dependency('threads')]
 deps = [dependency('liblz4')]
 
-executable('stap_debug', ['main.c', 'buffers.c', 'packet.c', 'sockets.c', 'tunnel.c', 'tap.c', 'util.c'], dependencies: deps,
+sources = ['main.c', 'buffers.c', 'packet.c', 'sockets.c', 'tunnel.c', 'tap.c', 'util.c']
+
+
+# FIXME does not work we need this for clang-includes-fixer
+find_all_symbols_target = custom_target('find_all_symbols',
+  output : 'symbols.yaml',
+  command : ['find-all-symbols', sources],
+  input : sources,
+)
+
+
+executable('stap_debug', sources, dependencies: deps,
     c_args: ['-pg', '-no-pie', '-DDEBUG', '-D_GNU_SOURCE'],
     link_args: ['-pg', '-no-pie'],
 )
 
-executable('stap', ['main.c', 'buffers.c', 'sockets.c', 'packet.c', 'tunnel.c', 'tap.c', 'util.c'], dependencies: deps, c_args: ['-D_GNU_SOURCE'])
+executable('stap', [sources], dependencies: deps, c_args: ['-D_GNU_SOURCE'])
 
 executable('tst', ['test.c'])

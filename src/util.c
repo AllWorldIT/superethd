@@ -24,5 +24,3 @@ int to_sin6addr(const char *address_str, struct in6_addr *result) {
 	// Conversion failed
 	return 0;
 }
-
-

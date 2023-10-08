@@ -12,5 +12,4 @@
 // Normal fprintf macro
 #define FPRINTF(fmt, ...) fprintf(stderr, "%s(): " fmt "\n", __func__, ##__VA_ARGS__)
 
-
 #endif

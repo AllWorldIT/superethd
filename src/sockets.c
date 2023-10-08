@@ -10,7 +10,6 @@
 #include "threads.h"
 #include "util.h"
 
-
 int create_udp_socket(struct ThreadData *tdata) {
 	socklen_t addrlen = sizeof(struct sockaddr_in6);
 
@@ -43,6 +42,4 @@ int create_udp_socket(struct ThreadData *tdata) {
 	return 0;
 }
 
-void destroy_udp_socket(struct ThreadData *tdata) {
-	close(tdata->udp_socket);
-}
+void destroy_udp_socket(struct ThreadData *tdata) { close(tdata->udp_socket); }
