@@ -7,28 +7,28 @@ conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
 configure_file(input: 'config.h.in', output: 'config.h', configuration: conf_data)
 
+
+#
+# Depdendencies
+#
 deps = [dependency('threads')]
 deps = [dependency('liblz4')]
 
-sources = ['main.c', 'buffers.c', 'packet.c', 'sockets.c', 'superethd.c', 'tunnel.c', 'tap.c', 'util.c']
+
+#
+# Static libraries
+#
+
+libsuperethd_sources = ['buffers.c', 'codec.c', 'sockets.c', 'superethd.c', 'tunnel.c', 'tap.c', 'util.c']
+libsuperethd = static_library('src', libsuperethd_sources)
 
 
-# FIXME does not work we need this for clang-includes-fixer
-find_all_symbols_target = custom_target('find_all_symbols',
-  output : 'symbols.yaml',
-  command : ['find-all-symbols', sources],
-  input : sources,
-)
+#
+# Executables
+#
 
-
-executable('stap_debug', sources, dependencies: deps,
-    c_args: ['-pg', '-no-pie', '-DDEBUG', '-D_GNU_SOURCE'],
+executable('superethd-debug', 'main.c', link_with: libsuperethd, dependencies: deps,
+    c_args: ['-pg', '-no-pie', '-DDEBUG'],
     link_args: ['-pg', '-no-pie'],
 )
-
-executable('superethd', [sources], dependencies: deps, c_args: ['-D_GNU_SOURCE'])
-
-executable('tst', ['test.c'])
-executable('tst-crc32', ['fcs-crc32.c'])
-executable('tst-crc32b', ['fcs-crc32b.c'])
-executable('tst-crc32c', ['fcs-crc32c.c'])
+executable('superethd', 'main.c', link_with: libsuperethd, dependencies: deps)

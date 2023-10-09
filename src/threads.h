@@ -22,9 +22,10 @@ struct ThreadData {
 	// UDP socket
 	int udp_socket;
 	// Settings
-	uint16_t mss;
+	uint16_t tx_size;
 	uint16_t mtu;
 	uint16_t max_payload_size;
+	uint16_t max_ethernet_frame_size;
 	// Local and remote address
 	struct sockaddr_in6 local_addr;
 	struct sockaddr_in6 remote_addr;

@@ -14,20 +14,22 @@
 #include "util.h"
 
 static struct option long_options[] = {
-	{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		{"ifname", required_argument, 0, 'i'},
-	{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'}, {"port", required_argument, 0, 'p'},
-	{"mtu", required_argument, 0, 'm'}, {"mss", required_argument, 0, 'r'}, {0, 0, 0, 0}};
+	{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		  {"ifname", required_argument, 0, 'i'},
+	{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'},	  {"port", required_argument, 0, 'p'},
+	{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
 
 void print_help() {
 	fprintf(stderr, "Usage:\n");
 	fprintf(stderr, "    -v, --version                 Print version\n");
 	fprintf(stderr, "    -h, --help                    Print this help\n");
 	fprintf(stderr,
-			"    -m, --mtu=<MTU>               Specify the interface MTU of between 1000 and\n"
-			"                                  9216 (default is 1500)\n");
+			"    -m, --mtu=<MTU>               Specify the interface MTU of between %i and\n"
+			"                                  %i (default is 1500)\n",
+			SET_MIN_MTU_SIZE, SET_MAX_MTU_SIZE);
 	fprintf(stderr,
-			"    -r, --mss=<MSS>               Specify the maximum transport packet size of\n"
-			"                                  between 1000 and 9216 (default is 1500)\n");
+			"    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size\n"
+			"                                  of between %i and %i (default is 1500)\n",
+			SET_MIN_TXSIZE, SET_MAX_TXSIZE);
 	fprintf(stderr,
 			"    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address\n"
 			"                                  (mandatory)\n");
@@ -47,7 +49,7 @@ int main(int argc, char *argv[]) {
 	int c;
 	int option_index = 0;
 	int mtu_value = 1500;
-	int mss_value = 1500;
+	int tsize_value = 1500;
 	int port_value = 58023;
 	char *src_value = NULL;
 	char *dst_value = NULL;
@@ -74,15 +76,15 @@ int main(int argc, char *argv[]) {
 				return 0;
 			case 'm':
 				mtu_value = atoi(optarg);
-				if (mtu_value < STAP_MIN_MTU_SIZE || mtu_value > STAP_MAX_MTU_SIZE) {
-					FPRINTF("ERROR: Invalid MTU value. It should be between 1000 and 9216.");
+				if (mtu_value < SET_MIN_MTU_SIZE || mtu_value > SET_MAX_MTU_SIZE) {
+					FPRINTF("ERROR: Invalid MTU value. It should be between %i and %i.", SET_MIN_MTU_SIZE, SET_MAX_MTU_SIZE);
 					return 1;
 				}
 				break;
-			case 'r':
-				mss_value = atoi(optarg);
-				if (mss_value < STAP_MIN_MSS_SIZE || mss_value > STAP_MAX_MSS_SIZE) {
-					FPRINTF("ERROR: Invalid MSS value. It should be between 1000 and 9216.");
+			case 't':
+				tsize_value = atoi(optarg);
+				if (tsize_value < SET_MIN_TXSIZE || tsize_value > SET_MAX_TXSIZE) {
+					FPRINTF("ERROR: Invalid TX_SIZE value. It should be between %i and %i.", SET_MIN_TXSIZE, SET_MAX_TXSIZE);
 					return 1;
 				}
 				break;
@@ -151,10 +153,10 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Destination.: %s\n", dst_addr_str);
 	fprintf(stderr, "UDP Port....: %d\n", port_value);
 	fprintf(stderr, "MTU.........: %d\n", mtu_value);
-	fprintf(stderr, "MSS.........: %d\n", mss_value);
+	fprintf(stderr, "MSS.........: %d\n", tsize_value);
 	fprintf(stderr, "\n");
 
-	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, mss_value);
+	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, tsize_value);
 
 	return 0;
 }

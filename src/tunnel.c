@@ -16,7 +16,7 @@
 #include "buffers.h"
 #include "common.h"
 #include "debug.h"
-#include "packet.h"
+#include "codec.h"
 #include "tap.h"
 #include "threads.h"
 #include "util.h"
@@ -38,7 +38,7 @@ void *tunnel_read_tap_handler(void *arg) {
 		Buffer *buffer = buffer_node->buffer;
 
 		// Read data from TAP interface
-		buffer->length = read(tdata->tap_device.fd, buffer->contents, STAP_MAX_PACKET_SIZE);
+		buffer->length = read(tdata->tap_device.fd, buffer->contents, tdata->max_ethernet_frame_size);
 		if (buffer->length == -1) {
 			FPRINTF("tunnel_read_tap_handler(): Got an error on read(): %s", strerror(errno));
 			exit(EXIT_FAILURE);
@@ -69,13 +69,14 @@ void *tunnel_write_socket_handler(void *arg) {
 
 	// Packet encoder state
 	PacketEncoderState state;
-	init_packet_encoder(&state);
+	init_packet_encoder(&state,  tdata->max_ethernet_frame_size);
 
 	// START - packet encoder buffers
 	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
-	int wbuffer_count = ((STAP_MAX_PACKET_SIZE + tdata->mss - 1) / tdata->mss) + 1;
+	int wbuffer_count = get_codec_wbuffer_count(tdata->max_ethernet_frame_size);
+	DEBUG_PRINT("Allocating %i wbuffers of %i size each", tdata->wbuffer_count, tdata->max_ethernet_frame_size);
 	BufferList wbuffers;
-	initialize_buffer_list(&wbuffers, wbuffer_count, STAP_BUFFER_SIZE);
+	initialize_buffer_list(&wbuffers, wbuffer_count, tdata->max_ethernet_frame_size);
 
 	// Main IO loop
 	int buffer_wait_time = 0;
@@ -158,10 +159,10 @@ void *tunnel_read_socket_handler(void *arg) {
 	// START - IO vector buffers
 
 	// Allocate memory for our buffers and IO vectors
-	buffer_nodes = (BufferNode **)malloc(STAP_MAX_RECVMM_MESSAGES * sizeof(BufferNode));
-	msgs = (struct mmsghdr *)malloc(STAP_MAX_RECVMM_MESSAGES * sizeof(struct mmsghdr));
-	iovecs = (struct iovec *)malloc(STAP_MAX_RECVMM_MESSAGES * sizeof(struct iovec));
-	controls = (struct sockaddr_in6 *)calloc(1, STAP_MAX_RECVMM_MESSAGES * sizeof(struct sockaddr_in6));
+	buffer_nodes = (BufferNode **)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(BufferNode));
+	msgs = (struct mmsghdr *)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(struct mmsghdr));
+	iovecs = (struct iovec *)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(struct iovec));
+	controls = (struct sockaddr_in6 *)calloc(1, SET_MAX_RECVMM_MESSAGES * sizeof(struct sockaddr_in6));
 	// Make sure memory allocation succeeded
 	if (msgs == NULL || iovecs == NULL || controls == NULL || buffer_nodes == NULL) {
 		FPRINTF("Memory allocation failed: %s", strerror(errno));
@@ -173,7 +174,7 @@ void *tunnel_read_socket_handler(void *arg) {
 		exit(EXIT_FAILURE);
 	}
 	// Set up iovecs and mmsghdrs
-	for (int i = 0; i < STAP_MAX_RECVMM_MESSAGES; ++i) {
+	for (int i = 0; i < SET_MAX_RECVMM_MESSAGES; ++i) {
 		buffer_nodes[i] = get_buffer_node_head(&tdata->available_buffers);
 		if (buffer_nodes[i] == NULL) {
 			perror("%s(): Could not get available buffer node");
@@ -189,7 +190,7 @@ void *tunnel_read_socket_handler(void *arg) {
 		}
 		// Setup IO vectors
 		iovecs[i].iov_base = buffer_nodes[i]->buffer->contents;
-		iovecs[i].iov_len = STAP_MAX_PACKET_SIZE;
+		iovecs[i].iov_len = tdata->max_ethernet_frame_size;
 		// And the associated msgs
 		msgs[i].msg_hdr.msg_iov = &iovecs[i];
 		msgs[i].msg_hdr.msg_iovlen = 1;
@@ -201,7 +202,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	while (1) {
 		if (*tdata->stop_program) break;
 
-		int num_received = recvmmsg(tdata->udp_socket, msgs, STAP_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
+		int num_received = recvmmsg(tdata->udp_socket, msgs, SET_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
 		if (num_received == -1) {
 			FPRINTF("recvmmsg failed: %s", strerror(errno));
 			break;
@@ -226,7 +227,7 @@ void *tunnel_read_socket_handler(void *arg) {
 			buffer_node->buffer->length = msgs[i].msg_len;
 
 			// Make sure the buffer is long enough for us to overlay the header
-			if (buffer_node->buffer->length < STAP_PACKET_HEADER_SIZE) {
+			if (buffer_node->buffer->length < SET_PACKET_HEADER_SIZE) {
 				FPRINTF("Packet too small %lu < 12, DROPPING!!!", buffer_node->buffer->length);
 				continue;
 			}
@@ -234,8 +235,8 @@ void *tunnel_read_socket_handler(void *arg) {
 			// Overlay packet header and do basic header checks
 			pkthdr = (PacketHeader *)buffer_node->buffer->contents;
 			// Check version is supported
-			if (pkthdr->ver > STAP_VERSION) {
-				FPRINTF("Packet not supported, version %i vs. our version %i, DROPPING!", pkthdr->ver, STAP_VERSION);
+			if (pkthdr->ver > SET_VERSION) {
+				FPRINTF("Packet not supported, version %i vs. our version %i, DROPPING!", pkthdr->ver, SET_VERSION);
 				continue;
 			}
 			if (pkthdr->reserved != 0) {
@@ -243,7 +244,7 @@ void *tunnel_read_socket_handler(void *arg) {
 				continue;
 			}
 			// First thing we do is validate the header
-			int valid_format_mask = STAP_PACKET_FORMAT_ENCAP | STAP_PACKET_FORMAT_COMPRESSED;
+			int valid_format_mask = SET_PACKET_FORMAT_ENCAP | SET_PACKET_FORMAT_COMPRESSED;
 			if (pkthdr->format & ~valid_format_mask) {
 				FPRINTF("Packet in invalid format %x, DROPPING!", pkthdr->format);
 				continue;
@@ -265,7 +266,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	}
 
 	// Add buffers back to available list for de-allocation
-	for (int i = 0; i < STAP_MAX_RECVMM_MESSAGES; ++i) {
+	for (int i = 0; i < SET_MAX_RECVMM_MESSAGES; ++i) {
 		append_buffer_node(&tdata->available_buffers, buffer_nodes[i]);
 	}
 	// Free the rest of the IOV stuff
@@ -290,16 +291,15 @@ void *tunnel_write_tap_handler(void *arg) {
 
 	// Set up packet decoder state
 	PacketDecoderState state;
-	init_packet_decoder(&state);
+	init_packet_decoder(&state, tdata->max_ethernet_frame_size);
 
 	// START - packet decoder buffers
 	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
-	int wbuffer_count = ((STAP_MAX_PACKET_SIZE + tdata->mss - 1) / tdata->mss) + 1;
+	int wbuffer_count = get_codec_wbuffer_count(tdata->max_ethernet_frame_size);
+	DEBUG_PRINT("Allocating %i wbuffers of %i size each", tdata->wbuffer_count, tdata->max_ethernet_frame_size);
 	BufferList wbuffers;
-	initialize_buffer_list(&wbuffers, wbuffer_count, STAP_BUFFER_SIZE);
+	initialize_buffer_list(&wbuffers, wbuffer_count, tdata->max_ethernet_frame_size);
 	// END - packet decoder buffers
-
-	// TODO: init decoder state   packet_decoder_init(&state)
 
 	while (1) {
 		if (*tdata->stop_program) break;

@@ -1,4 +1,4 @@
-#include "packet.h"
+#include "codec.h"
 
 #include <assert.h>
 #include <lz4.h>
@@ -10,27 +10,27 @@
 #include "buffers.h"
 #include "common.h"
 #include "debug.h"
+#include "util.h"
 
 /**
- * @brief Detect if the packet sequence is wrapping.
+ * @brief Get the codec wbuffer count to allocate and pass to the codec.
  *
- * @param cur Current sequence.
- * @param prev Previous sequence.
- * @return int 1 if wrapping, 0 if not.
+ * @param max_ethernet_frame_size Maximum ethernet frame size.
+ * @return size_t Number of buffers to allocate.
  */
-int sequence_wrapping(uint32_t cur, uint32_t prev) {
-	// Check if the current sequence number is less than the previous one
-	// while accounting for wrapping
-	return cur < prev && (prev - cur) < (UINT32_MAX / 2);
+size_t get_codec_wbuffer_count(uint16_t max_ethernet_frame_size) {
+	// Number of minimum ethernet frames that will fit into our maximum frame size plus one
+	return ((max_ethernet_frame_size + SET_MIN_ETHERNET_FRAME_SIZE - 1) / SET_MIN_ETHERNET_FRAME_SIZE) + 1;
 }
 
 /**
  * @brief Initialize the packet encoder.
  *
  * @param state Packet encoder state.
+ * @param max_ethernet_frame_size Maximum ethernet frame size.
  * @return int 0 on success.
  */
-int init_packet_encoder(PacketEncoderState *state) {
+int init_packet_encoder(PacketEncoderState *state, uint16_t max_ethernet_frame_size) {
 	// Packet sequence
 	state->seq = 0;
 
@@ -39,7 +39,7 @@ int init_packet_encoder(PacketEncoderState *state) {
 	state->wbuffer_count = 0;	 // Set to 0 on new encoding run
 
 	// Allocate buffer used for compression
-	state->cbuffer.contents = (char *)malloc(STAP_BUFFER_SIZE_COMPRESSION);
+	state->cbuffer.contents = (char *)malloc(max_ethernet_frame_size);
 	state->cbuffer.length = 0;
 	// Current payload we're dealing with
 	state->payload = NULL;
@@ -66,10 +66,10 @@ void reset_packet_encoder(PacketEncoderState *state) {
  * @param state Encoder state.
  * @param wbuffers List of buffers used to write to the tunnel.
  * @param pbuffer Packet buffer, this is the packet we're processing.
- * @param max_wbuffer_size Maximum size of the resulting packets generated, not including any encapsulating packet protocol headers.
+ * @param max_encap_data_size Maximum size of the data payload of the encapsulated packet.
  * @return Number of packets ready in the wbuffers.
  */
-int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t max_wbuffer_size) {
+int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t max_encap_data_size) {
 	// Packet header pointer
 	PacketHeader *pkthdr;
 	PacketPayloadHeader *pktphdr;
@@ -77,7 +77,7 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 	// Header changes
 	uint8_t header_format = 0;
 	// Try compress the packet and see if we can use it
-	int csize = LZ4_compress_default(pbuffer->contents, state->cbuffer.contents, pbuffer->length, STAP_BUFFER_SIZE_COMPRESSION);
+	int csize = LZ4_compress_default(pbuffer->contents, state->cbuffer.contents, pbuffer->length, max_encap_data_size);
 	if (csize < 1) {
 		FPRINTF("Failed to compress buffer");
 		exit(EXIT_FAILURE);
@@ -85,10 +85,10 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 		// Set compression buffer length
 		state->cbuffer.length = csize;
 		// Now check if we actually saved space
-		if (csize <= pbuffer->length - STAP_PACKET_HEADER_SIZE && 0) {	// FIXME: DISABLED FOR NOW
+		if (csize <= pbuffer->length - SET_PACKET_HEADER_SIZE && 0) {  // FIXME: DISABLED FOR NOW
 			DEBUG_PRINT("Compression ratio: %.1f%% reduction (%i vs %lu)",
 						((float)(pbuffer->length - csize) / pbuffer->length) * 100, csize, pbuffer->length);
-			header_format |= STAP_PACKET_FORMAT_COMPRESSED;
+			header_format |= SET_PACKET_FORMAT_COMPRESSED;
 			state->payload = &state->cbuffer;
 			// If the data was not compressed sufficiently, set the payload to the pbuffer contents
 		} else {
@@ -116,15 +116,15 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 		int payload_header_type = 0;
 
 		// Work out our header size, at the bare minimum we need the payload header
-		int header_size = STAP_PACKET_PAYLOAD_HEADER_SIZE;
+		int header_size = SET_PACKET_PAYLOAD_HEADER_SIZE;
 		// If our length is 0, it means its a new buffer, so we also nead the packet header
-		if (!wbuffer->length) header_size += STAP_PACKET_HEADER_SIZE;
+		if (!wbuffer->length) header_size += SET_PACKET_HEADER_SIZE;
 		DEBUG_PRINT("header_size%i", header_size);
 
 		// Work out wbuffer space left
-		int wbuffer_left = max_wbuffer_size - wbuffer->length - header_size;
-		DEBUG_PRINT("wbuffer_left=%i  (mss=%i - wbuffer->length=%lu - header_size=%i)", wbuffer_left, max_wbuffer_size,
-					wbuffer->length, header_size);
+		int wbuffer_left = max_encap_data_size - wbuffer->length - header_size;
+		DEBUG_PRINT("wbuffer_left=%i  (max_encap_data_size=%i - wbuffer->length=%lu - header_size=%i)", wbuffer_left,
+					max_encap_data_size, wbuffer->length, header_size);
 
 		// Work out payload data left
 		int payload_left = state->payload->length - state->payload_pos;
@@ -133,13 +133,13 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 		// Check if this is the first packet and if the entire thing will fit
 		if (!state->payload_part && payload_left < wbuffer_left) {	// Packet will fit
 			chunk_size = state->payload->length;
-			payload_header_type = STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET;
+			payload_header_type = SET_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET;
 			DEBUG_PRINT("chunk_size=%i (payload_left=%i < wbuffer_left=%i) - PACKET FITS", chunk_size, payload_left, wbuffer_left);
 		} else {  // Packet won't fit, so we try use the smallest of either the wbuffer_left or payload_left
-			payload_header_type = STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET;
+			payload_header_type = SET_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET;
 			// Bump the header size and reduce wbuffer_left, this header is bigger
-			header_size += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
-			wbuffer_left -= STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
+			header_size += SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
+			wbuffer_left -= SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
 			chunk_size = (payload_left < wbuffer_left) ? payload_left : wbuffer_left;
 			DEBUG_PRINT("chunk_size=%i (payload_left=%i, new wbuffer_left=%i, new header_size=%i)", chunk_size, payload_left,
 						wbuffer_left, header_size);
@@ -151,13 +151,13 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 			pkthdr = (PacketHeader *)wbuffer->contents;
 			DEBUG_PRINT("NEW Header @wbuffer->length=%lu", wbuffer->length);
 			// Build packet header
-			pkthdr->ver = STAP_PACKET_VERSION_V1;
+			pkthdr->ver = SET_PACKET_VERSION_V1;
 			pkthdr->oam = 0;
 			pkthdr->critical = 0;
 			pkthdr->opt_len = 1;
-			pkthdr->format = STAP_PACKET_FORMAT_ENCAP | header_format;
+			pkthdr->format = SET_PACKET_FORMAT_ENCAP | header_format;
 			pkthdr->channel = 1;
-			pkthdr->sequence = stap_cpu_to_be_32(state->seq);
+			pkthdr->sequence = set_cpu_to_be_32(state->seq);
 
 			// Check if the counter is wrapping
 			if (state->seq == UINT32_MAX)
@@ -166,29 +166,29 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 				state->seq++;
 
 			// Bump the wbuffer length past the header, so we can write the packet payload header below
-			wbuffer->length += STAP_PACKET_HEADER_SIZE;
+			wbuffer->length += SET_PACKET_HEADER_SIZE;
 			DEBUG_PRINT("bumping wbuffer->length=%lu after pkthdr setup (first header in new packet)", wbuffer->length);
 		}
 
 		// Write the packet payload header
 		pktphdr = (PacketPayloadHeader *)(wbuffer->contents + wbuffer->length);
 		pktphdr->type = payload_header_type;
-		pktphdr->packet_size = stap_cpu_to_be_16(state->payload->length);
+		pktphdr->packet_size = set_cpu_to_be_16(state->payload->length);
 		pktphdr->reserved = 0;
 		DEBUG_PRINT("NEW payload header @wbuffer->length=%lu, type=%i, packet_size=%i", wbuffer->length, pktphdr->type,
 					pktphdr->packet_size);
-		wbuffer->length += STAP_PACKET_PAYLOAD_HEADER_SIZE;
+		wbuffer->length += SET_PACKET_PAYLOAD_HEADER_SIZE;
 
 		// If this is a partial header, we overlay the partial header struct and set the additional values
-		if (payload_header_type == STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET) {
+		if (payload_header_type == SET_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET) {
 			PacketPayloadHeaderPartial *pktphdr_partial = (PacketPayloadHeaderPartial *)(wbuffer->contents + wbuffer->length);
 
-			pktphdr_partial->payload_length = stap_cpu_to_be_16(chunk_size);
+			pktphdr_partial->payload_length = set_cpu_to_be_16(chunk_size);
 			pktphdr_partial->part = state->payload_part;
 			pktphdr_partial->reserved = 0;
-			wbuffer->length += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
+			wbuffer->length += SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
 			DEBUG_PRINT("Partial packet, adding partial packet header: payload_length=%i, payload_part=%i, wbuffer->length=%lu",
-					chunk_size, state->payload_part, wbuffer->length);
+						chunk_size, state->payload_part, wbuffer->length);
 		}
 
 		// Copy chunk into buffer
@@ -204,7 +204,7 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 
 		// Check if we have finished our payload, or finished the buffer
 		// TODO: this bumps the wbuffer, we don't really need to do it if the payload is done, we can wait for a timeout
-		if (state->payload_pos == state->payload->length || wbuffer->length == max_wbuffer_size) {
+		if (state->payload_pos == state->payload->length || wbuffer->length == max_encap_data_size) {
 			state->wbuffer_count++;
 			state->wbuffer_node = state->wbuffer_node->next;
 			wbuffer = state->wbuffer_node->buffer;
@@ -221,9 +221,10 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
  * @brief Initialize the packet decoder.
  *
  * @param state Packet decoder state.
+ * @param max_ethernet_frame_size Maximum ethernet frame size.
  * @return int 0 on success.
  */
-int init_packet_decoder(PacketDecoderState *state) {
+int init_packet_decoder(PacketDecoderState *state, uint16_t max_ethernet_frame_size) {
 	// Packet counting and sequencing
 	state->first_packet = 1;
 	state->last_seq = 0;
@@ -231,11 +232,11 @@ int init_packet_decoder(PacketDecoderState *state) {
 	state->wbuffer_node = NULL;	 // Set to NULL once buffers are written
 	state->wbuffer_count = 0;	 // Set to 0 on new encoding run
 	// Allocate buffer used for decompression and assembly
-	state->cbuffer.contents = (char *)malloc(STAP_BUFFER_SIZE_COMPRESSION);
+	state->cbuffer.contents = (char *)malloc(max_ethernet_frame_size);
 	state->cbuffer.length = 0;
 
 	// Clear and set up partial packet payload
-	state->partial_packet.contents = (char *)malloc(STAP_MAX_PACKET_SIZE);
+	state->partial_packet.contents = (char *)malloc(max_ethernet_frame_size);
 	state->partial_packet.length = 0;
 	state->partial_packet_part = 0;
 	state->partial_packet_lastseq = 0;
@@ -280,7 +281,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Overlay the partial packet header and move onto checking the partial packet below
 	PacketPayloadHeaderPartial *pktphdr_partial = (PacketPayloadHeaderPartial *)(epkt->payload.contents + epkt->pos);
 	// Bump the payload contents pointer past the partial header
-	epkt->pos += STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
+	epkt->pos += SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
 	DEBUG_PRINT("Moved payload_pos=%i past partial header", epkt->pos);
 
 	if (state->partial_packet_size)
@@ -288,9 +289,9 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 					state->partial_packet.length, state->partial_packet_size, state->partial_packet_lastseq);
 
 	// Make sure we have space to overlay the partial packet header
-	if (epkt->payload.length - epkt->pos <= STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE * 2) {
+	if (epkt->payload.length - epkt->pos <= SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE * 2) {
 		FPRINTF("Invalid payload length %lu, should be > %i to fit partial packet header %i, DROPPING!", epkt->payload.length,
-				STAP_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, epkt->cur_header);
+				SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, epkt->cur_header);
 		// Something is pretty wrong here, so clear partial packet state and go to next encap packet
 		_clear_packet_decoder_partial_state(state);
 		return -1;
@@ -305,7 +306,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	}
 
 	// Set the partial packet size
-	uint16_t partial_packet_payload_length = stap_be_to_cpu_16(pktphdr_partial->payload_length);
+	uint16_t partial_packet_payload_length = set_be_to_cpu_16(pktphdr_partial->payload_length);
 
 	// Check that this partial packet size does not exceed the encap payload memory space left
 	if (partial_packet_payload_length > epkt->payload.length - epkt->pos) {
@@ -429,10 +430,10 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
  * @param state Decoder state.
  * @param wbuffers List of buffers used to write to TAP device.
  * @param pbuffer Packet buffer, this is the packet we're processing.
- * @param emtu Maximum MTU of our ethernet device.
+ * @param max_ethernet_frame_size Maximum MTU of our ethernet device.
  * @return Number of packets ready in the wbuffers.
  */
-int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t emtu) {
+int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuffer, uint16_t max_ethernet_frame_size) {
 	// Packet we're working on
 	PacketDecoderEncapPacket epkt;
 
@@ -440,10 +441,8 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 	PacketHeader *pkthdr = (PacketHeader *)pbuffer->contents;
 	PacketPayloadHeader *pktphdr;
 
-	// Maximum MTU for resulting packet
-	epkt.mtu = emtu;
 	// Decode sequence
-	epkt.seq = stap_be_to_cpu_32(pkthdr->sequence);
+	epkt.seq = set_be_to_cpu_32(pkthdr->sequence);
 
 	// If this is not the first packet...
 	if (!state->first_packet) {
@@ -458,24 +457,24 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 	}
 
 	// Depending on the format of the buffer we need to set up the payload pointer and size
-	if (pkthdr->format == (STAP_PACKET_FORMAT_ENCAP & STAP_PACKET_FORMAT_COMPRESSED)) {
+	if (pkthdr->format == (SET_PACKET_FORMAT_ENCAP & SET_PACKET_FORMAT_COMPRESSED)) {
 		// Try decompress the contents
-		state->cbuffer.length = LZ4_decompress_safe(pbuffer->contents + STAP_PACKET_HEADER_SIZE, state->cbuffer.contents,
-													pbuffer->length - STAP_PACKET_HEADER_SIZE, STAP_BUFFER_SIZE_COMPRESSION);
+		state->cbuffer.length = LZ4_decompress_safe(pbuffer->contents + SET_PACKET_HEADER_SIZE, state->cbuffer.contents,
+													pbuffer->length - SET_PACKET_HEADER_SIZE, max_ethernet_frame_size);
 		// And check if we ran into any errors
 		if (state->cbuffer.length < 1) {
 			FPRINTF("Failed to decompress packet!, DROPPING! error=%lu", state->cbuffer.length);
 			goto bump_seq;
 		}
-		DEBUG_PRINT("Decompressed data size = %lu => %lu", pbuffer->length - STAP_PACKET_HEADER_SIZE, state->cbuffer.length);
+		DEBUG_PRINT("Decompressed data size = %lu => %lu", pbuffer->length - SET_PACKET_HEADER_SIZE, state->cbuffer.length);
 		// If all is still good, set the payload to point to the decompressed data
 		epkt.payload.contents = state->cbuffer.contents;
 		epkt.payload.length = state->cbuffer.length;
 		// Plain uncompressed encapsulated packets
-	} else if (pkthdr->format == STAP_PACKET_FORMAT_ENCAP) {
+	} else if (pkthdr->format == SET_PACKET_FORMAT_ENCAP) {
 		// If the packet is not compressed, we just set the payload to point to the data following our packet header
-		epkt.payload.contents = pbuffer->contents + STAP_PACKET_HEADER_SIZE;
-		epkt.payload.length = pbuffer->length - STAP_PACKET_HEADER_SIZE;
+		epkt.payload.contents = pbuffer->contents + SET_PACKET_HEADER_SIZE;
+		epkt.payload.length = pbuffer->length - SET_PACKET_HEADER_SIZE;
 		// Something unknown?
 	} else {
 		FPRINTF("Unknown packet format: %u", pkthdr->format);
@@ -502,24 +501,24 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 					epkt.cur_header);
 
 		// Make sure we have space to overlay the optional packet header
-		if (epkt.payload.length - epkt.pos <= STAP_PACKET_PAYLOAD_HEADER_SIZE) {
+		if (epkt.payload.length - epkt.pos <= SET_PACKET_PAYLOAD_HEADER_SIZE) {
 			FPRINTF("Invalid payload length %lu, should be > %i to fit header %i, DROPPING!", epkt.payload.length,
-					STAP_PACKET_PAYLOAD_HEADER_SIZE, epkt.cur_header);
+					SET_PACKET_PAYLOAD_HEADER_SIZE, epkt.cur_header);
 			goto bump_seq;
 		}
 
 		// Overlay packet payload header
 		pktphdr = (PacketPayloadHeader *)(epkt.payload.contents + epkt.pos);
 		// Bump the payload contents pointer
-		epkt.pos += STAP_PACKET_PAYLOAD_HEADER_SIZE;
+		epkt.pos += SET_PACKET_PAYLOAD_HEADER_SIZE;
 		DEBUG_PRINT("Moved payload_pos=%i past header", epkt.pos);
 
 		// This is the packet size of the final packet after reassembly
-		epkt.decoded_packet_size = stap_be_to_cpu_16(pktphdr->packet_size);
+		epkt.decoded_packet_size = set_be_to_cpu_16(pktphdr->packet_size);
 		DEBUG_PRINT("Final packet size: decoded_packet_size=%i", epkt.decoded_packet_size);
 
-		// Packets should be at least ETHERNET_FRAME_SIZE bytes in size
-		if (epkt.decoded_packet_size < ETHERNET_FRAME_SIZE) {
+		// Packets should be at least SET_MIN_ETHERNET_FRAME_SIZE bytes in size
+		if (epkt.decoded_packet_size < SET_MIN_ETHERNET_FRAME_SIZE) {
 			FPRINTF("Packet size %u is too small to be an ethernet frame in header %i, DROPPING!", epkt.decoded_packet_size,
 					epkt.cur_header);
 			// Something is probably pretty wrong here too, so lets again clear the state and continue to the next encap
@@ -527,16 +526,9 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 			_clear_packet_decoder_partial_state(state);
 			return -1;
 		}
-		// Do a few sanity checks on the packet
-		if (epkt.decoded_packet_size > STAP_MAX_PACKET_SIZE) {
-			FPRINTF("Packet size %i exceeds maximum supported size %i, DROPPING!", epkt.decoded_packet_size, STAP_MAX_PACKET_SIZE);
-			// Again, probably something pretty wrong here, this cannot be the case, so we discard the encap packet and
-			// clear state
-			_clear_packet_decoder_partial_state(state);
-			return -1;
-		}
-		if (epkt.decoded_packet_size > epkt.mtu + ETHERNET_FRAME_SIZE) {
-			FPRINTF("DROPPING PACKET! packet size %i bigger than MTU %i, DROPPING!", epkt.decoded_packet_size, epkt.mtu);
+		if (epkt.decoded_packet_size > max_ethernet_frame_size) {
+			FPRINTF("DROPPING PACKET! packet size %i bigger than MTU %i, DROPPING!", epkt.decoded_packet_size,
+					max_ethernet_frame_size);
 			// Things should be properly setup, so this should not be able to happen, clear state and contine to next encap
 			// packet
 			_clear_packet_decoder_partial_state(state);
@@ -547,9 +539,9 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 		 * Packet decoding
 		 */
 		int res;
-		if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET) res = _decode_complete_packet(state, &epkt);
+		if (pktphdr->type == SET_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET) res = _decode_complete_packet(state, &epkt);
 		// Partial packet handling
-		else if (pktphdr->type == STAP_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET)
+		else if (pktphdr->type == SET_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET)
 			res = _decode_partial_packet(state, &epkt);
 		else {
 			// If we don't understand what type of packet this is, drop it
@@ -576,7 +568,7 @@ bump_seq:
 		// We only bump the last sequence if its smaller than the one we're on
 	} else if (state->last_seq < epkt.seq) {
 		state->last_seq = epkt.seq;
-	} else if (state->last_seq > epkt.seq && sequence_wrapping(epkt.seq, state->last_seq)) {
+	} else if (state->last_seq > epkt.seq && is_sequence_wrapping(epkt.seq, state->last_seq)) {
 		state->last_seq = epkt.seq;
 	}
 

@@ -23,61 +23,76 @@ void handleSIGUSR1(int signum) {
 	// exit(EXIT_SUCCESS);
 }
 
-int start_set(char *ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int mss) {
+/**
+ * @brief Start Super Ethernet Tunnel.
+ *
+ * @param ifname Interface name.
+ * @param src Source IP address for packets.
+ * @param dst Destination IP address for packets.
+ * @param port Port to use for communication.
+ * @param mtu SET ethernet device MTU.
+ * @param tx_size Maximum transmission packet size.
+ * @return int
+ */
+int start_set(char *ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int tx_size) {
 	// Register the signal handler for SIGUSR1
 	if (signal(SIGUSR1, handleSIGUSR1) == SIG_ERR) {
 		FPRINTF("ERROR: Failed to register signal handler: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	// Set up thread data
+	/*
+	 * Start thread data setup
+	 */
+
 	struct ThreadData tdata;
-	// Allocate buffers
-	initialize_buffer_list(&tdata.available_buffers, STAP_BUFFER_COUNT, STAP_MAX_PACKET_SIZE);
-	// Initialize our queues
-	initialize_buffer_list(&tdata.tx_packet_queue, 0, 0);
-	initialize_buffer_list(&tdata.rx_packet_queue, 0, 0);
 
 	// Next the other thread information
 	tdata.stop_program = &stop_program;
 
+	// Tunnel info
 	tdata.local_addr.sin6_addr = *src;
 	tdata.local_addr.sin6_family = tdata.remote_addr.sin6_family = AF_INET6;
 	tdata.local_addr.sin6_port = tdata.remote_addr.sin6_port = htons(port);
-
-	tdata.local_addr.sin6_addr = *dst;
+	tdata.remote_addr.sin6_addr = *dst;
 
 	// MSS
-	tdata.mss = mss;
-	if (tdata.mss > STAP_MAX_MSS_SIZE) {
-		FPRINTF("ERROR: Maximum MSS is %u", STAP_MAX_MSS_SIZE);
+	tdata.tx_size = tx_size;
+	if (tdata.tx_size > SET_MAX_TXSIZE) {
+		FPRINTF("ERROR: Maximum TX_SIZE is %i", SET_MAX_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
-	if (tdata.mss < STAP_MIN_MSS_SIZE) {
-		FPRINTF("ERROR: Minimum MSS is %u", STAP_MIN_MSS_SIZE);
+	if (tdata.tx_size < SET_MIN_TXSIZE) {
+		FPRINTF("ERROR: Minimum MSS is %i", SET_MIN_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
 	// MTU
 	tdata.mtu = mtu;
-	if (tdata.mtu > STAP_MAX_MTU_SIZE) {
-		FPRINTF("ERROR: Maximum MTU is %u!", STAP_MAX_MTU_SIZE);
+	if (tdata.mtu > SET_MAX_MTU_SIZE) {
+		FPRINTF("ERROR: Maximum MTU is %i!", SET_MAX_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
-	if (tdata.mtu < STAP_MIN_MTU_SIZE) {
-		FPRINTF("ERROR: Minimum MTU is %u!", STAP_MIN_MTU_SIZE);
+	if (tdata.mtu < SET_MIN_MTU_SIZE) {
+		FPRINTF("ERROR: Minimum MTU is %i!", SET_MIN_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
 
-	// Work out REAL maximum packet payload size
-	tdata.max_payload_size = tdata.mss;
-	// Ethernet frame size
-	tdata.max_payload_size -= 14;
-	// Reduce by IP header size
-	if (is_ipv4_mapped_ipv6(&tdata.remote_addr.sin6_addr))
-		tdata.max_payload_size -= 20;
-	else
-		tdata.max_payload_size -= 40;
-	tdata.max_payload_size -= 8;  // UDP frame
+	// Get maximum ethernet frame size we can get
+	tdata.max_ethernet_frame_size = get_max_ethernet_frame_size(tdata.mtu);
+
+	// Get REAL maximum packet payload size
+	tdata.max_payload_size = get_max_payload_size(tdata.tx_size, &tdata.remote_addr.sin6_addr);
+	FPRINTF("Setting maximum UDP payload size to %i...", tdata.max_payload_size);
+
+	// Allocate buffers
+	initialize_buffer_list(&tdata.available_buffers, SET_BUFFER_COUNT, tdata.max_ethernet_frame_size);
+	// Initialize our queues
+	initialize_buffer_list(&tdata.tx_packet_queue, 0, 0);
+	initialize_buffer_list(&tdata.rx_packet_queue, 0, 0);
+
+	/*
+	 * End thread data setup
+	 */
 
 	// Allocate actual interface
 	create_tap_interface(ifname, &tdata);

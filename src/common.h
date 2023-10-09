@@ -2,22 +2,29 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define STAP_VERSION 1
+#define SET_VERSION 1
 
-#define STAP_BUFFER_COUNT 5000
+// Default buffer count
+#define SET_BUFFER_COUNT 5000
+// Number of messages to get at maximum from recvmm
+#define SET_MAX_RECVMM_MESSAGES 1000
 
-#define STAP_MAX_PACKET_SIZE 9204
+// Minimum transmission packet size
+#define SET_MIN_TXSIZE 1200
+// Maximum transmission packet size
+#define SET_MAX_TXSIZE 9000
 
-#define STAP_BUFFER_SIZE STAP_MAX_PACKET_SIZE + STAP_PACKET_HEADER_SIZE
-// NK: For lack of any better value?
-#define STAP_BUFFER_SIZE_COMPRESSION STAP_BUFFER_SIZE * 2
+// Minimum device MTU size
+#define SET_MIN_MTU_SIZE 1200
+// Maximum device MTU size
+#define SET_MAX_MTU_SIZE 9198
 
-#define STAP_MAX_RECVMM_MESSAGES 1000
 
-#define STAP_MIN_MSS_SIZE 1200
-#define STAP_MAX_MSS_SIZE 9000
+/*
+ * Other useful constants
+ */
 
-#define STAP_MIN_MTU_SIZE 1400	// FIXME: Change back to 1500
-#define STAP_MAX_MTU_SIZE 9000
+#define SET_MIN_ETHERNET_FRAME_SIZE 64
+
 
 #endif
