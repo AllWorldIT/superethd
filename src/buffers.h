@@ -1,5 +1,5 @@
-#ifndef BUFFERS_H
-#define BUFFERS_H
+#ifndef __BUFFERS_H__
+#define __BUFFERS_H__
 
 #include <stdint.h>
 #include <sys/types.h>

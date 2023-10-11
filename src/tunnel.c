@@ -159,10 +159,10 @@ void *tunnel_read_socket_handler(void *arg) {
 	// START - IO vector buffers
 
 	// Allocate memory for our buffers and IO vectors
-	buffer_nodes = (BufferNode **)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(BufferNode));
-	msgs = (struct mmsghdr *)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(struct mmsghdr));
-	iovecs = (struct iovec *)malloc(SET_MAX_RECVMM_MESSAGES * sizeof(struct iovec));
-	controls = (struct sockaddr_in6 *)calloc(1, SET_MAX_RECVMM_MESSAGES * sizeof(struct sockaddr_in6));
+	buffer_nodes = (BufferNode **)malloc(SETH_MAX_RECVMM_MESSAGES * sizeof(BufferNode));
+	msgs = (struct mmsghdr *)malloc(SETH_MAX_RECVMM_MESSAGES * sizeof(struct mmsghdr));
+	iovecs = (struct iovec *)malloc(SETH_MAX_RECVMM_MESSAGES * sizeof(struct iovec));
+	controls = (struct sockaddr_in6 *)calloc(1, SETH_MAX_RECVMM_MESSAGES * sizeof(struct sockaddr_in6));
 	// Make sure memory allocation succeeded
 	if (msgs == NULL || iovecs == NULL || controls == NULL || buffer_nodes == NULL) {
 		FPRINTF("Memory allocation failed: %s", strerror(errno));
@@ -174,7 +174,7 @@ void *tunnel_read_socket_handler(void *arg) {
 		exit(EXIT_FAILURE);
 	}
 	// Set up iovecs and mmsghdrs
-	for (int i = 0; i < SET_MAX_RECVMM_MESSAGES; ++i) {
+	for (int i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
 		buffer_nodes[i] = get_buffer_node_head(&tdata->available_buffers);
 		if (buffer_nodes[i] == NULL) {
 			perror("%s(): Could not get available buffer node");
@@ -202,7 +202,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	while (1) {
 		if (*tdata->stop_program) break;
 
-		int num_received = recvmmsg(tdata->udp_socket, msgs, SET_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
+		int num_received = recvmmsg(tdata->udp_socket, msgs, SETH_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
 		if (num_received == -1) {
 			FPRINTF("recvmmsg failed: %s", strerror(errno));
 			break;
@@ -227,7 +227,7 @@ void *tunnel_read_socket_handler(void *arg) {
 			buffer_node->buffer->length = msgs[i].msg_len;
 
 			// Make sure the buffer is long enough for us to overlay the header
-			if (buffer_node->buffer->length < SET_PACKET_HEADER_SIZE) {
+			if (buffer_node->buffer->length < SETH_PACKET_HEADER_SIZE) {
 				FPRINTF("Packet too small %lu < 12, DROPPING!!!", buffer_node->buffer->length);
 				continue;
 			}
@@ -235,8 +235,8 @@ void *tunnel_read_socket_handler(void *arg) {
 			// Overlay packet header and do basic header checks
 			pkthdr = (PacketHeader *)buffer_node->buffer->contents;
 			// Check version is supported
-			if (pkthdr->ver > SET_VERSION) {
-				FPRINTF("Packet not supported, version %i vs. our version %i, DROPPING!", pkthdr->ver, SET_VERSION);
+			if (pkthdr->ver > SETH_PACKET_VERSION_V1) {
+				FPRINTF("Packet not supported, version %i vs. our version %i, DROPPING!", pkthdr->ver, SETH_PACKET_VERSION_V1);
 				continue;
 			}
 			if (pkthdr->reserved != 0) {
@@ -244,7 +244,7 @@ void *tunnel_read_socket_handler(void *arg) {
 				continue;
 			}
 			// First thing we do is validate the header
-			int valid_format_mask = SET_PACKET_FORMAT_ENCAP | SET_PACKET_FORMAT_COMPRESSED;
+			int valid_format_mask = SETH_PACKET_FORMAT_ENCAP | SETH_PACKET_FORMAT_COMPRESSED;
 			if (pkthdr->format & ~valid_format_mask) {
 				FPRINTF("Packet in invalid format %x, DROPPING!", pkthdr->format);
 				continue;
@@ -266,7 +266,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	}
 
 	// Add buffers back to available list for de-allocation
-	for (int i = 0; i < SET_MAX_RECVMM_MESSAGES; ++i) {
+	for (int i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
 		append_buffer_node(&tdata->available_buffers, buffer_nodes[i]);
 	}
 	// Free the rest of the IOV stuff

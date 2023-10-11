@@ -25,11 +25,11 @@ void print_help() {
 	fprintf(stderr,
 			"    -m, --mtu=<MTU>               Specify the interface MTU of between %i and\n"
 			"                                  %i (default is 1500)\n",
-			SET_MIN_MTU_SIZE, SET_MAX_MTU_SIZE);
+			SETH_MIN_MTU_SIZE, SETH_MAX_MTU_SIZE);
 	fprintf(stderr,
 			"    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size\n"
 			"                                  of between %i and %i (default is 1500)\n",
-			SET_MIN_TXSIZE, SET_MAX_TXSIZE);
+			SETH_MIN_TXSIZE, SETH_MAX_TXSIZE);
 	fprintf(stderr,
 			"    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address\n"
 			"                                  (mandatory)\n");
@@ -76,15 +76,15 @@ int main(int argc, char *argv[]) {
 				return 0;
 			case 'm':
 				mtu_value = atoi(optarg);
-				if (mtu_value < SET_MIN_MTU_SIZE || mtu_value > SET_MAX_MTU_SIZE) {
-					FPRINTF("ERROR: Invalid MTU value. It should be between %i and %i.", SET_MIN_MTU_SIZE, SET_MAX_MTU_SIZE);
+				if (mtu_value < SETH_MIN_MTU_SIZE || mtu_value > SETH_MAX_MTU_SIZE) {
+					FPRINTF("ERROR: Invalid MTU value. It should be between %i and %i.", SETH_MIN_MTU_SIZE, SETH_MAX_MTU_SIZE);
 					return 1;
 				}
 				break;
 			case 't':
 				tsize_value = atoi(optarg);
-				if (tsize_value < SET_MIN_TXSIZE || tsize_value > SET_MAX_TXSIZE) {
-					FPRINTF("ERROR: Invalid TX_SIZE value. It should be between %i and %i.", SET_MIN_TXSIZE, SET_MAX_TXSIZE);
+				if (tsize_value < SETH_MIN_TXSIZE || tsize_value > SETH_MAX_TXSIZE) {
+					FPRINTF("ERROR: Invalid TX_SIZE value. It should be between %i and %i.", SETH_MIN_TXSIZE, SETH_MAX_TXSIZE);
 					return 1;
 				}
 				break;

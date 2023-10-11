@@ -1,5 +1,5 @@
-#ifndef SET_H
-#define SET_H
+#ifndef __SUPERETHD_H__
+#define __SUPERETHD_H__
 
 #include <netinet/in.h>
 

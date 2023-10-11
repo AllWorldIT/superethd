@@ -3,9 +3,90 @@
 #include "util.h"
 
 #include <arpa/inet.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length) {
+	*buffer = malloc(strlen(hex_dump));	 // Maximum possible size
+	if (!*buffer) {
+		return -1;	// Memory allocation failed
+	}
+
+	size_t offset = 0;
+	size_t byte_count = 0;
+	const char *cursor = hex_dump;
+
+	while (sscanf(cursor, "%4zx", &offset) == 1) {
+		cursor += 5;  // Move past offset and space
+
+		for (int i = 0; i < 16 && *cursor && *cursor != '\n'; i++) {
+			if (sscanf(cursor, " %2hhx", &(*buffer)[byte_count]) != 1) {
+				break;	// End of line or invalid data
+			}
+			byte_count++;
+			cursor += 3;  // Move past hex byte and space
+		}
+
+		while (*cursor && *cursor != '\n') {
+			cursor++;  // Move to next line
+		}
+		if (*cursor == '\n') {
+			cursor++;  // Move past newline
+		}
+	}
+
+	*buffer = realloc(*buffer, byte_count);	 // Resize to actual size
+	*length = byte_count;
+
+	return 0;  // Success
+}
+
+char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
+	// Allocate memory for the buffer (+1 for the null terminator)
+	char *buffer = (char *)malloc(length + 1);
+	if (!buffer) {
+		return NULL;  // Memory allocation failed
+	}
+
+	// Copy the values
+	for (size_t i = 0; i < length; i++) {
+		buffer[i] = (char)array[i];
+	}
+
+	// Null-terminate the buffer
+	buffer[length] = '\0';
+
+	return buffer;
+}
+
+char *create_sequence_data(size_t length) {
+	if (length < 2) return NULL;  // Ensure at least space for one character and a null terminator
+
+	char *buffer = malloc(length + 1);
+	if (!buffer) return NULL;  // Memory allocation failed
+
+	char letter = 'A';
+	char number = '0';
+	uint16_t index = 0;
+
+	while (index < length) {  // Leave space for null terminator
+		buffer[index++] = letter;
+		for (number = '0'; number <= '9' && index < length; number++) {
+			buffer[index++] = number;
+		}
+
+		// Update for the next letter
+		if (letter == 'Z') {
+			letter = 'A';
+		} else {
+			letter++;
+		}
+	}
+
+	buffer[index + 1] = '\0';  // Null terminate the buffer
+	return buffer;
+}
 
 /**
  * @brief Convert a string to an in6_addr.
@@ -34,7 +115,6 @@ int to_sin6addr(const char *str, struct in6_addr *result) {
 	// Conversion failed
 	return 0;
 }
-
 
 /**
  * @brief Return if the provided in6_addr is an IPv4 mapped IPv6 address.

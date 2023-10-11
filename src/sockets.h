@@ -1,6 +1,6 @@
 
-#ifndef SOCKETS_H
-#define SOCKETS_H
+#ifndef __SOCKETS_H__
+#define __SOCKETS_H__
 
 #include "threads.h"
 

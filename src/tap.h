@@ -1,6 +1,6 @@
 
-#ifndef TAP_H
-#define TAP_H
+#ifndef __TAP_H__
+#define __TAP_H__
 
 #include "threads.h"
 

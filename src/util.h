@@ -3,6 +3,11 @@
 
 #include <netinet/in.h>
 
+extern int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length);
+extern char *uint8_array_to_char_buffer(const uint8_t *array, size_t length);
+
+extern char *create_sequence_data(size_t length);
+
 extern int to_sin6addr(const char *address_str, struct in6_addr *result);
 extern int is_ipv4_mapped_ipv6(const struct in6_addr *addr);
 

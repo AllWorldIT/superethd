@@ -1,5 +1,5 @@
-#ifndef CODEC_H
-#define CODEC_H
+#ifndef __CODEC_H__
+#define __CODEC_H__
 
 
 #include "buffers.h"
@@ -27,15 +27,15 @@
 	- Channel: 8 bits, Network channel to use.
 */
 
-#define SET_PACKET_VERSION_V1 0x1
+#define SETH_PACKET_VERSION_V1 0x1
 
-#define SET_PACKET_FORMAT_ENCAP 0x1
-#define SET_PACKET_FORMAT_COMPRESSED 0x2
+#define SETH_PACKET_FORMAT_ENCAP 0x1
+#define SETH_PACKET_FORMAT_COMPRESSED 0x2
 
-#define SET_PACKET_HEADER_SIZE 8
+#define SETH_PACKET_HEADER_SIZE 8
 
-typedef struct __set_packed {
-#if SET_BYTE_ORDER == SET_BIG_ENDIAN
+typedef struct __seth_packed {
+#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 	uint8_t ver : 4;
 	uint8_t opt_len : 4;
 
@@ -53,7 +53,7 @@ typedef struct __set_packed {
 #endif
 	uint8_t format;
 	uint8_t channel;
-	set_be32_t sequence;
+	seth_be32_t sequence;
 	uint32_t opts[];
 } PacketHeader;
 
@@ -72,20 +72,20 @@ typedef struct __set_packed {
  *
  */
 
-#define SET_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET 1
-#define SET_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET 2
+#define SETH_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET 1
+#define SETH_PACKET_PAYLOAD_TYPE_COMPLETE_PACKET 2
 
-#define SET_PACKET_PAYLOAD_HEADER_SIZE 4
-#define SET_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE 4
+#define SETH_PACKET_PAYLOAD_HEADER_SIZE 4
+#define SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE 4
 
-typedef struct __set_packed {
+typedef struct __seth_packed {
 	uint8_t type;
-	set_be16_t packet_size;
+	seth_be16_t packet_size;
 	uint8_t reserved;
 } PacketPayloadHeader;
 
-typedef struct __set_packed {
-	set_be16_t payload_length;
+typedef struct __seth_packed {
+	seth_be16_t payload_length;
 	uint8_t part;
 	uint8_t reserved;
 } PacketPayloadHeaderPartial;

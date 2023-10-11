@@ -58,22 +58,22 @@ int start_set(char *ifname, struct in6_addr *src, struct in6_addr *dst, int port
 
 	// MSS
 	tdata.tx_size = tx_size;
-	if (tdata.tx_size > SET_MAX_TXSIZE) {
-		FPRINTF("ERROR: Maximum TX_SIZE is %i", SET_MAX_TXSIZE);
+	if (tdata.tx_size > SETH_MAX_TXSIZE) {
+		FPRINTF("ERROR: Maximum TX_SIZE is %i", SETH_MAX_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
-	if (tdata.tx_size < SET_MIN_TXSIZE) {
-		FPRINTF("ERROR: Minimum MSS is %i", SET_MIN_TXSIZE);
+	if (tdata.tx_size < SETH_MIN_TXSIZE) {
+		FPRINTF("ERROR: Minimum MSS is %i", SETH_MIN_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
 	// MTU
 	tdata.mtu = mtu;
-	if (tdata.mtu > SET_MAX_MTU_SIZE) {
-		FPRINTF("ERROR: Maximum MTU is %i!", SET_MAX_MTU_SIZE);
+	if (tdata.mtu > SETH_MAX_MTU_SIZE) {
+		FPRINTF("ERROR: Maximum MTU is %i!", SETH_MAX_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
-	if (tdata.mtu < SET_MIN_MTU_SIZE) {
-		FPRINTF("ERROR: Minimum MTU is %i!", SET_MIN_MTU_SIZE);
+	if (tdata.mtu < SETH_MIN_MTU_SIZE) {
+		FPRINTF("ERROR: Minimum MTU is %i!", SETH_MIN_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
 
@@ -85,7 +85,7 @@ int start_set(char *ifname, struct in6_addr *src, struct in6_addr *dst, int port
 	FPRINTF("Setting maximum UDP payload size to %i...", tdata.max_payload_size);
 
 	// Allocate buffers
-	initialize_buffer_list(&tdata.available_buffers, SET_BUFFER_COUNT, tdata.max_ethernet_frame_size);
+	initialize_buffer_list(&tdata.available_buffers, SETH_BUFFER_COUNT, tdata.max_ethernet_frame_size);
 	// Initialize our queues
 	initialize_buffer_list(&tdata.tx_packet_queue, 0, 0);
 	initialize_buffer_list(&tdata.rx_packet_queue, 0, 0);
