@@ -5,16 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "Launch Debugger",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/tests/t_420-packet-ethernet-ipv4-icmp",
+            "program": "${workspaceFolder}/build/tests/${fileBasenameNoExtension}",
             "args": [],
-            "stopAtEntry": false,
             "cwd": "${fileDirname}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "CRITERION_NO_FORK",
+                    "value": "1"
+                },
+                {
+                    "name": "CRITERION_BREAK_ON_FAIL",
+                    "value": "1"
+                },
+                {
+                    "name": "CRITERION_VERBOSITY_LEVEL",
+                    "value": "verbose"
+                },
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
+            //"miDebuggerServerAddress": "localhost:1234",
+            "preLaunchTask": "${defaultBuildTask}",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -28,6 +42,5 @@
                 }
             ]
         }
-
     ]
 }

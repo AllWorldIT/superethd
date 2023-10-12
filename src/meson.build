@@ -15,22 +15,32 @@ configure_file(input: 'config.h.in', output: 'config.h', configuration: conf_dat
 deps = [dependency('threads')]
 deps = [dependency('liblz4')]
 
+c_args = []
+c_args_debug = c_args
+c_args_debug += ['-pg', '-DDEBUG']
+
+cpp_args = c_args
+cpp_args_debug = c_args_debug
+
+link_args = []
+link_args_debug = ['-pg']
+
 
 #
 # Static libraries
 #
 
 libsuperethd_sources = [
-    'buffers.c',
-    'checksum.c',
-    'codec.c',
-    'debug.c',
-    'packet.c',
-    'sockets.c',
-    'superethd.c',
-    'tap.c',
-    'tunnel.c',
-    'util.c',
+    'buffers.cpp',
+    'checksum.cpp',
+    'codec.cpp',
+    'debug.cpp',
+    'packet.cpp',
+    'sockets.cpp',
+    'superethd.cpp',
+    'tap.cpp',
+    'tunnel.cpp',
+    'util.cpp',
 ]
 libsuperethd = static_library('superethd', libsuperethd_sources)
 
@@ -39,8 +49,9 @@ libsuperethd = static_library('superethd', libsuperethd_sources)
 # Executables
 #
 
-executable('superethd-debug', 'main.c', link_with: libsuperethd, dependencies: deps,
-    c_args: ['-pg', '-DDEBUG'],
-    link_args: ['-pg'],
+executable('superethd-debug', 'main.cpp', link_with: libsuperethd, dependencies: deps,
+    c_args: c_args_debug,
+    cpp_args: cpp_args_debug,
+    link_args: link_args_debug,
 )
-executable('superethd', 'main.c', link_with: libsuperethd, dependencies: deps)
+executable('superethd', 'main.cpp', link_with: libsuperethd, dependencies: deps)
