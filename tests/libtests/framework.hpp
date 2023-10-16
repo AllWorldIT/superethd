@@ -1,11 +1,11 @@
 #ifndef __T_FRAMEWORK_H__
 #define __T_FRAMEWORK_H__
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
+#define CATCH_CONFIG_MAIN
 
+#include <catch2/catch_all.hpp>
 
-#include "checksum.hpp"
+#include "libsethnetkit/checksum.hpp"
 #include "debug.hpp"
 #include "packet.hpp"
 #include "util.hpp"

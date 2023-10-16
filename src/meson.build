@@ -1,3 +1,5 @@
+subdir('libsethnetkit')
+
 
 # Get debug flag so we can enable debugging below
 debug = get_option('debug')
@@ -32,10 +34,8 @@ link_args_debug = ['-pg']
 
 libsuperethd_sources = [
     'buffers.cpp',
-    'checksum.cpp',
     'codec.cpp',
     'debug.cpp',
-    'packet.cpp',
     'sockets.cpp',
     'superethd.cpp',
     'tap.cpp',
@@ -55,3 +55,6 @@ executable('superethd-debug', 'main.cpp', link_with: libsuperethd, dependencies:
     link_args: link_args_debug,
 )
 executable('superethd', 'main.cpp', link_with: libsuperethd, dependencies: deps)
+
+
+

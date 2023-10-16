@@ -9,22 +9,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/${fileBasenameNoExtension}",
-            "args": [],
-            "cwd": "${fileDirname}",
-            "environment": [
-                {
-                    "name": "CRITERION_NO_FORK",
-                    "value": "1"
-                },
-                {
-                    "name": "CRITERION_BREAK_ON_FAIL",
-                    "value": "1"
-                },
-                {
-                    "name": "CRITERION_VERBOSITY_LEVEL",
-                    "value": "verbose"
-                },
-            ],
+            "args": ["--break"],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
             //"miDebuggerServerAddress": "localhost:1234",

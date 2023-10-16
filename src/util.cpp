@@ -87,7 +87,7 @@ char *create_sequence_data(size_t length) {
 		}
 	}
 
-	buffer[index + 1] = '\0';  // Null terminate the buffer
+	buffer[index] = '\0';  // Null terminate the buffer
 	return buffer;
 }
 

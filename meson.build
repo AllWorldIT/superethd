@@ -8,6 +8,9 @@ project('Super Ethernet Tunnel',
 
 # Options needed to build everything
 add_global_arguments('-D_GNU_SOURCE', language: 'cpp')
+# Test suite options
+valgrind_args = ['--error-exitcode=1', '--leak-check=full']
+
 
 subdir('src')
 subdir('tests')
