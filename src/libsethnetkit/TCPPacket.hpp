@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IPv4Packet.hpp"
-
+#include "IPv6Packet.hpp"
 
 typedef struct __seth_packet {
 		uint8_t cwr : 1;
@@ -37,14 +37,13 @@ typedef struct __seth_packed {
 		seth_be16_t urgent;	  // Urgent pointer
 } tcp_header_t;
 
-
-class TCPv4Packet : public IPv4Packet {
+template <typename T> class TCPPacketTmpl : public T {
 	protected:
 		seth_be16_t src_port;
 		seth_be16_t dst_port;
 		seth_be32_t sequence;
 		seth_be32_t ack;
-		uint8_t offset;  // Offset in 32-bit words, minimum 5
+		uint8_t offset; // Offset in 32-bit words, minimum 5
 
 		bool opt_cwr;
 		bool opt_ece;
@@ -59,8 +58,16 @@ class TCPv4Packet : public IPv4Packet {
 		seth_be16_t checksum;
 		seth_be16_t urgent;
 
+	private:
+		void _clear();
+
 	public:
-		TCPv4Packet(const std::vector<uint8_t> &data);
+		TCPPacketTmpl();
+		TCPPacketTmpl(const std::vector<uint8_t> &data);
+
+		~TCPPacketTmpl();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 
@@ -78,7 +85,6 @@ class TCPv4Packet : public IPv4Packet {
 
 		uint8_t getOffset() const;
 		void setOffset(uint8_t newOffset);
-
 
 		bool getOptCWR() const;
 		void setOptCWR(bool newOptCWR);
@@ -104,7 +110,6 @@ class TCPv4Packet : public IPv4Packet {
 		bool getOptFIN() const;
 		void setOptFIN(bool newOptFin);
 
-
 		uint16_t getWindow() const;
 		void setWindow(uint16_t newWindow);
 
@@ -117,3 +122,11 @@ class TCPv4Packet : public IPv4Packet {
 		std::string asText() const;
 		std::string asBinary() const;
 };
+
+// Define types we plan to use
+template class TCPPacketTmpl<IPv4Packet>;
+template class TCPPacketTmpl<IPv6Packet>;
+
+// Create class aliases
+using TCPv4Packet = TCPPacketTmpl<IPv4Packet>;
+using TCPv6Packet = TCPPacketTmpl<IPv6Packet>;

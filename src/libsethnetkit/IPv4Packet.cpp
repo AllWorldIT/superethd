@@ -1,7 +1,42 @@
 #include "IPv4Packet.hpp"
 #include "IPPacket.hpp"
 
-IPv4Packet::IPv4Packet(const std::vector<uint8_t> &data) : IPPacket(data) {}
+void IPv4Packet::_clear() {
+	setVersion(SETH_PACKET_IP_VERSION_IPV4);
+
+	ihl = 0;
+	dscp = 0;
+	ecn = 0;
+	total_length = 0;
+	id = 0;
+	frag_off = 0;
+	ttl = 0;
+	protocol = 0;
+	checksum = 0;
+	// Clear IP's
+	for (auto &element : dst_addr) {
+		element = 0;
+	}
+	for (auto &element : src_addr) {
+		element = 0;
+	}
+}
+
+IPv4Packet::IPv4Packet() : IPPacket() {
+	DEBUG_PRINT("Construct");
+	_clear();
+}
+
+IPv4Packet::IPv4Packet(const std::vector<uint8_t> &data) : IPPacket(data) { setVersion(SETH_PACKET_IP_VERSION_IPV4); }
+
+IPv4Packet::~IPv4Packet() { DEBUG_PRINT("Destruction!"); }
+
+void IPv4Packet::clear() {
+	DEBUG_PRINT("start clear");
+	IPPacket::clear();
+	DEBUG_PRINT("end clear");
+	_clear();
+}
 
 void IPv4Packet::parse(const std::vector<uint8_t> &data) {
 	// bye bye world
@@ -43,19 +78,19 @@ void IPv4Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> newSrcA
 std::string IPv4Packet::asText() const {
 	std::ostringstream oss;
 
-	oss << Packet::asText() << std::endl;
+	oss << IPPacket::asText() << std::endl;
 
 	oss << "==> IPv4" << std::endl;
 
-	oss << std::format("IP Header Len : ", getIHL()) << std::endl;
-	oss << std::format("DSCP          : ", getDSCP()) << std::endl;
-	oss << std::format("ECN           : ", getECN()) << std::endl;
-	oss << std::format("Total Length  : ", getTotalLength()) << std::endl;
-	oss << std::format("ID            : ", getId()) << std::endl;
-	oss << std::format("Frag Offset   : ", getFragOff()) << std::endl;
-	oss << std::format("TTL           : ", getTtl()) << std::endl;
-	oss << std::format("Protocol      : ", getProtocol()) << std::endl;
-	oss << std::format("Checksum      : ", getChecksum()) << std::endl;
+	oss << std::format("IP Header Len : {}", getIHL()) << std::endl;
+	oss << std::format("DSCP          : {}", getDSCP()) << std::endl;
+	oss << std::format("ECN           : {}", getECN()) << std::endl;
+	oss << std::format("Total Length  : {}", getTotalLength()) << std::endl;
+	oss << std::format("ID            : {}", getId()) << std::endl;
+	oss << std::format("Frag Offset   : {}", getFragOff()) << std::endl;
+	oss << std::format("TTL           : {}", getTtl()) << std::endl;
+	oss << std::format("Protocol      : {}", getProtocol()) << std::endl;
+	oss << std::format("Checksum      : {:04X}", getChecksum()) << std::endl;
 
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> ip;
 
@@ -70,5 +105,8 @@ std::string IPv4Packet::asText() const {
 
 std::string IPv4Packet::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
+
+	oss << IPPacket::asBinary();
+
 	return oss.str();
 }

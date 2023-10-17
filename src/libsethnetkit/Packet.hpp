@@ -2,6 +2,7 @@
 
 #include "../common.hpp"
 #include "../endian.hpp"
+#include "../debug.hpp"
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -16,11 +17,16 @@ class Packet {
 	protected:
 		std::vector<uint8_t> rawData;
 
+	private:
+		void _clear();
+
 	public:
 		Packet();
 		Packet(const std::vector<uint8_t> &data);
 
 		virtual ~Packet();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

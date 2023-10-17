@@ -1,5 +1,7 @@
 #pragma once
 
+// FIXME
+/*
 extern "C" {
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
@@ -24,34 +26,8 @@ extern "C" {
 
 #include "libsethnetkit/ICMPv4Packet.hpp"
 
-#include "libsethnetkit/UDPv4Packet.hpp"
+#include "libsethnetkit/UDPPacket.hpp"
 
-/*
- * @brief Packet not currently supported exception.
- *
- */
-class PacketNotSupportedEception : public std::runtime_error {
-	public:
-		PacketNotSupportedEception(const std::string &message) : std::runtime_error(message) {}
-};
-
-/*
- * @brief Packet malformed exception.
- *
- */
-class PacketMalformedEception : public std::runtime_error {
-	public:
-		PacketMalformedEception(const std::string &message) : std::runtime_error(message) {}
-};
-
-/*
- * @brief Invalid packet operation exception.
- *
- */
-class PacketOperationInvalid : public std::runtime_error {
-	public:
-		PacketOperationInvalid(const std::string &message) : std::runtime_error(message) {}
-};
 
 #define SETH_PACKET_TYPE_ETHERNET_IPV4 0x0800
 #define SETH_PACKET_TYPE_ETHERNET_ARP 0x0806
@@ -95,3 +71,4 @@ int is_valid_ethernet_ip(const ethernet_header_t *packet, uint16_t size);
 int is_valid_ethernet_ipv4(const ethernet_header_t *packet, uint16_t size);
 int is_valid_ethernet_ipv4_udp(const ethernet_header_t *packet, uint16_t size);
 int is_valid_ethernet_ipv4_icmp(const ethernet_header_t *packet, uint16_t size);
+*/

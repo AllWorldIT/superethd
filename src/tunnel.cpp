@@ -76,7 +76,7 @@ void *tunnel_write_socket_handler(void *arg) {
 	// START - packet encoder buffers
 	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
 	int wbuffer_count = get_codec_wbuffer_count(tdata->max_ethernet_frame_size);
-	DEBUG_PRINT("Allocating %i wbuffers of %i size each", tdata->wbuffer_count, tdata->max_ethernet_frame_size);
+	DEBUG_PRINT("Allocating %i wbuffers of %i size each", wbuffer_count, tdata->max_ethernet_frame_size);
 	BufferList wbuffers;
 	initialize_buffer_list(&wbuffers, wbuffer_count, tdata->max_ethernet_frame_size);
 
@@ -298,7 +298,7 @@ void *tunnel_write_tap_handler(void *arg) {
 	// START - packet decoder buffers
 	// NK: work out the write node count based on how many packets it takes to split the maximum packet size plus 1
 	int wbuffer_count = get_codec_wbuffer_count(tdata->max_ethernet_frame_size);
-	DEBUG_PRINT("Allocating %i wbuffers of %i size each", tdata->wbuffer_count, tdata->max_ethernet_frame_size);
+	DEBUG_PRINT("Allocating %i wbuffers of %i size each", wbuffer_count, tdata->max_ethernet_frame_size);
 	BufferList wbuffers;
 	initialize_buffer_list(&wbuffers, wbuffer_count, tdata->max_ethernet_frame_size);
 	// END - packet decoder buffers

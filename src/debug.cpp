@@ -50,6 +50,8 @@ void print_in_bits(const uint8_t *buffer, size_t length) {
 }
 
 
+// FIXME
+
 // void print_ipv4_header(const ethernet_header_t *packet, uint16_t size) {
 // 	if (!is_valid_ethernet_ipv4(packet, size)) return;
 

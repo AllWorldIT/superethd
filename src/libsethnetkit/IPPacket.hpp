@@ -19,8 +19,17 @@ typedef struct __seth_packed {
 class IPPacket : public EthernetPacket {
 	protected:
 		uint8_t version; // IP packet version
+
+	private:
+		void _clear();
+
 	public:
+		IPPacket();
 		IPPacket(const std::vector<uint8_t> &data);
+
+		~IPPacket();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

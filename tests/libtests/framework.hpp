@@ -5,9 +5,16 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "libsethnetkit/EthernetPacket.hpp"
+#include "libsethnetkit/ICMPv4Packet.hpp"
+#include "libsethnetkit/IPPacket.hpp"
+#include "libsethnetkit/IPv4Packet.hpp"
+#include "libsethnetkit/IPv6Packet.hpp"
+#include "libsethnetkit/Packet.hpp"
+#include "libsethnetkit/TCPPacket.hpp"
+#include "libsethnetkit/UDPPacket.hpp"
 #include "libsethnetkit/checksum.hpp"
-#include "debug.hpp"
-#include "packet.hpp"
+
 #include "util.hpp"
 
 extern "C" {

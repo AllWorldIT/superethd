@@ -4,15 +4,15 @@
 #
 
 libsethnetkit_sources = [
-    'Packet.cpp',
+    'checksum.cpp',
     'EthernetPacket.cpp',
+    'ICMPv4Packet.cpp',
     'IPPacket.cpp',
     'IPv4Packet.cpp',
-    'ICMPv4Packet.cpp',
-    'UDPv4Packet.cpp',
-#    'TCPv4Packet.cpp',
     'IPv6Packet.cpp',
-    'checksum.cpp',
+    'Packet.cpp',
+    'TCPPacket.cpp',
+    'UDPPacket.cpp',
 ]
 
 libsethnetkit = static_library('sethnetkit', libsethnetkit_sources)

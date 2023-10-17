@@ -1,8 +1,29 @@
 #include "EthernetPacket.hpp"
 
-EthernetPacket::EthernetPacket() : Packet() {}
+void EthernetPacket::_clear() {
+	// Clear macs
+	for (auto &element : dst_mac) {
+		element = 0;
+	}
+	for (auto &element : src_mac) {
+		element = 0;
+	}
+	// Clear ethertype
+	ethertype = 0;
+}
+
+EthernetPacket::EthernetPacket() : Packet() {
+	_clear();
+}
 
 EthernetPacket::EthernetPacket(const std::vector<uint8_t> &data) : Packet(data) {}
+
+EthernetPacket::~EthernetPacket() { }
+
+void EthernetPacket::clear() {
+	Packet::clear();
+	_clear();
+}
 
 void EthernetPacket::parse(const std::vector<uint8_t> &data) {
 	// hell oworld

@@ -23,7 +23,7 @@ extern "C" {
 
 
 
-
+/*
 
 void _realloc_packet(ethernet_header_t **pkt, uint16_t *pkt_size, uint16_t pkt_size_needed) {
 	if (!*pkt_size) {
@@ -39,16 +39,7 @@ void _realloc_packet(ethernet_header_t **pkt, uint16_t *pkt_size, uint16_t pkt_s
 	}
 }
 
-/**
- * @brief Add an ethernet header to a packet.
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param dst_mac Destination MAC address.
- * @param src_mac Source MAC address.
- * @param ethertype Ethernet type.
- * @returns ipv4_header_t* Pointer to the UDP header within the packet.
- */
+
 ethernet_header_t *add_packet_ethernet_header(ethernet_header_t **pkt, uint16_t *pkt_size,
 											  uint8_t dst_mac[SETH_PACKET_ETHERNET_MAC_LEN],
 											  uint8_t src_mac[SETH_PACKET_ETHERNET_MAC_LEN], uint16_t ethertype) {
@@ -64,16 +55,7 @@ ethernet_header_t *add_packet_ethernet_header(ethernet_header_t **pkt, uint16_t 
 	return *pkt;
 }
 
-/**
- * @brief Add IPv4 packet header to an ethernet packet.
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param id Packet ID.
- * @param src_addr Source IPv4 address, represented as an array of 4 uint8_t's.
- * @param dst_addr Destination IPv4 address, represented as an array of 4 uint8_t's.
- * @returns ipv4_header_t* Pointer to the UDP header within the packet.
- */
+
 ipv4_header_t *add_packet_ipv4_header(ethernet_header_t **pkt, uint16_t *pkt_size, uint16_t id,
 									  uint8_t src_addr[SETH_PACKET_IPV4_IP_LEN], uint8_t dst_addr[SETH_PACKET_IPV4_IP_LEN]) {
 	// Make sure packet is big enough
@@ -106,16 +88,7 @@ ipv4_header_t *add_packet_ipv4_header(ethernet_header_t **pkt, uint16_t *pkt_siz
 	return ipv4_packet;
 }
 
-/**
- * @brief Add a UDP header to an IP packet
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param src_port UDP source port.
- * @param dst_port UDP destination port.
- * @returns udp_header_t* Pointer to the UDP header within the packet.
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
+
 udp_header_t *add_packet_udp_header(ethernet_header_t **pkt, uint16_t *pkt_size, uint16_t src_port, uint16_t dst_port) {
 	// Grab ethertype
 	uint16_t ethertype = seth_be_to_cpu_16((*pkt)->ethertype);
@@ -148,16 +121,7 @@ udp_header_t *add_packet_udp_header(ethernet_header_t **pkt, uint16_t *pkt_size,
 	}
 }
 
-/**
- * @brief Add a ICMP header to an IP packet
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param type ICMP type.
- * @param code ICMP code.
- * @returns icmp_header_t* Pointer to the ICMP header within the packet.
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
+
 icmp_header_t *add_packet_icmp_header(ethernet_header_t **pkt, uint16_t *pkt_size, uint8_t type, uint8_t code) {
 	// Grab ethertype
 	uint16_t ethertype = seth_be_to_cpu_16((*pkt)->ethertype);
@@ -189,15 +153,7 @@ icmp_header_t *add_packet_icmp_header(ethernet_header_t **pkt, uint16_t *pkt_siz
 	}
 }
 
-/**
- * @brief Add a ICMP ECHO header to an IP packet
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param identifier ICMP identifier
- * @param sequence ICMP sequence
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
+
 void add_packet_icmp_echo_header(ethernet_header_t **pkt, uint16_t *pkt_size, uint16_t identifier, uint16_t sequence) {
 	// Grab ethertype
 	uint16_t ethertype = seth_be_to_cpu_16((*pkt)->ethertype);
@@ -217,13 +173,7 @@ void add_packet_icmp_echo_header(ethernet_header_t **pkt, uint16_t *pkt_size, ui
 	}
 }
 
-/**
- * @brief Set up packet length fields to correct values.
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
+
 void set_length(ethernet_header_t **pkt, uint16_t pkt_size) {
 	// Grab ethertype
 	uint16_t header_len = is_valid_ethernet(*pkt, pkt_size);
@@ -254,13 +204,7 @@ void set_length(ethernet_header_t **pkt, uint16_t pkt_size) {
 	}
 }
 
-/**
- * @brief Set up packet checksum fields to correct values.
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
+
 void set_checksums(ethernet_header_t **pkt, uint16_t pkt_size) {
 	is_valid_ethernet_ip(*pkt, pkt_size);
 	// Grab IP header
@@ -310,15 +254,6 @@ void set_checksums(ethernet_header_t **pkt, uint16_t pkt_size) {
 	}
 }
 
-/**
- * @brief Add payload to packet.
- *
- * @param pkt Pointer to the packet pointer.
- * @param pkt_size Pointer to the packet size, this will be updated when the header is added.
- * @param payload Payload data.
- * @param payload_size Size of payload data.
- * @throws PacketNotSupportedEception If packet is unsupported.
- */
 void add_payload(ethernet_header_t **pkt, uint16_t *pkt_size, uint8_t *payload, uint16_t payload_size) {
 	is_valid_ethernet_ip(*pkt, *pkt_size);
 	ip_header_t *ip_header = (ip_header_t *)&(*pkt)->payload;
@@ -363,7 +298,7 @@ void add_payload(ethernet_header_t **pkt, uint16_t *pkt_size, uint8_t *payload, 
 }
 
 static uint64_t _compute_ipv4_pseudo_checksum_partial(ethernet_header_t *pkt, seth_be16_t layer4_length_be) {
-	/* The IPv4 pseudo-header is defined in RFC 793, Section 3.1. */
+	// The IPv4 pseudo-header is defined in RFC 793, Section 3.1.
 	struct ipv4_pseudo_header_t {
 			uint8_t src_addr[SETH_PACKET_IPV4_IP_LEN];
 			uint8_t dst_addr[SETH_PACKET_IPV4_IP_LEN];
@@ -379,7 +314,7 @@ static uint64_t _compute_ipv4_pseudo_checksum_partial(ethernet_header_t *pkt, se
 
 	ipv4_header_t *ipv4_packet = (ipv4_header_t *)ip_header;
 
-	/* Fill in the pseudo-header. */
+	// Pseudo header
 	memcpy(&pseudo_header.src_addr, &ipv4_packet->src_addr, sizeof(ipv4_packet->src_addr));
 	memcpy(&pseudo_header.dst_addr, &ipv4_packet->dst_addr, sizeof(ipv4_packet->dst_addr));
 	pseudo_header.zero = 0;
@@ -568,3 +503,5 @@ int is_valid_ethernet_ipv4_icmp(const ethernet_header_t *packet, uint16_t size) 
 
 	return header_len;
 }
+
+*/

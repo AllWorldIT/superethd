@@ -40,8 +40,16 @@ class IPv4Packet : public IPPacket {
 		std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_addr;
 		std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_addr;
 
+	private:
+		void _clear();
+
 	public:
+		IPv4Packet();
 		IPv4Packet(const std::vector<uint8_t> &data);
+
+		~IPv4Packet();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

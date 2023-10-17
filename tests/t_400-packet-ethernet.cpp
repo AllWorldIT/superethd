@@ -1,6 +1,7 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
-#include "packet.hpp"
+
+
 
 TEST_CASE("Check creating ethernet packets with IPv4 ethertype", "[ethernet-packets]") {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};

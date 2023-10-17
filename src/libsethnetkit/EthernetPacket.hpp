@@ -13,12 +13,20 @@ typedef struct __seth_packed {
 
 class EthernetPacket : public Packet {
 	protected:
-		std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0, 0, 0, 0, 0, 0}; // Destination MAC address
-		std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0, 0, 0, 0, 0, 0}; // Source MAC address
-		seth_be16_t ethertype = 0;														// Ethertype field to indicate the protocol
+		std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac; // Destination MAC address
+		std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac; // Source MAC address
+		seth_be16_t ethertype;														// Ethertype field to indicate the protocol
+
+	private:
+		void _clear();
+
 	public:
 		EthernetPacket();
 		EthernetPacket(const std::vector<uint8_t> &data);
+
+		~EthernetPacket();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

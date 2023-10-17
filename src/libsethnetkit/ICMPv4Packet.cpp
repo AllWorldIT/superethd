@@ -1,6 +1,22 @@
 #include "ICMPv4Packet.hpp"
+#include "IPv4Packet.hpp"
+
+void ICMPv4Packet::_clear() {
+	type = 0;
+	code = 0;
+	checksum = 0;
+}
+
+ICMPv4Packet::ICMPv4Packet() : IPv4Packet() { _clear(); }
 
 ICMPv4Packet::ICMPv4Packet(const std::vector<uint8_t> &data) : IPv4Packet(data) {}
+
+ICMPv4Packet::~ICMPv4Packet() {  }
+
+void ICMPv4Packet::clear() {
+	IPv4Packet::clear();
+	_clear();
+}
 
 void ICMPv4Packet::parse(const std::vector<uint8_t> &data) {
 	// bye bye world

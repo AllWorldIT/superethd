@@ -1,14 +1,22 @@
 #include "Packet.hpp"
 
-Packet::Packet() = default;
+void Packet::_clear() { rawData.clear(); }
 
-Packet::Packet(const std::vector<uint8_t> &data) {
+Packet::Packet() {
+	DEBUG_PRINT("Construct - start clear");
+	_clear();
+	DEBUG_PRINT("Construct - clear done");
+};
+
+Packet::Packet(const std::vector<uint8_t> &data) : Packet() {
 	// Base class parseing of the data we got
 	parse(data);
 }
 
 // Use default destructor
 Packet::~Packet() = default;
+
+void Packet::clear() { _clear(); }
 
 void Packet::parse(const std::vector<uint8_t> &data) { rawData = data; }
 
@@ -49,7 +57,7 @@ std::string Packet::asText() const {
 	std::ostringstream oss;
 
 	oss << "==> Packet" << std::endl;
-	oss << "Size           : " << getSize() << std::endl;
+	oss << "Size          : " << getSize() << std::endl;
 
 	return oss.str();
 }

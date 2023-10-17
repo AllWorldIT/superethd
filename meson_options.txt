@@ -1,0 +1,2 @@
+
+option('unit_testing', type: 'boolean', description: 'Enable unit testing mode', value: false)

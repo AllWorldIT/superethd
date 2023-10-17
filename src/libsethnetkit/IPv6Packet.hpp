@@ -26,8 +26,16 @@ class IPv6Packet : public IPPacket {
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> src_addr;
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> dst_addr;
 
+	private:
+		void _clear();
+
 	public:
+		IPv6Packet();
 		IPv6Packet(const std::vector<uint8_t> &data);
+
+		~IPv6Packet();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

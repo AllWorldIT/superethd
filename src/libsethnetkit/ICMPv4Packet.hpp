@@ -23,8 +23,16 @@ class ICMPv4Packet : public IPv4Packet {
 		uint8_t code;
 		seth_be16_t checksum;
 
+	private:
+		void _clear();
+
 	public:
+		ICMPv4Packet();
 		ICMPv4Packet(const std::vector<uint8_t> &data);
+
+		~ICMPv4Packet();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 

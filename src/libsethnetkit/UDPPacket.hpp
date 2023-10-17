@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IPv4Packet.hpp"
+#include "IPv6Packet.hpp"
 
 typedef struct __seth_packed {
 		seth_be16_t src_port; // Source port
@@ -9,15 +10,23 @@ typedef struct __seth_packed {
 		seth_be16_t checksum; // Checksum
 } udp_header_t;
 
-class UDPv4Packet : public IPv4Packet {
+template <typename T> class UDPPacketTmpl : public T {
 	protected:
 		seth_be16_t src_port;
 		seth_be16_t dst_port;
 		seth_be16_t length;
 		seth_be16_t checksum;
 
+	private:
+		void _clear();
+
 	public:
-		UDPv4Packet(const std::vector<uint8_t> &data);
+		UDPPacketTmpl();
+		UDPPacketTmpl(const std::vector<uint8_t> &data);
+
+		~UDPPacketTmpl();
+
+		void clear();
 
 		void parse(const std::vector<uint8_t> &data);
 
@@ -34,3 +43,11 @@ class UDPv4Packet : public IPv4Packet {
 		std::string asText() const;
 		std::string asBinary() const;
 };
+
+// Define types we plan to use
+template class UDPPacketTmpl<IPv4Packet>;
+template class UDPPacketTmpl<IPv6Packet>;
+
+// Create class aliases
+using UDPv4Packet = UDPPacketTmpl<IPv4Packet>;
+using UDPv6Packet = UDPPacketTmpl<IPv6Packet>;

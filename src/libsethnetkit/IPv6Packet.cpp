@@ -1,6 +1,34 @@
 #include "IPv6Packet.hpp"
 
-IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) {}
+void IPv6Packet::_clear() {
+	setVersion(SETH_PACKET_IP_VERSION_IPV6);
+
+	traffic_class = 0;
+	flow_label = 0;
+	payload_length = 0;
+	next_header = 0;
+	hop_limit = 0;
+	// Clear IP's
+	for (auto &element : dst_addr) {
+		element = 0;
+	}
+	for (auto &element : src_addr) {
+		element = 0;
+	}
+}
+
+IPv6Packet::IPv6Packet() : IPPacket() {
+	_clear();
+}
+
+IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) { setVersion(SETH_PACKET_IP_VERSION_IPV6); }
+
+IPv6Packet::~IPv6Packet() { DEBUG_PRINT("Destruction!"); }
+
+void IPv6Packet::clear() {
+	IPPacket::clear();
+	_clear();
+}
 
 void IPv6Packet::parse(const std::vector<uint8_t> &data) {
 	// bye bye world
