@@ -1,7 +1,10 @@
 #include "ICMPv4Packet.hpp"
+#include "IPPacket.hpp"
 #include "IPv4Packet.hpp"
 
 void ICMPv4Packet::_clear() {
+	setProtocol(SETH_PACKET_IP_PROTOCOL_ICMP4);
+
 	type = 0;
 	code = 0;
 	checksum = 0;
@@ -31,17 +34,27 @@ void ICMPv4Packet::setCode(uint8_t newCode) { code = newCode; }
 
 uint8_t ICMPv4Packet::getChecksum() const { return seth_be_to_cpu_16(checksum); }
 
+uint16_t ICMPv4Packet::getHeaderOffset() const { return IPv4Packet::getHeaderOffset() + IPv4Packet::getHeaderSize(); }
+uint16_t ICMPv4Packet::getHeaderSize() const { return sizeof(icmp_header_t); }
+
+uint16_t ICMPv4Packet::getPacketSize() const {
+	// TODO
+	return getHeaderOffset() + getHeaderSize() + getPayloadSize();
+};
+
 std::string ICMPv4Packet::asText() const {
 	std::ostringstream oss;
 
-	oss << Packet::asText() << std::endl;
+	oss << IPv4Packet::asText() << std::endl;
 
 	oss << "==> ICMPv4 Packet" << std::endl;
 
-	oss << std::format("Type          : ", getType()) << std::endl;
-	oss << std::format("Code          : ", getCode()) << std::endl;
-	oss << std::format("Checksum      : ", getChecksum()) << std::endl;
-	oss << std::format("Version       : ", getVersion()) << std::endl;
+	oss << std::format("*Header Offset : {}", getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size   : {}", getHeaderSize()) << std::endl;
+
+	oss << std::format("Type           : {}", getType()) << std::endl;
+	oss << std::format("Code           : {}", getCode()) << std::endl;
+	oss << std::format("Checksum       : {}", getChecksum()) << std::endl;
 
 	return oss.str();
 }

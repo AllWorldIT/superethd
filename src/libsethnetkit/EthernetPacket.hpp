@@ -39,6 +39,9 @@ class EthernetPacket : public Packet {
 		uint16_t getEthertype() const;
 		void setEthertype(const uint16_t type);
 
+		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderSize() const;
+
 		std::string asText() const;
 		std::string asBinary() const;
 };

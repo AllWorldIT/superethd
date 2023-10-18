@@ -20,7 +20,7 @@ class IPv6Packet : public IPPacket {
 	protected:
 		uint8_t traffic_class;
 		uint32_t flow_label;
-		seth_be16_t payload_length;
+//		seth_be16_t payload_length;
 		uint8_t next_header; // Type
 		uint8_t hop_limit;
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> src_addr;
@@ -48,6 +48,7 @@ class IPv6Packet : public IPPacket {
 		uint16_t getPayloadLength() const;
 
 		uint8_t getNextHeader() const;
+		void setNextHeader(uint8_t newNextHeader);
 
 		uint8_t getHopLimit() const;
 		void setHopLimit(uint8_t newHopLimit);
@@ -57,6 +58,9 @@ class IPv6Packet : public IPPacket {
 
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> getSrcAddr() const;
 		void setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcAddr);
+
+		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderSize() const;
 
 		std::string asText() const;
 		std::string asBinary() const;

@@ -1,11 +1,9 @@
 #include "Packet.hpp"
 
-void Packet::_clear() { rawData.clear(); }
+void Packet::_clear() { payload.clear(); }
 
 Packet::Packet() {
-	DEBUG_PRINT("Construct - start clear");
 	_clear();
-	DEBUG_PRINT("Construct - clear done");
 };
 
 Packet::Packet(const std::vector<uint8_t> &data) : Packet() {
@@ -18,24 +16,28 @@ Packet::~Packet() = default;
 
 void Packet::clear() { _clear(); }
 
-void Packet::parse(const std::vector<uint8_t> &data) { rawData = data; }
+void Packet::parse(const std::vector<uint8_t> &data) { }
 
-const uint8_t *Packet::getPointer() const { return rawData.data(); }
-const std::vector<uint8_t> &Packet::getData() const { return rawData; };
+// Payload handling
+void Packet::addPayload(const std::vector<uint8_t> &data) { payload = data; }
 
-uint16_t Packet::getSize() const { return rawData.size(); }
-void Packet::resize(uint16_t newSize) { rawData.resize(newSize); }
+const uint8_t *Packet::getPayloadPointer() const { return payload.data(); }
+const std::vector<uint8_t> &Packet::getPayload() const { return payload; };
 
+uint16_t Packet::getPayloadSize() const { return payload.size(); }
+void Packet::resizePayload(uint16_t newSize) { payload.resize(newSize); }
+
+// Print packet handling
 void Packet::printHex() const { std::cout << asHex() << std::endl; }
 void Packet::printText() const { std::cout << asText() << std::endl; }
 
-int Packet::compare(void *cmp, uint16_t len) { return std::memcmp(getPointer(), cmp, len); }
+//int Packet::compare(void *cmp, uint16_t len) { return std::memcmp(getPointer(), cmp, len); }
 
 std::string Packet::asHex() const {
 	std::ostringstream oss;
 	uint16_t count = 0; // For keeping track of byte count
 
-	for (const auto &byte : rawData) {
+	for (const auto &byte : asBinary()) {
 		// If it's the start of a new line, print the position
 		if (count % 16 == 0) {
 			if (count != 0) {
@@ -57,7 +59,7 @@ std::string Packet::asText() const {
 	std::ostringstream oss;
 
 	oss << "==> Packet" << std::endl;
-	oss << "Size          : " << getSize() << std::endl;
+//	oss << "Size           : " << getSize() << std::endl;
 
 	return oss.str();
 }

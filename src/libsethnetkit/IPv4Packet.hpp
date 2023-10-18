@@ -31,7 +31,7 @@ class IPv4Packet : public IPPacket {
 		uint8_t ihl;
 		uint8_t dscp;
 		uint8_t ecn;
-		seth_be16_t total_length;
+		//seth_be16_t total_length;  // NK: This is a method
 		seth_be16_t id;
 		seth_be16_t frag_off;
 		uint8_t ttl;
@@ -54,7 +54,6 @@ class IPv4Packet : public IPPacket {
 		void parse(const std::vector<uint8_t> &data);
 
 		uint8_t getIHL() const;
-		void setIHL(uint8_t newIHL);
 
 		uint8_t getDSCP() const;
 		void setDSCP(uint8_t newDSCP);
@@ -62,7 +61,7 @@ class IPv4Packet : public IPPacket {
 		uint8_t getECN() const;
 		void setECN(uint8_t newECN);
 
-		uint16_t getTotalLength() const;
+//		uint16_t getTotalLength() const;
 
 		uint16_t getId() const;
 		void setId(uint16_t newId);
@@ -84,6 +83,9 @@ class IPv4Packet : public IPPacket {
 
 		std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> getSrcAddr() const;
 		void setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> newSrcAddr);
+
+		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderSize() const;
 
 		std::string asText() const;
 		std::string asBinary() const;

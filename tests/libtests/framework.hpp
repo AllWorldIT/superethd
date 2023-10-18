@@ -12,6 +12,7 @@
 #include "libsethnetkit/IPv6Packet.hpp"
 #include "libsethnetkit/Packet.hpp"
 #include "libsethnetkit/TCPPacket.hpp"
+#include "libsethnetkit/SequenceDataGenerator.hpp"
 #include "libsethnetkit/UDPPacket.hpp"
 #include "libsethnetkit/checksum.hpp"
 

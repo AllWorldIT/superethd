@@ -1,15 +1,13 @@
 #include "IPPacket.hpp"
 #include "EthernetPacket.hpp"
 
-void IPPacket::_clear() {
-	version = 0;
-}
+void IPPacket::_clear() { version = 0; }
 
 IPPacket::IPPacket() : EthernetPacket() { _clear(); }
 
 IPPacket::IPPacket(const std::vector<uint8_t> &data) : EthernetPacket(data) {}
 
-IPPacket::~IPPacket() {  }
+IPPacket::~IPPacket() {}
 
 void IPPacket::clear() {
 	EthernetPacket::clear();
@@ -24,6 +22,8 @@ void IPPacket::parse(const std::vector<uint8_t> &data) {
 uint8_t IPPacket::getVersion() const { return version; }
 void IPPacket::setVersion(uint8_t newVersion) { version = newVersion; }
 
+uint16_t IPPacket::getHeaderOffset() const { return EthernetPacket::getHeaderOffset() + EthernetPacket::getHeaderSize(); }
+
 std::string IPPacket::asText() const {
 	std::ostringstream oss;
 
@@ -31,7 +31,10 @@ std::string IPPacket::asText() const {
 
 	oss << "==> IP" << std::endl;
 
-	oss << std::format("Version       : {}", getVersion()) << std::endl;
+	oss << std::format("*Header Offset : {}", getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size   : {}", getHeaderSize()) << std::endl;
+
+	oss << std::format("Version        : {}", getVersion()) << std::endl;
 
 	return oss.str();
 }

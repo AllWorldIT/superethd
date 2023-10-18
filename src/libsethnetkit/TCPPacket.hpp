@@ -37,7 +37,10 @@ typedef struct __seth_packed {
 		seth_be16_t urgent;	  // Urgent pointer
 } tcp_header_t;
 
-template <typename T> class TCPPacketTmpl : public T {
+template <typename T>
+concept TCPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;
+
+template <TCPAllowedType T> class TCPPacketTmpl : public T {
 	protected:
 		seth_be16_t src_port;
 		seth_be16_t dst_port;
@@ -118,6 +121,11 @@ template <typename T> class TCPPacketTmpl : public T {
 
 		uint16_t getUrgent() const;
 		void setUrgent(uint16_t newUrgent);
+
+		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderSize() const;
+
+		uint16_t getPacketSize() const;
 
 		std::string asText() const;
 		std::string asBinary() const;

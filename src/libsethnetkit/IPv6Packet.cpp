@@ -1,11 +1,12 @@
 #include "IPv6Packet.hpp"
+#include "IPPacket.hpp"
 
 void IPv6Packet::_clear() {
 	setVersion(SETH_PACKET_IP_VERSION_IPV6);
 
 	traffic_class = 0;
 	flow_label = 0;
-	payload_length = 0;
+	//	payload_length = 0;
 	next_header = 0;
 	hop_limit = 0;
 	// Clear IP's
@@ -17,11 +18,9 @@ void IPv6Packet::_clear() {
 	}
 }
 
-IPv6Packet::IPv6Packet() : IPPacket() {
-	_clear();
-}
+IPv6Packet::IPv6Packet() : IPPacket() { _clear(); }
 
-IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) { setVersion(SETH_PACKET_IP_VERSION_IPV6); }
+IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) { _clear(); }
 
 IPv6Packet::~IPv6Packet() { DEBUG_PRINT("Destruction!"); }
 
@@ -42,9 +41,10 @@ void IPv6Packet::setTrafficClass(uint8_t newTrafficClass) { traffic_class = newT
 uint8_t IPv6Packet::getFlowLabel() const { return flow_label; }
 void IPv6Packet::setFlowLabel(uint8_t newFlowLabel) { flow_label = newFlowLabel; }
 
-seth_be16_t IPv6Packet::getPayloadLength() const { return seth_be_to_cpu_16(payload_length); }
+// seth_be16_t IPv6Packet::getPayloadLength() const { return seth_be_to_cpu_16(payload_length); }
 
 uint8_t IPv6Packet::getNextHeader() const { return next_header; }
+void IPv6Packet::setNextHeader(uint8_t newNextHeader) { next_header = newNextHeader; }
 
 uint8_t IPv6Packet::getHopLimit() const { return hop_limit; }
 void IPv6Packet::setHopLimit(uint8_t newHopLimit) { hop_limit = newHopLimit; }
@@ -55,6 +55,12 @@ void IPv6Packet::setDstAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newDstA
 std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> IPv6Packet::getSrcAddr() const { return src_addr; }
 void IPv6Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcAddr) { src_addr = newSrcAddr; }
 
+uint16_t IPv6Packet::getHeaderOffset() const { return IPPacket::getHeaderOffset(); }
+uint16_t IPv6Packet::getHeaderSize() const {
+	// TODO: include header options size
+	return sizeof(ipv6_header_t);
+}
+
 std::string IPv6Packet::asText() const {
 	std::ostringstream oss;
 
@@ -62,11 +68,14 @@ std::string IPv6Packet::asText() const {
 
 	oss << "==> IPv6" << std::endl;
 
-	oss << std::format("Traffic Class : ", getTrafficClass()) << std::endl;
-	oss << std::format("Flow Label    : ", getFlowLabel()) << std::endl;
-	oss << std::format("Payload Length: ", getPayloadLength()) << std::endl;
-	oss << std::format("Next Header   : ", getNextHeader()) << std::endl;
-	oss << std::format("Hop Limit     : ", getHopLimit()) << std::endl;
+	oss << std::format("*Header Offset  : {}", getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size    : {}", getHeaderSize()) << std::endl;
+
+	oss << std::format("Traffic Class  : ", getTrafficClass()) << std::endl;
+	oss << std::format("Flow Label     : ", getFlowLabel()) << std::endl;
+	oss << std::format("Payload Length : ", 0) << std::endl;
+	oss << std::format("Next Header    : ", getNextHeader()) << std::endl;
+	oss << std::format("Hop Limit      : ", getHopLimit()) << std::endl;
 
 	std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> ip;
 
@@ -89,5 +98,21 @@ std::string IPv6Packet::asText() const {
 
 std::string IPv6Packet::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
+
+	oss << IPPacket::asBinary();
+
+	ipv6_header_t header;
+
+	header.traffic_class = traffic_class;
+	header.flow_label = flow_label;
+	header.next_header = next_header;
+	header.hop_limit = hop_limit;
+	//	header.payload_length = getPayloadLength();
+
+	std::copy(src_addr.begin(), src_addr.end(), header.src_addr);
+	std::copy(dst_addr.begin(), dst_addr.end(), header.dst_addr);
+
+	oss.write(reinterpret_cast<const char *>(&header), sizeof(ipv6_header_t));
+
 	return oss.str();
 }

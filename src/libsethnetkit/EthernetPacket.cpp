@@ -12,13 +12,11 @@ void EthernetPacket::_clear() {
 	ethertype = 0;
 }
 
-EthernetPacket::EthernetPacket() : Packet() {
-	_clear();
-}
+EthernetPacket::EthernetPacket() : Packet() { _clear(); }
 
 EthernetPacket::EthernetPacket(const std::vector<uint8_t> &data) : Packet(data) {}
 
-EthernetPacket::~EthernetPacket() { }
+EthernetPacket::~EthernetPacket() {}
 
 void EthernetPacket::clear() {
 	Packet::clear();
@@ -39,6 +37,9 @@ void EthernetPacket::setSrcMac(const std::array<uint8_t, SETH_PACKET_ETHERNET_MA
 uint16_t EthernetPacket::getEthertype() const { return seth_be_to_cpu_16(ethertype); }
 void EthernetPacket::setEthertype(const uint16_t newEthertype) { ethertype = seth_cpu_to_be_16(newEthertype); }
 
+uint16_t EthernetPacket::getHeaderOffset() const { return 0; }
+uint16_t EthernetPacket::getHeaderSize() const { return sizeof(ethernet_header_t); }
+
 std::string EthernetPacket::asText() const {
 	std::ostringstream oss;
 
@@ -46,17 +47,20 @@ std::string EthernetPacket::asText() const {
 
 	oss << "==> Ethernet" << std::endl;
 
+	oss << std::format("*Header Offset : {}", getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size   : {}", getHeaderSize()) << std::endl;
+
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> mac;
 
 	mac = getDstMac();
-	oss << std::format("Destination MAC: {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
+	oss << std::format("Destination MAC : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
 		<< std::endl;
 
 	mac = getSrcMac();
-	oss << std::format("Source MAC     : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
+	oss << std::format("Source MAC      : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
 		<< std::endl;
 
-	oss << std::format("Ethernet Type  : 0x{:04X}", getEthertype()) << std::endl;
+	oss << std::format("Ethernet Type   : 0x{:04X}", getEthertype()) << std::endl;
 
 	return oss.str();
 }

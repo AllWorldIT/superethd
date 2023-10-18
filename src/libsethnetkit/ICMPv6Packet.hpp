@@ -1,23 +1,15 @@
 #pragma once
 
-#include "IPv4Packet.hpp"
+#include "IPv6Packet.hpp"
 
 typedef struct __seth_packed {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code
 		seth_be16_t checksum; // Checksum
 		uint32_t unused;	  // Unused
-} icmp_header_t;
+} icmp6_header_t;
 
-typedef struct __seth_packed {
-		uint8_t type;			// Type
-		uint8_t code;			// Code
-		seth_be16_t checksum;	// Checksum
-		seth_be16_t identifier; // Identifier
-		seth_be16_t sequence;	// Sequence
-} icmp_echo_header_t;
-
-class ICMPv4Packet : public IPv4Packet {
+class ICMPv6Packet : public IPv6Packet {
 	protected:
 		uint8_t type;
 		uint8_t code;
@@ -27,10 +19,10 @@ class ICMPv4Packet : public IPv4Packet {
 		void _clear();
 
 	public:
-		ICMPv4Packet();
-		ICMPv4Packet(const std::vector<uint8_t> &data);
+		ICMPv6Packet();
+		ICMPv6Packet(const std::vector<uint8_t> &data);
 
-		~ICMPv4Packet();
+		~ICMPv6Packet();
 
 		void clear();
 

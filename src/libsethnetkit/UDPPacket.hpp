@@ -10,11 +10,13 @@ typedef struct __seth_packed {
 		seth_be16_t checksum; // Checksum
 } udp_header_t;
 
-template <typename T> class UDPPacketTmpl : public T {
+template <typename T>
+concept UDPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;
+
+template <UDPAllowedType T> class UDPPacketTmpl : public T {
 	protected:
 		seth_be16_t src_port;
 		seth_be16_t dst_port;
-		seth_be16_t length;
 		seth_be16_t checksum;
 
 	private:
@@ -36,9 +38,12 @@ template <typename T> class UDPPacketTmpl : public T {
 		uint16_t getDstPort() const;
 		void setDstPort(uint16_t newDstPort);
 
-		uint16_t getLength() const;
-
 		uint16_t getChecksum() const;
+
+		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderSize() const;
+
+		uint16_t getPacketSize() const;
 
 		std::string asText() const;
 		std::string asBinary() const;

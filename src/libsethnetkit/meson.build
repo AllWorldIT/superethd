@@ -7,10 +7,12 @@ libsethnetkit_sources = [
     'checksum.cpp',
     'EthernetPacket.cpp',
     'ICMPv4Packet.cpp',
+    'ICMPv6Packet.cpp',
     'IPPacket.cpp',
     'IPv4Packet.cpp',
     'IPv6Packet.cpp',
     'Packet.cpp',
+    'SequenceDataGenerator.cpp',
     'TCPPacket.cpp',
     'UDPPacket.cpp',
 ]

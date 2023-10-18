@@ -15,7 +15,8 @@
 // Base Packet Class
 class Packet {
 	protected:
-		std::vector<uint8_t> rawData;
+		//std::vector<uint8_t> rawData;
+		std::vector<uint8_t> payload;
 
 	private:
 		void _clear();
@@ -30,11 +31,11 @@ class Packet {
 
 		void parse(const std::vector<uint8_t> &data);
 
-		const uint8_t *getPointer() const;
-		const std::vector<uint8_t> &getData() const;
-
-		uint16_t getSize() const;
-		void resize(uint16_t newSize);
+		void addPayload(const std::vector<uint8_t> &data);
+		const uint8_t *getPayloadPointer() const;
+		const std::vector<uint8_t> &getPayload() const;
+		uint16_t getPayloadSize() const;
+		void resizePayload(uint16_t newSize);
 
 		void printHex() const;
 		void printText() const;
