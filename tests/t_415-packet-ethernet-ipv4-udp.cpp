@@ -11,10 +11,15 @@ TEST_CASE("Check creating IPv4 UDP packets", "[ethernet-ipv4-udp]") {
 	std::vector<uint8_t> payloadBytes = payloadSeq.asBytes();
 
 	UDPv4Packet packet;
+
 	packet.setDstMac(dst_mac);
 	packet.setSrcMac(src_mac);
 	packet.setDstAddr(dst_ip);
 	packet.setSrcAddr(src_ip);
+
+	packet.setSrcPort(12345);
+	packet.setDstPort(54321);
+
 	packet.addPayload(payloadBytes);
 
 	std::cout << "Payload size created: " << payloadString.size() << std::endl;
@@ -22,6 +27,8 @@ TEST_CASE("Check creating IPv4 UDP packets", "[ethernet-ipv4-udp]") {
 
 	std::cout << packet.asText() << std::endl;
 
+	packet.printHex();
+	
 	// add_packet_ethernet_header(&packet, &pkt_size, dst_mac, src_mac, SETH_PACKET_TYPE_ETHERNET_IPV4);
 	// REQUIRE(pkt_size == SETH_PACKET_ETHERNET_HEADER_LEN);
 

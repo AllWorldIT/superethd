@@ -141,13 +141,12 @@ template <TCPAllowedType T> class TCPPacketTmpl : public T {
 		uint16_t getUrgent() const;
 		void setUrgent(uint16_t newUrgent);
 
-		uint16_t getHeaderOffset() const;
-		uint16_t getHeaderSize() const;
+		uint16_t getHeaderOffset() const override;
+		uint16_t getHeaderSize() const override;
+		uint16_t getPacketSize() const override;
 
-		uint16_t getPacketSize() const;
-
-		std::string asText() const;
-		std::string asBinary() const;
+		std::string asText() const override;
+		std::string asBinary() const override;
 };
 
 // Define types we plan to use

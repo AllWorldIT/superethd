@@ -60,8 +60,8 @@ class IPPacket : public EthernetPacket {
 		uint8_t getVersion() const;
 		void setVersion(uint8_t newVersion);
 
-		uint16_t getHeaderOffset() const;
+		uint16_t getHeaderOffset() const override;
 
-		std::string asText() const;
-		std::string asBinary() const;
+		std::string asText() const override;
+		std::string asBinary() const override;
 };

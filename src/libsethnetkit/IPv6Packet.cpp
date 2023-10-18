@@ -21,6 +21,7 @@
 #include "IPPacket.hpp"
 
 void IPv6Packet::_clear() {
+	setEthertype(SETH_PACKET_TYPE_ETHERNET_IPV6);
 	setVersion(SETH_PACKET_IP_VERSION_IPV6);
 
 	traffic_class = 0;
@@ -79,6 +80,7 @@ uint16_t IPv6Packet::getHeaderSize() const {
 	// TODO: include header options size
 	return sizeof(ipv6_header_t);
 }
+uint16_t IPv6Packet::getPacketSize() const { return getHeaderOffset() + getHeaderSize() + getPayloadSize(); }
 
 std::string IPv6Packet::asText() const {
 	std::ostringstream oss;

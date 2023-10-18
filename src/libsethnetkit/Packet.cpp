@@ -21,9 +21,7 @@
 
 void Packet::_clear() { payload.clear(); }
 
-Packet::Packet() {
-	_clear();
-};
+Packet::Packet() { _clear(); };
 
 Packet::Packet(const std::vector<uint8_t> &data) : Packet() {
 	// Base class parseing of the data we got
@@ -35,7 +33,7 @@ Packet::~Packet() = default;
 
 void Packet::clear() { _clear(); }
 
-void Packet::parse(const std::vector<uint8_t> &data) { }
+void Packet::parse(const std::vector<uint8_t> &data) {}
 
 // Payload handling
 void Packet::addPayload(const std::vector<uint8_t> &data) { payload = data; }
@@ -46,11 +44,20 @@ const std::vector<uint8_t> &Packet::getPayload() const { return payload; };
 uint16_t Packet::getPayloadSize() const { return payload.size(); }
 void Packet::resizePayload(uint16_t newSize) { payload.resize(newSize); }
 
+
+uint16_t Packet::getHeaderOffset() const { return 0; }
+uint16_t Packet::getHeaderSize() const { return 0; }
+uint16_t Packet::getPacketSize() const { return getHeaderOffset() + getHeaderSize(); }
+
 // Print packet handling
-void Packet::printHex() const { std::cout << asHex() << std::endl; }
+void Packet::printHex() const {
+	std::cout << "==> Hex Dump" << std::endl;
+	std::cout << asHex() << std::endl;
+}
+
 void Packet::printText() const { std::cout << asText() << std::endl; }
 
-//int Packet::compare(void *cmp, uint16_t len) { return std::memcmp(getPointer(), cmp, len); }
+// int Packet::compare(void *cmp, uint16_t len) { return std::memcmp(getPointer(), cmp, len); }
 
 std::string Packet::asHex() const {
 	std::ostringstream oss;
@@ -62,11 +69,16 @@ std::string Packet::asHex() const {
 			if (count != 0) {
 				oss << std::endl; // Add a new line for every line except the first
 			}
-			oss << std::hex << std::setfill('0') << std::setw(4) << count << ": ";
+
+			// oss << std::hex << std::setfill('0') << std::setw(4) << count << ": ";
+			oss << std::format("{:04X}", count) << ": ";
+		} else {
+			oss << " ";
 		}
 
 		// Print the byte in hex format
-		oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+		oss << std::format("{:02X}", static_cast<uint8_t>(byte));
+		// oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
 
 		count++;
 	}
@@ -78,12 +90,13 @@ std::string Packet::asText() const {
 	std::ostringstream oss;
 
 	oss << "==> Packet" << std::endl;
-//	oss << "Size           : " << getSize() << std::endl;
+	//	oss << "Size           : " << getSize() << std::endl;
 
 	return oss.str();
 }
 
 std::string Packet::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
+	DEBUG_PRINT();
 	return oss.str();
 }

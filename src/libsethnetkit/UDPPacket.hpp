@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #pragma once
 
 #include "IPv4Packet.hpp"
@@ -59,13 +59,13 @@ template <UDPAllowedType T> class UDPPacketTmpl : public T {
 
 		uint16_t getChecksum() const;
 
-		uint16_t getHeaderOffset() const;
-		uint16_t getHeaderSize() const;
-
-		uint16_t getPacketSize() const;
-
-		std::string asText() const;
-		std::string asBinary() const;
+		uint16_t getHeaderOffset() const override;
+		uint16_t getHeaderSize() const override;
+		uint16_t getPacketSize() const override;
+		uint16_t getLengthLayer4() const;
+		
+		std::string asText() const override;
+		std::string asBinary() const override;
 };
 
 // Define types we plan to use

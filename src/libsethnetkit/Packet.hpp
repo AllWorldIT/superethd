@@ -56,12 +56,16 @@ class Packet {
 		uint16_t getPayloadSize() const;
 		void resizePayload(uint16_t newSize);
 
+		virtual uint16_t getHeaderOffset() const;
+		virtual uint16_t getHeaderSize() const;
+		virtual uint16_t getPacketSize() const;
+
 		void printHex() const;
 		void printText() const;
 
 		int compare(void *cmp, uint16_t len);
 
-		std::string asHex() const;
-		std::string asText() const;
-		std::string asBinary() const;
+		virtual std::string asHex() const;
+		virtual std::string asText() const;
+		virtual std::string asBinary() const;
 };

@@ -46,7 +46,7 @@ uint16_t IPPacket::getHeaderOffset() const { return EthernetPacket::getHeaderOff
 std::string IPPacket::asText() const {
 	std::ostringstream oss;
 
-	oss << Packet::asText() << std::endl;
+	oss << EthernetPacket::asText() << std::endl;
 
 	oss << "==> IP" << std::endl;
 
@@ -58,4 +58,7 @@ std::string IPPacket::asText() const {
 	return oss.str();
 }
 
-std::string IPPacket::asBinary() const { return EthernetPacket::asBinary(); }
+std::string IPPacket::asBinary() const {
+	DEBUG_PRINT();
+	return EthernetPacket::asBinary();
+}

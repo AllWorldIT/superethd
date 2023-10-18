@@ -18,15 +18,20 @@
  */
 
 #include "UDPPacket.hpp"
+#include "exceptions.hpp"
 #include <type_traits>
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::_clear() {
 
 	// Switch out the method used to set the Layer 4 protocol
 	if constexpr (std::is_same<IPv4Packet, T>::value) {
-		T::setProtocol(SETH_PACKET_IP_PROTOCOL_TCP);
+		DEBUG_PRINT("Protocol is IPv4Packet");
+		T::setProtocol(SETH_PACKET_IP_PROTOCOL_UDP);
 	} else if constexpr (std::is_same<IPv6Packet, T>::value) {
-		T::setNextHeader(SETH_PACKET_IP_PROTOCOL_TCP);
+		DEBUG_PRINT("Protocol is IPv6Packet");
+		T::setNextHeader(SETH_PACKET_IP_PROTOCOL_UDP);
+	} else {
+		throw PacketNotSupportedEception("Unknown packet");
 	}
 
 	src_port = 0;
@@ -61,9 +66,12 @@ template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSize() const { r
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getPacketSize() const {
 	// TODO
-	return getHeaderOffset() + getHeaderSize() + T::getPayloadSize();
-};
+	return getHeaderOffset() + getLengthLayer4();
+}
 
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getLengthLayer4() const { return getHeaderSize() + T::getPayloadSize(); }
+
+// TODO: Checksum
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksum() const { return seth_be_to_cpu_16(checksum); }
 
 template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asText() const {
@@ -80,15 +88,26 @@ template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asText() const {
 	oss << std::format("Dest. Port     : {}", getDstPort()) << std::endl;
 	oss << std::format("Checksum       : {}", getChecksum()) << std::endl;
 
-	oss << std::format("Length         : {}", getPacketSize()) << std::endl;
+	oss << std::format("Length         : {}", getLengthLayer4()) << std::endl;
 
 	return oss.str();
 }
 
 template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
-
+	DEBUG_PRINT();
 	oss << T::asBinary();
+
+	udp_header_t header;
+
+	header.src_port = src_port;
+	header.dst_port = dst_port;
+	header.length = seth_cpu_to_be_16(getLengthLayer4());
+	// FIXME
+	header.checksum = 0;
+
+	oss.write(reinterpret_cast<const char *>(&header), sizeof(udp_header_t));
+	oss.write(reinterpret_cast<const char *>(T::getPayloadPointer()), T::getPayloadSize());
 
 	return oss.str();
 }

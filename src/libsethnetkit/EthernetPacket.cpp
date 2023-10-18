@@ -86,7 +86,7 @@ std::string EthernetPacket::asText() const {
 
 std::string EthernetPacket::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
-
+	DEBUG_PRINT();
 	oss << Packet::asBinary();
 
 	ethernet_header_t header;
