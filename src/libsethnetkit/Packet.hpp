@@ -63,9 +63,9 @@ class Packet {
 		void printHex() const;
 		void printText() const;
 
-		int compare(void *cmp, uint16_t len);
+		bool compare(std::string bin);
 
-		virtual std::string asHex() const;
+			virtual std::string asHex() const;
 		virtual std::string asText() const;
 		virtual std::string asBinary() const;
 };

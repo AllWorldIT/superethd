@@ -27,11 +27,10 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "config.h"
 }
 
 #include "common.hpp"
+#include "config.hpp"
 #include "debug.hpp"
 #include "superethd.hpp"
 #include "util.hpp"

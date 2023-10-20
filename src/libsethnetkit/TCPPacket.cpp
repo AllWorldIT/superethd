@@ -21,6 +21,7 @@
 #include "IPPacket.hpp"
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
+#include "checksum.hpp"
 
 template <TCPAllowedType T> void TCPPacketTmpl<T>::_clear() {
 
@@ -35,7 +36,7 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::_clear() {
 	dst_port = 0;
 	sequence = 0;
 	ack = 0;
-	offset = 0;
+	offset = 5;
 
 	opt_cwr = false;
 	opt_ece = false;
@@ -109,19 +110,52 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::setOptFIN(bool newOptFin) { o
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getWindow() const { return seth_be_to_cpu_32(window); }
 template <TCPAllowedType T> void TCPPacketTmpl<T>::setWindow(uint16_t newWindow) { ack = seth_be_to_cpu_32(newWindow); }
 
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getChecksum() const { return seth_be_to_cpu_32(checksum); }
-
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getUrgent() const { return seth_be_to_cpu_32(urgent); }
 template <TCPAllowedType T> void TCPPacketTmpl<T>::setUrgent(uint16_t newUrgent) { ack = seth_be_to_cpu_32(newUrgent); }
 
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getChecksumLayer4() const {
+	// Populate UDP header to add onto the layer 3 pseudo header
+	tcp_header_t header;
+
+	header.src_port = src_port;
+	header.dst_port = dst_port;
+	header.sequence = sequence;
+	header.ack = ack;
+	header.offset = offset;
+	header.reserved = 0;
+	header.options.cwr = opt_cwr;
+	header.options.ece = opt_ece;
+	header.options.urg = opt_urg;
+	header.options.ack = opt_ack;
+	header.options.psh = opt_psh;
+	header.options.rst = opt_rst;
+	header.options.syn = opt_syn;
+	header.options.fin = opt_fin;
+
+	header.window = window;
+	header.urgent = urgent;
+
+	header.checksum = 0;
+
+	// Grab the layer3 checksum
+	uint32_t partial_checksum = T::getPseudoChecksumLayer3(getLayer4Size());
+	// Add the UDP packet header
+	partial_checksum = compute_checksum_partial((uint8_t *)&header, sizeof(tcp_header_t), partial_checksum);
+	// Add payload
+	partial_checksum = compute_checksum_partial((uint8_t *)TCPPacketTmpl<T>::getPayloadPointer(),
+												TCPPacketTmpl<T>::getPayloadSize(), partial_checksum);
+	// Finalize checksum and return
+	return compute_checksum_finalize(partial_checksum);
+}
+
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getHeaderOffset() const { return T::getHeaderOffset() + T::getHeaderSize(); }
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getHeaderSize() const { return sizeof(tcp_header_t); }
-
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getPacketSize() const {
-	// TODO
-	return getHeaderOffset() + getHeaderSize() + T::getPayloadSize();
-};
-
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getHeaderSizeTotal() const {
+	return T::getHeaderSizeTotal() + getHeaderSize();
+}
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getLayer4Size() const {
+	return getHeaderSize() + TCPPacketTmpl<T>::getPayloadSize();
+}
 template <TCPAllowedType T> std::string TCPPacketTmpl<T>::asText() const {
 	std::ostringstream oss;
 
@@ -136,7 +170,7 @@ template <TCPAllowedType T> std::string TCPPacketTmpl<T>::asText() const {
 	oss << std::format("Dest. Port     : {}", getDstPort()) << std::endl;
 	oss << std::format("Sequence       : {}", getSequence()) << std::endl;
 	oss << std::format("Ack            : {}", getAck()) << std::endl;
-	oss << std::format("IHL            : {}", getOffset()) << std::endl;
+	oss << std::format("Offset         : {}", getOffset()) << std::endl;
 	oss << std::format("Options        : ") << std::endl;
 	oss << "           FIN: " << getOptFIN() << std::endl;
 	oss << "           SYN: " << getOptSYN() << std::endl;
@@ -146,7 +180,7 @@ template <TCPAllowedType T> std::string TCPPacketTmpl<T>::asText() const {
 	oss << "           URG: " << getOptURG() << std::endl;
 	oss << "           ECE: " << getOptECE() << std::endl;
 	oss << std::format("Window         : {}", getWindow()) << std::endl;
-	oss << std::format("Checksum       : {}", getChecksum()) << std::endl;
+	oss << std::format("Checksum       : {:04X}", getChecksumLayer4()) << std::endl;
 	oss << std::format("Urgent         : {}", getUrgent()) << std::endl;
 
 	return oss.str();
@@ -156,6 +190,34 @@ template <TCPAllowedType T> std::string TCPPacketTmpl<T>::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
 
 	oss << T::asBinary();
+
+	// Build header to dump into the stream
+	tcp_header_t header;
+
+	header.src_port = src_port;
+	header.dst_port = dst_port;
+	header.sequence = sequence;
+	header.ack = ack;
+	header.offset = offset;
+	header.reserved = 0;
+	header.options.cwr = opt_cwr;
+	header.options.ece = opt_ece;
+	header.options.urg = opt_urg;
+	header.options.ack = opt_ack;
+	header.options.psh = opt_psh;
+	header.options.rst = opt_rst;
+	header.options.syn = opt_syn;
+	header.options.fin = opt_fin;
+
+	header.window = window;
+	header.urgent = urgent;
+
+	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+
+	// Write out header to stream
+	oss.write(reinterpret_cast<const char *>(&header), sizeof(tcp_header_t));
+	// Write out payload to stream
+	oss.write(reinterpret_cast<const char *>(TCPPacketTmpl<T>::getPayloadPointer()), TCPPacketTmpl<T>::getPayloadSize());
 
 	return oss.str();
 }

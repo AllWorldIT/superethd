@@ -21,7 +21,7 @@
 
 #include "IPPacket.hpp"
 
-#define SETH_PACKET_TYPE_ETHERNET_IPV4 0x0800
+#define SETH_PACKET_ETHERTYPE_ETHERNET_IPV4 0x0800
 
 #define SETH_PACKET_IPV4_HEADER_LEN 20
 #define SETH_PACKET_IPV4_IP_LEN 4
@@ -97,7 +97,7 @@ class IPv4Packet : public IPPacket {
 		void setProtocol(uint8_t newProtocol);
 
 		uint16_t getChecksum() const;
-		void setChecksum(uint16_t newChecksum) const;
+//		void setChecksum(uint16_t newChecksum) const;
 
 		std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> getDstAddr() const;
 		void setDstAddr(std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> newDstAddr);
@@ -105,9 +105,11 @@ class IPv4Packet : public IPPacket {
 		std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> getSrcAddr() const;
 		void setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> newSrcAddr);
 
-		uint16_t getHeaderOffset() const override;
+		uint32_t getPseudoChecksumLayer3(uint16_t length) const;
+
 		uint16_t getHeaderSize() const override;
-		uint16_t getPacketSize() const override;
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer3Size() const override;
 
 		std::string asText() const override;
 		std::string asBinary() const override;

@@ -44,7 +44,6 @@ const std::vector<uint8_t> &Packet::getPayload() const { return payload; };
 uint16_t Packet::getPayloadSize() const { return payload.size(); }
 void Packet::resizePayload(uint16_t newSize) { payload.resize(newSize); }
 
-
 uint16_t Packet::getHeaderOffset() const { return 0; }
 uint16_t Packet::getHeaderSize() const { return 0; }
 uint16_t Packet::getPacketSize() const { return getHeaderOffset() + getHeaderSize(); }
@@ -57,7 +56,10 @@ void Packet::printHex() const {
 
 void Packet::printText() const { std::cout << asText() << std::endl; }
 
-// int Packet::compare(void *cmp, uint16_t len) { return std::memcmp(getPointer(), cmp, len); }
+bool Packet::compare(std::string bin) {
+	std::string pkt = asBinary();
+	return pkt == bin;
+}
 
 std::string Packet::asHex() const {
 	std::ostringstream oss;
@@ -78,7 +80,6 @@ std::string Packet::asHex() const {
 
 		// Print the byte in hex format
 		oss << std::format("{:02X}", static_cast<uint8_t>(byte));
-		// oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
 
 		count++;
 	}
@@ -97,6 +98,5 @@ std::string Packet::asText() const {
 
 std::string Packet::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
-	DEBUG_PRINT();
 	return oss.str();
 }

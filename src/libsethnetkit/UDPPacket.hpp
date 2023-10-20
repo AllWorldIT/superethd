@@ -57,13 +57,13 @@ template <UDPAllowedType T> class UDPPacketTmpl : public T {
 		uint16_t getDstPort() const;
 		void setDstPort(uint16_t newDstPort);
 
-		uint16_t getChecksum() const;
+		uint16_t getChecksumLayer4() const;
 
 		uint16_t getHeaderOffset() const override;
 		uint16_t getHeaderSize() const override;
-		uint16_t getPacketSize() const override;
-		uint16_t getLengthLayer4() const;
-		
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer4Size() const;
+
 		std::string asText() const override;
 		std::string asBinary() const override;
 };

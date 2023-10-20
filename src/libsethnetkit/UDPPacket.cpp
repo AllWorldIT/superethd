@@ -18,6 +18,7 @@
  */
 
 #include "UDPPacket.hpp"
+#include "checksum.hpp"
 #include "exceptions.hpp"
 #include <type_traits>
 
@@ -25,10 +26,8 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::_clear() {
 
 	// Switch out the method used to set the Layer 4 protocol
 	if constexpr (std::is_same<IPv4Packet, T>::value) {
-		DEBUG_PRINT("Protocol is IPv4Packet");
 		T::setProtocol(SETH_PACKET_IP_PROTOCOL_UDP);
 	} else if constexpr (std::is_same<IPv6Packet, T>::value) {
-		DEBUG_PRINT("Protocol is IPv6Packet");
 		T::setNextHeader(SETH_PACKET_IP_PROTOCOL_UDP);
 	} else {
 		throw PacketNotSupportedEception("Unknown packet");
@@ -61,18 +60,34 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::setSrcPort(uint16_t newSrcPor
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getDstPort() const { return seth_be_to_cpu_16(dst_port); }
 template <UDPAllowedType T> void UDPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = seth_cpu_to_be_16(newDstPort); }
 
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderOffset() const { return T::getHeaderOffset() + T::getHeaderSize(); }
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSize() const { return sizeof(udp_header_t); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksumLayer4() const {
+	// Populate UDP header to add onto the layer 3 pseudo header
+	udp_header_t header;
 
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getPacketSize() const {
-	// TODO
-	return getHeaderOffset() + getLengthLayer4();
+	header.src_port = src_port;
+	header.dst_port = dst_port;
+	header.length = seth_cpu_to_be_16(getLayer4Size());
+	header.checksum = 0;
+
+	// Grab the layer3 checksum
+	uint32_t partial_checksum = T::getPseudoChecksumLayer3(getLayer4Size());
+	// Add the UDP packet header
+	partial_checksum = compute_checksum_partial((uint8_t *)&header, sizeof(udp_header_t), partial_checksum);
+	// Add payload
+	partial_checksum = compute_checksum_partial((uint8_t *)UDPPacketTmpl<T>::getPayloadPointer(),
+												UDPPacketTmpl<T>::getPayloadSize(), partial_checksum);
+	// Finalize checksum and return
+	return compute_checksum_finalize(partial_checksum);
 }
 
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getLengthLayer4() const { return getHeaderSize() + T::getPayloadSize(); }
-
-// TODO: Checksum
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksum() const { return seth_be_to_cpu_16(checksum); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderOffset() const { return T::getHeaderOffset() + T::getHeaderSize(); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSize() const { return sizeof(udp_header_t); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSizeTotal() const {
+	return T::getHeaderSizeTotal() + getHeaderSize();
+}
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getLayer4Size() const {
+	return getHeaderSize() + UDPPacketTmpl<T>::getPayloadSize();
+}
 
 template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asText() const {
 	std::ostringstream oss;
@@ -86,28 +101,30 @@ template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asText() const {
 
 	oss << std::format("Source Port    : {}", getSrcPort()) << std::endl;
 	oss << std::format("Dest. Port     : {}", getDstPort()) << std::endl;
-	oss << std::format("Checksum       : {}", getChecksum()) << std::endl;
+	oss << std::format("Checksum       : {:04X}", getChecksumLayer4()) << std::endl;
 
-	oss << std::format("Length         : {}", getLengthLayer4()) << std::endl;
+	oss << std::format("Length         : {}", getLayer4Size()) << std::endl;
 
 	return oss.str();
 }
 
 template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
-	DEBUG_PRINT();
+
 	oss << T::asBinary();
 
+	// Build header to dump into the stream
 	udp_header_t header;
 
 	header.src_port = src_port;
 	header.dst_port = dst_port;
-	header.length = seth_cpu_to_be_16(getLengthLayer4());
-	// FIXME
-	header.checksum = 0;
+	header.length = seth_cpu_to_be_16(getLayer4Size());
+	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
 
+	// Write out header to stream
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(udp_header_t));
-	oss.write(reinterpret_cast<const char *>(T::getPayloadPointer()), T::getPayloadSize());
+	// Write out payload to stream
+	oss.write(reinterpret_cast<const char *>(UDPPacketTmpl<T>::getPayloadPointer()), UDPPacketTmpl<T>::getPayloadSize());
 
 	return oss.str();
 }

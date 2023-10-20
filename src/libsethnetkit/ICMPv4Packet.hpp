@@ -61,13 +61,13 @@ class ICMPv4Packet : public IPv4Packet {
 		uint8_t getCode() const;
 		void setCode(uint8_t newCode);
 
-		uint8_t getChecksum() const;
+		uint16_t getChecksumLayer4() const;
 
-		uint16_t getHeaderOffset() const;
-		uint16_t getHeaderSize() const;
+		uint16_t getHeaderOffset() const override;
+		uint16_t getHeaderSize() const override;
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer4Size() const;
 
-		uint16_t getPacketSize() const;
-
-		std::string asText() const;
-		std::string asBinary() const;
+		std::string asText() const override;
+		std::string asBinary() const override;
 };

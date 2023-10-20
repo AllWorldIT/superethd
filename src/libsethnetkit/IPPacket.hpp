@@ -61,7 +61,9 @@ class IPPacket : public EthernetPacket {
 		void setVersion(uint8_t newVersion);
 
 		uint16_t getHeaderOffset() const override;
+		virtual uint16_t getHeaderSizeTotal() const = 0;
+		virtual uint16_t getLayer3Size() const = 0;
 
-		std::string asText() const override;
+			std::string asText() const override;
 		std::string asBinary() const override;
 };

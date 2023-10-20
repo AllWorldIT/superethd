@@ -66,8 +66,8 @@ std::string EthernetPacket::asText() const {
 
 	oss << "==> Ethernet" << std::endl;
 
-	oss << std::format("*Header Offset : {}", getHeaderOffset()) << std::endl;
-	oss << std::format("*Header Size   : {}", getHeaderSize()) << std::endl;
+	oss << std::format("*Header Offset : {}", EthernetPacket::getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size   : {}", EthernetPacket::getHeaderSize()) << std::endl;
 
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> mac;
 
@@ -86,7 +86,7 @@ std::string EthernetPacket::asText() const {
 
 std::string EthernetPacket::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
-	DEBUG_PRINT();
+
 	oss << Packet::asBinary();
 
 	ethernet_header_t header;

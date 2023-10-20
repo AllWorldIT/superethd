@@ -50,8 +50,8 @@ std::string IPPacket::asText() const {
 
 	oss << "==> IP" << std::endl;
 
-	oss << std::format("*Header Offset : {}", getHeaderOffset()) << std::endl;
-	oss << std::format("*Header Size   : {}", getHeaderSize()) << std::endl;
+	oss << std::format("*Header Offset : {}", IPPacket::getHeaderOffset()) << std::endl;
+	oss << std::format("*Header Size   : {}", IPPacket::getHeaderSize()) << std::endl;
 
 	oss << std::format("Version        : {}", getVersion()) << std::endl;
 
@@ -59,6 +59,5 @@ std::string IPPacket::asText() const {
 }
 
 std::string IPPacket::asBinary() const {
-	DEBUG_PRINT();
 	return EthernetPacket::asBinary();
 }

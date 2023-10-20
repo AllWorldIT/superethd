@@ -93,3 +93,14 @@ t_420_packet_ethernet_ipv4_icmp = executable('t_420-packet-ethernet-ipv4-icmp',
   cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and ICMP header', t_420_packet_ethernet_ipv4_icmp)
+
+
+t_425_packet_ethernet_ipv4_tcp = executable('t_425-packet-ethernet-ipv4-tcp',
+  't_425-packet-ethernet-ipv4-tcp.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Create an ethernet packet with an IPv4 header and TCP header', t_425_packet_ethernet_ipv4_tcp)

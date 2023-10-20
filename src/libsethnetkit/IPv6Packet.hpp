@@ -21,7 +21,7 @@
 
 #include "IPPacket.hpp"
 
-#define SETH_PACKET_TYPE_ETHERNET_IPV6 0x86DD
+#define SETH_PACKET_ETHERTYPE_ETHERNET_IPV6 0x86DD
 
 #define SETH_PACKET_IPV6_IP_LEN 16
 
@@ -80,9 +80,11 @@ class IPv6Packet : public IPPacket {
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> getSrcAddr() const;
 		void setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcAddr);
 
-		uint16_t getHeaderOffset() const override;
+		uint32_t getPseudoChecksumLayer3(uint16_t length) const;
+
 		uint16_t getHeaderSize() const override;
-		uint16_t getPacketSize() const override;
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer3Size() const override;
 
 		std::string asText() const override;
 		std::string asBinary() const override;

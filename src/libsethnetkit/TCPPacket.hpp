@@ -22,7 +22,8 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
-typedef struct __seth_packet {
+typedef struct __seth_packed {
+#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t cwr : 1;
 		uint8_t ece : 1;
 		uint8_t urg : 1;
@@ -31,6 +32,16 @@ typedef struct __seth_packet {
 		uint8_t rst : 1;
 		uint8_t syn : 1;
 		uint8_t fin : 1;
+#else
+		uint8_t fin : 1;
+		uint8_t syn : 1;
+		uint8_t rst : 1;
+		uint8_t psh : 1;
+		uint8_t ack : 1;
+		uint8_t urg : 1;
+		uint8_t ece : 1;
+		uint8_t cwr : 1;
+#endif
 } tcp_options_header_t;
 
 typedef struct __seth_packed {
@@ -46,7 +57,7 @@ typedef struct __seth_packed {
 		uint8_t reserved : 4;	 // Reserved bits
 #else
 		uint8_t reserved : 4; // Reserved bits
-		uint8_t ihl : 4;	  // Data offset
+		uint8_t offset : 4;	  // Data offset
 #endif
 
 		tcp_options_header_t options; // TCP optoins
@@ -135,15 +146,15 @@ template <TCPAllowedType T> class TCPPacketTmpl : public T {
 		uint16_t getWindow() const;
 		void setWindow(uint16_t newWindow);
 
-		uint16_t getChecksum() const;
-		void setChecksum(uint16_t newChecksum);
-
 		uint16_t getUrgent() const;
 		void setUrgent(uint16_t newUrgent);
 
+		uint16_t getChecksumLayer4() const;
+
 		uint16_t getHeaderOffset() const override;
 		uint16_t getHeaderSize() const override;
-		uint16_t getPacketSize() const override;
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer4Size() const;
 
 		std::string asText() const override;
 		std::string asBinary() const override;

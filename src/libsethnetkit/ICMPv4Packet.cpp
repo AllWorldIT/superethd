@@ -20,6 +20,7 @@
 #include "ICMPv4Packet.hpp"
 #include "IPPacket.hpp"
 #include "IPv4Packet.hpp"
+#include "checksum.hpp"
 
 void ICMPv4Packet::_clear() {
 	setProtocol(SETH_PACKET_IP_PROTOCOL_ICMP4);
@@ -51,15 +52,31 @@ void ICMPv4Packet::setType(uint8_t newType) { type = newType; }
 uint8_t ICMPv4Packet::getCode() const { return code; }
 void ICMPv4Packet::setCode(uint8_t newCode) { code = newCode; }
 
-uint8_t ICMPv4Packet::getChecksum() const { return seth_be_to_cpu_16(checksum); }
+uint16_t ICMPv4Packet::getChecksumLayer4() const {
+	// Populate UDP header to add onto the layer 3 pseudo header
+	icmp_header_t header;
+
+	header.type = type;
+	header.code = code;
+	header.checksum = 0;
+	header.unused = 0;
+
+	// Grab the layer3 checksum
+	uint32_t partial_checksum = 0;
+	//uint32_t partial_checksum = IPv4Packet::getPseudoChecksumLayer3(getLayer4Size());
+	// Add the UDP packet header
+	partial_checksum = compute_checksum_partial((uint8_t *)&header, sizeof(icmp_header_t), partial_checksum);
+	// Add payload
+	partial_checksum =
+		compute_checksum_partial((uint8_t *)IPv4Packet::getPayloadPointer(), IPv4Packet::getPayloadSize(), partial_checksum);
+	// Finalize checksum and return
+	return compute_checksum_finalize(partial_checksum);
+}
 
 uint16_t ICMPv4Packet::getHeaderOffset() const { return IPv4Packet::getHeaderOffset() + IPv4Packet::getHeaderSize(); }
 uint16_t ICMPv4Packet::getHeaderSize() const { return sizeof(icmp_header_t); }
-
-uint16_t ICMPv4Packet::getPacketSize() const {
-	// TODO
-	return getHeaderOffset() + getHeaderSize() + getPayloadSize();
-};
+uint16_t ICMPv4Packet::getHeaderSizeTotal() const { return IPv4Packet::getHeaderSizeTotal() + getHeaderSize(); }
+uint16_t ICMPv4Packet::getLayer4Size() const { return getHeaderSize() + ICMPv4Packet::getPayloadSize(); }
 
 std::string ICMPv4Packet::asText() const {
 	std::ostringstream oss;
@@ -73,12 +90,29 @@ std::string ICMPv4Packet::asText() const {
 
 	oss << std::format("Type           : {}", getType()) << std::endl;
 	oss << std::format("Code           : {}", getCode()) << std::endl;
-	oss << std::format("Checksum       : {}", getChecksum()) << std::endl;
+	oss << std::format("Checksum       : {:04X}", getChecksumLayer4()) << std::endl;
 
 	return oss.str();
 }
 
 std::string ICMPv4Packet::asBinary() const {
 	std::ostringstream oss(std::ios::binary);
+
+	oss << IPv4Packet::asBinary();
+
+	// Build header to dump into the stream
+	icmp_header_t header;
+
+	header.type = type;
+	header.code = code;
+	header.unused = 0;
+
+	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+
+	// Write out header to stream
+	oss.write(reinterpret_cast<const char *>(&header), sizeof(icmp_header_t));
+	// Write out payload to stream
+	oss.write(reinterpret_cast<const char *>(getPayloadPointer()), getPayloadSize());
+
 	return oss.str();
 }

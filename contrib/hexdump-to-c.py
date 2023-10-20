@@ -12,7 +12,7 @@ def hex_dump_to_c_array(hex_dump: str) -> str:
 
     # Format as a C array
     c_array = ', '.join(['0x' + value for value in values])
-    return f"uint8_t data[] = {{ {c_array} }};"
+    return f"const unsigned char data[] = {{ {c_array} }};"
 
 if __name__ == '__main__':
     data = sys.stdin.read()
