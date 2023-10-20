@@ -61,9 +61,7 @@ uint16_t ICMPv4Packet::getChecksumLayer4() const {
 	header.checksum = 0;
 	header.unused = 0;
 
-	// Grab the layer3 checksum
 	uint32_t partial_checksum = 0;
-	//uint32_t partial_checksum = IPv4Packet::getPseudoChecksumLayer3(getLayer4Size());
 	// Add the UDP packet header
 	partial_checksum = compute_checksum_partial((uint8_t *)&header, sizeof(icmp_header_t), partial_checksum);
 	// Add payload

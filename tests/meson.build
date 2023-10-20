@@ -82,6 +82,7 @@ t_412_packet_ethernet_ipv6 = executable('t_412-packet-ethernet-ipv6',
 )
 test('Test handling of ethernet IPv6 packets', t_412_packet_ethernet_ipv6)
 
+
 t_415_packet_ethernet_ipv4_udp = executable('t_415-packet-ethernet-ipv4-udp',
   't_415-packet-ethernet-ipv4-udp.cpp',
   include_directories: inc,
@@ -91,6 +92,16 @@ t_415_packet_ethernet_ipv4_udp = executable('t_415-packet-ethernet-ipv4-udp',
   cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and UDP header', t_415_packet_ethernet_ipv4_udp)
+
+t_417_packet_ethernet_ipv6_udp = executable('t_417-packet-ethernet-ipv6-udp',
+  't_417-packet-ethernet-ipv6-udp.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Create an ethernet packet with an IPv6 header and UDP header', t_417_packet_ethernet_ipv6_udp)
 
 
 t_420_packet_ethernet_ipv4_icmp = executable('t_420-packet-ethernet-ipv4-icmp',
@@ -102,6 +113,16 @@ t_420_packet_ethernet_ipv4_icmp = executable('t_420-packet-ethernet-ipv4-icmp',
   cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and ICMP header', t_420_packet_ethernet_ipv4_icmp)
+
+t_422_packet_ethernet_ipv6_icmp = executable('t_422-packet-ethernet-ipv6-icmp',
+  't_422-packet-ethernet-ipv6-icmp.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Create an ethernet packet with an IPv6 header and ICMP header', t_422_packet_ethernet_ipv6_icmp)
 
 
 t_425_packet_ethernet_ipv4_tcp = executable('t_425-packet-ethernet-ipv4-tcp',

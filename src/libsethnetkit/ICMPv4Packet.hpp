@@ -21,6 +21,8 @@
 
 #include "IPv4Packet.hpp"
 
+#define SETH_PACKET_IP_PROTOCOL_ICMP4 1
+
 typedef struct __seth_packed {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code

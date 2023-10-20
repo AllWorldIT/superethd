@@ -116,24 +116,24 @@ std::string IPv6Packet::asText() const {
 	oss << std::format("*Header Offset  : {}", IPv6Packet::getHeaderOffset()) << std::endl;
 	oss << std::format("*Header Size    : {}", IPv6Packet::getHeaderSize()) << std::endl;
 
-	oss << std::format("Version        : {}", getVersion()) << std::endl;
-	oss << std::format("Traffic Class  : {}", getTrafficClass()) << std::endl;
-	oss << std::format("Flow Label     : {}", getFlowLabel()) << std::endl;
-	oss << std::format("Payload Length : {}", _ipv6HeaderPayloadLength()) << std::endl;
-	oss << std::format("Next Header    : {}", getNextHeader()) << std::endl;
-	oss << std::format("Hop Limit      : {}", getHopLimit()) << std::endl;
+	oss << std::format("Version         : {}", getVersion()) << std::endl;
+	oss << std::format("Traffic Class   : {}", getTrafficClass()) << std::endl;
+	oss << std::format("Flow Label      : {}", getFlowLabel()) << std::endl;
+	oss << std::format("Payload Length  : {}", _ipv6HeaderPayloadLength()) << std::endl;
+	oss << std::format("Next Header     : {}", getNextHeader()) << std::endl;
+	oss << std::format("Hop Limit       : {}", getHopLimit()) << std::endl;
 
 	std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> ip;
 
 	ip = getDstAddr();
-	oss << std::format("Destination IP: "
+	oss << std::format("Destination IP  : "
 					   "{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}",
 					   ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7], ip[8], ip[9], ip[10], ip[11], ip[12], ip[13], ip[14],
 					   ip[15])
 		<< std::endl;
 
 	ip = getSrcAddr();
-	oss << std::format("Source IP     : "
+	oss << std::format("Source IP       : "
 					   "{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}:{:02X}{:02X}",
 					   ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7], ip[8], ip[9], ip[10], ip[11], ip[12], ip[13], ip[14],
 					   ip[15])

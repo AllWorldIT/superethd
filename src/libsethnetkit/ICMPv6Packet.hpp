@@ -21,11 +21,14 @@
 
 #include "IPv6Packet.hpp"
 
+#define SETH_PACKET_IP_PROTOCOL_ICMP6 58
+
 typedef struct __seth_packed {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code
 		seth_be16_t checksum; // Checksum
-		uint32_t unused;	  // Unused
+		uint32_t unused1;	  // Unused
+		uint32_t unused2;	  // Unused
 } icmp6_header_t;
 
 class ICMPv6Packet : public IPv6Packet {
@@ -53,13 +56,13 @@ class ICMPv6Packet : public IPv6Packet {
 		uint8_t getCode() const;
 		void setCode(uint8_t newCode);
 
-		uint8_t getChecksum() const;
+		uint16_t getChecksumLayer4() const;
 
-		uint16_t getHeaderOffset() const;
-		uint16_t getHeaderSize() const;
+		uint16_t getHeaderOffset() const override;
+		uint16_t getHeaderSize() const override;
+		uint16_t getHeaderSizeTotal() const override;
+		uint16_t getLayer4Size() const;
 
-		uint16_t getPacketSize() const;
-
-		std::string asText() const;
-		std::string asBinary() const;
+		std::string asText() const override;
+		std::string asBinary() const override;
 };

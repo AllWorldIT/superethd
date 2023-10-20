@@ -24,11 +24,6 @@
 #define SETH_PACKET_IP_VERSION_IPV4 0x4
 #define SETH_PACKET_IP_VERSION_IPV6 0x6
 
-#define SETH_PACKET_IP_PROTOCOL_ICMP4 1
-#define SETH_PACKET_IP_PROTOCOL_TCP 6
-#define SETH_PACKET_IP_PROTOCOL_UDP 17
-#define SETH_PACKET_IP_PROTOCOL_ICMP6 58
-
 // IP header definition
 typedef struct __seth_packed {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
@@ -64,6 +59,6 @@ class IPPacket : public EthernetPacket {
 		virtual uint16_t getHeaderSizeTotal() const = 0;
 		virtual uint16_t getLayer3Size() const = 0;
 
-			std::string asText() const override;
+		std::string asText() const override;
 		std::string asBinary() const override;
 };

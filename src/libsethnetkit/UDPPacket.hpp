@@ -22,6 +22,8 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
+#define SETH_PACKET_IP_PROTOCOL_UDP 17
+
 typedef struct __seth_packed {
 		seth_be16_t src_port; // Source port
 		seth_be16_t dst_port; // Destination port

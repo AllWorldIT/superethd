@@ -22,9 +22,6 @@ TEST_CASE("Check creating IPv4 UDP packets", "[ethernet-ipv4-udp]") {
 
 	packet.addPayload(payloadBytes);
 
-	std::cout << "Payload size created: " << payloadString.size() << std::endl;
-	std::cout << "Payload: " << payloadString << std::endl;
-
 	packet.printText();
 	packet.printHex();
 

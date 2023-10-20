@@ -7,6 +7,7 @@
 
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libsethnetkit/ICMPv4Packet.hpp"
+#include "libsethnetkit/ICMPv6Packet.hpp"
 #include "libsethnetkit/IPPacket.hpp"
 #include "libsethnetkit/IPv4Packet.hpp"
 #include "libsethnetkit/IPv6Packet.hpp"

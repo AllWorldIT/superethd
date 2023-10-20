@@ -22,6 +22,8 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
+#define SETH_PACKET_IP_PROTOCOL_TCP 6
+
 typedef struct __seth_packed {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t cwr : 1;
