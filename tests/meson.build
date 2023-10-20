@@ -1,19 +1,18 @@
 # Meson build system.
 # Copyright (C) 2023, AllWorldIT.
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # Build our helper library
@@ -134,3 +133,13 @@ t_425_packet_ethernet_ipv4_tcp = executable('t_425-packet-ethernet-ipv4-tcp',
   cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and TCP header', t_425_packet_ethernet_ipv4_tcp)
+
+t_427_packet_ethernet_ipv6_tcp = executable('t_427-packet-ethernet-ipv6-tcp',
+  't_427-packet-ethernet-ipv6-tcp.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packet_ethernet_ipv6_tcp)
