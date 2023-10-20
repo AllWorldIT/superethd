@@ -46,7 +46,7 @@ template <UDPAllowedType T> UDPPacketTmpl<T>::~UDPPacketTmpl() {}
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::clear() {
 	T::clear();
-	_clear();
+	UDPPacketTmpl<T>::_clear();
 }
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {

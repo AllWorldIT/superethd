@@ -27,9 +27,14 @@
 
 // IPv6 header definition
 typedef struct __seth_packed {
+#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t version : 4;		// IP version (should be 6 for IPv6)
-		uint8_t traffic_class;		// Traffic Class
-		uint32_t flow_label : 20;	// Flow Label
+		uint8_t priority : 4;		// Traffic Class => priority
+#else
+		uint8_t priority : 4; // Traffic Class => priority
+		uint8_t version : 4;  // IP version (should be 6 for IPv6)
+#endif
+		uint32_t flow_label : 24;	// Flow Label
 		seth_be16_t payload_length; // Length of the payload
 		uint8_t next_header;		// Identifies the type of the next header
 		uint8_t hop_limit;			// Similar to TTL in IPv4
@@ -39,7 +44,7 @@ typedef struct __seth_packed {
 
 class IPv6Packet : public IPPacket {
 	protected:
-		uint8_t traffic_class;
+		uint8_t priority;
 		uint32_t flow_label;
 		//		seth_be16_t payload_length;
 		uint8_t next_header; // Type
@@ -49,6 +54,7 @@ class IPv6Packet : public IPPacket {
 
 	private:
 		void _clear();
+		uint16_t _ipv6HeaderPayloadLength() const;
 
 	public:
 		IPv6Packet();

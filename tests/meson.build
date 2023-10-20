@@ -72,6 +72,15 @@ t_410_packet_ethernet_ipv4 = executable('t_410-packet-ethernet-ipv4',
 )
 test('Test handling of ethernet IPv4 packets', t_410_packet_ethernet_ipv4)
 
+t_412_packet_ethernet_ipv6 = executable('t_412-packet-ethernet-ipv6',
+  't_412-packet-ethernet-ipv6.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test handling of ethernet IPv6 packets', t_412_packet_ethernet_ipv6)
 
 t_415_packet_ethernet_ipv4_udp = executable('t_415-packet-ethernet-ipv4-udp',
   't_415-packet-ethernet-ipv4-udp.cpp',

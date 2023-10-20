@@ -37,7 +37,7 @@ ICMPv6Packet::~ICMPv6Packet() {}
 
 void ICMPv6Packet::clear() {
 	IPv6Packet::clear();
-	_clear();
+	ICMPv6Packet::_clear();
 }
 
 void ICMPv6Packet::parse(const std::vector<uint8_t> &data) {

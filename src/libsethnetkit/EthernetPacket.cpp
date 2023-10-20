@@ -39,7 +39,7 @@ EthernetPacket::~EthernetPacket() {}
 
 void EthernetPacket::clear() {
 	Packet::clear();
-	_clear();
+	EthernetPacket::_clear();
 }
 
 void EthernetPacket::parse(const std::vector<uint8_t> &data) {

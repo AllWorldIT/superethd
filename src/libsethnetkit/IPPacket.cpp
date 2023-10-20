@@ -30,7 +30,7 @@ IPPacket::~IPPacket() {}
 
 void IPPacket::clear() {
 	EthernetPacket::clear();
-	_clear();
+	IPPacket::_clear();
 }
 
 void IPPacket::parse(const std::vector<uint8_t> &data) {

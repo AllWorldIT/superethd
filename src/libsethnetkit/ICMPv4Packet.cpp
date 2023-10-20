@@ -38,7 +38,7 @@ ICMPv4Packet::~ICMPv4Packet() {}
 
 void ICMPv4Packet::clear() {
 	IPv4Packet::clear();
-	_clear();
+	ICMPv4Packet::_clear();
 }
 
 void ICMPv4Packet::parse(const std::vector<uint8_t> &data) {

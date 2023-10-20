@@ -79,7 +79,7 @@ IPv4Packet::~IPv4Packet() {}
 
 void IPv4Packet::clear() {
 	IPPacket::clear();
-	_clear();
+	IPv4Packet::_clear();
 }
 
 void IPv4Packet::parse(const std::vector<uint8_t> &data) {

@@ -60,7 +60,7 @@ template <TCPAllowedType T> TCPPacketTmpl<T>::~TCPPacketTmpl() {}
 
 template <TCPAllowedType T> void TCPPacketTmpl<T>::clear() {
 	T::clear();
-	_clear();
+	TCPPacketTmpl<T>::_clear();
 }
 
 template <TCPAllowedType T> void TCPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {
