@@ -1,19 +1,7 @@
 /*
- * IPv4 UDP packet testing.
- * Copyright (C) 2023, AllWorldIT.
+ * SPDX-FileCopyrightText: 2023 Conarx Ltd
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 #include "libtests/framework.hpp"
@@ -23,7 +11,7 @@ TEST_CASE("Check creating IPv4 UDP packets", "[ethernet-ipv4-udp]") {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_ip = {192, 168, 10, 1};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_ip = {172, 16, 101, 102};
-	SequenceDataGenerator payloadSeq = SequenceDataGenerator(100);
+	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(100);
 
 	std::string payloadString = payloadSeq.asString();
 	std::vector<uint8_t> payloadBytes = payloadSeq.asBytes();

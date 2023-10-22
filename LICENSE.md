@@ -2,6 +2,8 @@
 
 This project is dual licensed under the AGPLv3 or commercial licensing terms.
 
+The libaccl library is licensed under the MIT license.
+
 ## AGPLv3 License
 
 ```text
