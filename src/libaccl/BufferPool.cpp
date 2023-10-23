@@ -5,6 +5,7 @@
  */
 
 #include "BufferPool.hpp"
+#include "Buffer.hpp"
 #include <sstream>
 
 namespace accl {
@@ -26,7 +27,7 @@ BufferPool::~BufferPool() {
 std::unique_ptr<Buffer> BufferPool::pop() {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	if (pool.empty()) {
-		throw std::length_error("BufferPool empty");
+		throw std::bad_alloc();
 	}
 	auto buffer = std::move(pool.front());
 	pool.pop_front();
@@ -55,7 +56,7 @@ std::vector<std::unique_ptr<Buffer>> BufferPool::popMany(size_t count) {
 	return result;
 }
 
-void BufferPool::push(std::unique_ptr<Buffer> buffer) {
+void BufferPool::push(std::unique_ptr<Buffer> &buffer) {
 	// Make sure buffer size matches
 	if (buffer->getBufferSize() != buffer_size) {
 		std::ostringstream oss;
@@ -65,6 +66,27 @@ void BufferPool::push(std::unique_ptr<Buffer> buffer) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	pool.push_back(std::move(buffer));
 	cv.notify_one(); // Notify listener thread
+}
+
+
+void BufferPool::push(std::vector<std::unique_ptr<Buffer>> &buffers) {
+	// We can check all the buffers before doing the lock to save on how long we hold the lock
+	for (auto &buffer : buffers) {
+		// Make sure buffer size matches
+		if (buffer->getBufferSize() != buffer_size) {
+			std::ostringstream oss;
+			oss << "Buffer is of incorect size " << buffer->getBufferSize() << " vs. " << buffer_size;
+			throw std::invalid_argument(oss.str());
+		}
+	}
+	// Lock the pool
+	std::unique_lock<std::shared_mutex> lock(mtx);
+	// Move all buffers into the pool in one go
+	std::move(buffers.begin(), buffers.end(), std::back_inserter(pool));
+	// Clear the old buffer list
+	buffers.clear();
+
+	cv.notify_one(); // Notify listener threa
 }
 
 size_t BufferPool::getBufferCount() {

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <new>
 #include <shared_mutex>
 #include <thread>
 
@@ -30,7 +31,10 @@ class BufferPool {
 		std::unique_ptr<Buffer> pop();
 		std::vector<std::unique_ptr<Buffer>> popAll();
 		std::vector<std::unique_ptr<Buffer>> popMany(size_t count);
-		void push(std::unique_ptr<Buffer> buffer);
+
+		void push(Buffer &&buffer);
+		void push(std::unique_ptr<Buffer> &buffer);
+		void push(std::vector<std::unique_ptr<Buffer>> &buffers);
 
 		size_t getBufferCount();
 

@@ -9,8 +9,6 @@
 
 #define CATCH_CONFIG_MAIN
 
-#include <catch2/catch_all.hpp>
-
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/SequenceDataGenerator.hpp"
@@ -24,6 +22,8 @@
 #include "libsethnetkit/TCPPacket.hpp"
 #include "libsethnetkit/UDPPacket.hpp"
 #include "libsethnetkit/checksum.hpp"
+#include <catch2/catch_all.hpp>
+#include <memory>
 
 #include "util.hpp"
 

@@ -36,7 +36,7 @@ TEST_CASE("Check we cannot exceed buffer size with append", "[buffers]") {
 
 	buffer.append(reinterpret_cast<const uint8_t *>(test_string.c_str()), test_string.length());
 
-	SECTION("Expect a length_error is thrown if we try exceed the buffer size") {
+	SECTION("Expect a out_of_range is thrown if we try exceed the buffer size") {
 		REQUIRE_THROWS_AS(buffer.append(reinterpret_cast<const uint8_t *>(test_string.c_str()), test_string.length()),
 						  std::out_of_range);
 	}
@@ -62,7 +62,7 @@ TEST_CASE("Check copying data into the buffer manually and setting size", "[buff
 TEST_CASE("Check setting data size manually exceeding the buffer size", "[buffers]") {
 	accl::Buffer buffer = accl::Buffer(5);
 
-	SECTION("Expect a length_error is thrown if we try exceed the buffer size using setDataSize") {
+	SECTION("Expect a out_of_range is thrown if we try exceed the buffer size using setDataSize") {
 		REQUIRE_THROWS_AS(buffer.setDataSize(6), std::out_of_range);
 	}
 }
