@@ -12,3 +12,13 @@ TEST_CASE("Check buffers and buffer pools work", "[buffers]") {
 
 	assert(buffer_pool.getBufferCount() == 10);
 }
+
+
+TEST_CASE("Check retrieving a buffer for use", "[buffers]") {
+	accl::BufferPool buffer_pool = accl::BufferPool(1024, 10);
+
+	assert(buffer_pool.getBufferCount() == 10);
+
+	auto buffer = buffer_pool.pop();
+
+}

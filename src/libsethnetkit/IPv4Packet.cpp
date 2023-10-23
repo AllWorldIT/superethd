@@ -60,7 +60,10 @@ uint16_t IPv4Packet::_getIPv4Checksum() const {
 	return checksum;
 }
 
-IPv4Packet::IPv4Packet(const std::vector<uint8_t> &data) : IPPacket(data) { _clear(); }
+IPv4Packet::IPv4Packet(const std::vector<uint8_t> &data) : IPPacket(data) {
+	_clear();
+	parse(data);
+}
 
 IPv4Packet::~IPv4Packet() {}
 
@@ -70,8 +73,6 @@ void IPv4Packet::clear() {
 }
 
 void IPv4Packet::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	IPPacket::parse(data);
 	setVersion(SETH_PACKET_IP_VERSION_IPV4);
 }
 

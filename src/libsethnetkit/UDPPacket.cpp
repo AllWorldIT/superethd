@@ -27,7 +27,10 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::_clear() {
 
 template <UDPAllowedType T> UDPPacketTmpl<T>::UDPPacketTmpl() : T() { _clear(); }
 
-template <UDPAllowedType T> UDPPacketTmpl<T>::UDPPacketTmpl(const std::vector<uint8_t> &data) : T(data) {}
+template <UDPAllowedType T> UDPPacketTmpl<T>::UDPPacketTmpl(const std::vector<uint8_t> &data) : T(data) {
+	_clear();
+	parse(data);
+}
 
 template <UDPAllowedType T> UDPPacketTmpl<T>::~UDPPacketTmpl() {}
 
@@ -37,7 +40,6 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::clear() {
 }
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
 	T::parse(data);
 }
 

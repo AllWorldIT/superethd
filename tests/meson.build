@@ -15,7 +15,49 @@ libs = [libsuperethd, libsethnetkit, libsuperethdtest]
 
 
 #
-# Checksum function tests
+# Buffer tests
+#
+
+t_100_buffer = executable('t_100-buffer',
+  't_100-buffer.cpp',
+  include_directories: inc,
+  link_with: libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test buffer functionality', t_100_buffer)
+
+t_102_buffer_pool = executable('t_102-buffer-pool',
+  't_102-buffer-pool.cpp',
+  include_directories: inc,
+  link_with: libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test buffer pool functionality', t_102_buffer_pool)
+
+
+
+#
+# Sequence generator tests
+#
+
+t_120_sequence_generator = executable('t_120-sequence-generator',
+  't_120-sequence-generator.cpp',
+  include_directories: inc,
+  link_with: libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test buffer pool functionality', t_120_sequence_generator)
+
+
+
+#
+# Checksum tests
 #
 
 t_200_checksums = executable('t_200-checksums',
@@ -26,7 +68,7 @@ t_200_checksums = executable('t_200-checksums',
   c_args: c_args,
   cpp_args: cpp_args,
 )
-test('Checksum functions', t_200_checksums)
+test('Test checksums', t_200_checksums)
 
 
 #

@@ -11,7 +11,10 @@ void IPPacket::_clear() { version = 0; }
 
 IPPacket::IPPacket() : EthernetPacket() { _clear(); }
 
-IPPacket::IPPacket(const std::vector<uint8_t> &data) : EthernetPacket(data) {}
+IPPacket::IPPacket(const std::vector<uint8_t> &data) : EthernetPacket(data) {
+	_clear();
+	parse(data);
+}
 
 IPPacket::~IPPacket() {}
 
@@ -20,10 +23,7 @@ void IPPacket::clear() {
 	IPPacket::_clear();
 }
 
-void IPPacket::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	EthernetPacket::parse(data);
-}
+void IPPacket::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t IPPacket::getVersion() const { return version; }
 void IPPacket::setVersion(uint8_t newVersion) { version = newVersion; }
@@ -45,6 +45,4 @@ std::string IPPacket::asText() const {
 	return oss.str();
 }
 
-std::string IPPacket::asBinary() const {
-	return EthernetPacket::asBinary();
-}
+std::string IPPacket::asBinary() const { return EthernetPacket::asBinary(); }

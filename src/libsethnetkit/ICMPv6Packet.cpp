@@ -19,7 +19,10 @@ void ICMPv6Packet::_clear() {
 
 ICMPv6Packet::ICMPv6Packet() : IPv6Packet() { _clear(); }
 
-ICMPv6Packet::ICMPv6Packet(const std::vector<uint8_t> &data) : IPv6Packet(data) {}
+ICMPv6Packet::ICMPv6Packet(const std::vector<uint8_t> &data) : IPv6Packet(data) {
+	_clear();
+	parse(data);
+}
 
 ICMPv6Packet::~ICMPv6Packet() {}
 
@@ -28,10 +31,7 @@ void ICMPv6Packet::clear() {
 	ICMPv6Packet::_clear();
 }
 
-void ICMPv6Packet::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	IPv6Packet::parse(data);
-}
+void ICMPv6Packet::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t ICMPv6Packet::getType() const { return type; }
 void ICMPv6Packet::setType(uint8_t newType) { type = newType; }

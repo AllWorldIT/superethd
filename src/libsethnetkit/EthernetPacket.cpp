@@ -20,7 +20,10 @@ void EthernetPacket::_clear() {
 
 EthernetPacket::EthernetPacket() : Packet() { _clear(); }
 
-EthernetPacket::EthernetPacket(const std::vector<uint8_t> &data) : Packet(data) {}
+EthernetPacket::EthernetPacket(const std::vector<uint8_t> &data) : Packet(data) {
+	_clear();
+	parse(data);
+}
 
 EthernetPacket::~EthernetPacket() {}
 
@@ -30,8 +33,6 @@ void EthernetPacket::clear() {
 }
 
 void EthernetPacket::parse(const std::vector<uint8_t> &data) {
-	// hell oworld
-	Packet::parse(data);
 }
 
 std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> EthernetPacket::getDstMac() const { return dst_mac; }

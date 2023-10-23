@@ -29,7 +29,10 @@ uint16_t IPv6Packet::_ipv6HeaderPayloadLength() const { return getLayer3Size() -
 
 IPv6Packet::IPv6Packet() : IPPacket() { _clear(); }
 
-IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) { _clear(); }
+IPv6Packet::IPv6Packet(const std::vector<uint8_t> &data) : IPPacket(data) {
+	_clear();
+	parse(data);
+}
 
 IPv6Packet::~IPv6Packet() {}
 
@@ -39,8 +42,6 @@ void IPv6Packet::clear() {
 }
 
 void IPv6Packet::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	IPPacket::parse(data);
 	setVersion(SETH_PACKET_IP_VERSION_IPV6);
 }
 

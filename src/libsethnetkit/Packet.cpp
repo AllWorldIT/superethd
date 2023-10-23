@@ -11,7 +11,7 @@ void Packet::_clear() { payload.clear(); }
 Packet::Packet() { _clear(); };
 
 Packet::Packet(const std::vector<uint8_t> &data) : Packet() {
-	// Base class parseing of the data we got
+	_clear();
 	parse(data);
 }
 
@@ -20,7 +20,7 @@ Packet::~Packet() = default;
 
 void Packet::clear() { _clear(); }
 
-void Packet::parse(const std::vector<uint8_t> &data) {}
+void Packet::parse(const std::vector<uint8_t> &data) { }
 
 // Payload handling
 void Packet::addPayload(const std::vector<uint8_t> &data) { payload = data; }
@@ -66,7 +66,7 @@ std::string Packet::asHex() const {
 		}
 
 		// Print the byte in hex format
-		oss << std::format("{:02X}", static_cast<uint8_t>(byte));
+		oss << std::format("{:02X}", byte);
 
 		count++;
 	}

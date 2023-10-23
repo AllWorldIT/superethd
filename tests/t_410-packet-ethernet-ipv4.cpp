@@ -28,3 +28,18 @@ TEST_CASE("Check creating IPv4 packets used with IPv4 ethertype", "[ethernet-ipv
 	std::string bin(reinterpret_cast<const char *>(data), sizeof(data));
 	REQUIRE(packet.compare(bin) == true);
 }
+
+TEST_CASE("Check parsing a packet ends up in the correct result", "[ethernet-ipv4][!mayfail]") {
+	const unsigned char data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+								  0x08, 0x00, 0x45, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00,
+								  0x9e, 0xca, 0xac, 0x10, 0x65, 0x66, 0xc0, 0xa8, 0x0a, 0x01};
+
+	std::vector<uint8_t> data_v(data, data + sizeof(data) / sizeof(data[0]));
+	IPv4Packet packet(data_v);
+
+	packet.printText();
+	packet.printHex();
+
+	std::string bin(reinterpret_cast<const char *>(data), sizeof(data));
+	REQUIRE(packet.compare(bin) == true);
+}

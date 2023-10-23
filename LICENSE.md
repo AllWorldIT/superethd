@@ -1,6 +1,6 @@
 # Licensing Options for Super Ethernet Tunnel
 
-This project is dual licensed under the AGPLv3 or commercial licensing terms.
+The mail project is dual licensed under the AGPLv3 or commercial licensing terms.
 
 The libaccl library is licensed under the MIT license.
 

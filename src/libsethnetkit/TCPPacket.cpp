@@ -41,7 +41,10 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::_clear() {
 
 template <TCPAllowedType T> TCPPacketTmpl<T>::TCPPacketTmpl() : T() { _clear(); }
 
-template <TCPAllowedType T> TCPPacketTmpl<T>::TCPPacketTmpl(const std::vector<uint8_t> &data) : T(data) {}
+template <TCPAllowedType T> TCPPacketTmpl<T>::TCPPacketTmpl(const std::vector<uint8_t> &data) : T(data) {
+	_clear();
+	parse(data);
+}
 
 template <TCPAllowedType T> TCPPacketTmpl<T>::~TCPPacketTmpl() {}
 
@@ -50,10 +53,7 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::clear() {
 	TCPPacketTmpl<T>::_clear();
 }
 
-template <TCPAllowedType T> void TCPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	T::parse(data);
-}
+template <TCPAllowedType T> void TCPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {}
 
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getSrcPort() const { return seth_be_to_cpu_16(src_port); }
 template <TCPAllowedType T> void TCPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = seth_cpu_to_be_16(newSrcPort); }

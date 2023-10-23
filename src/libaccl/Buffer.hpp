@@ -14,14 +14,14 @@ namespace accl {
 
 class Buffer {
 	private:
-		std::vector<uint8_t> buffer;
+		std::vector<uint8_t> content;
 		std::size_t dataSize;
 
 	public:
 		Buffer(std::size_t size);
 
 		// Add data to buffer
-		void addData(const uint8_t *data, std::size_t size);
+		void append(const uint8_t *data, std::size_t size);
 
 		// Get pointer to data
 		const uint8_t *getData() const;
@@ -29,8 +29,10 @@ class Buffer {
 		// Get size of buffer
 		std::size_t getBufferSize() const;
 
-		// Get amount of useful data in buffer
+		// Get amount of data in buffer
 		std::size_t getDataSize() const;
+		// Set amount of data in buffer
+		void setDataSize(size_t size);
 
 		// Clear the buffer
 		void clear();

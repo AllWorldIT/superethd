@@ -19,7 +19,10 @@ void ICMPv4Packet::_clear() {
 
 ICMPv4Packet::ICMPv4Packet() : IPv4Packet() { _clear(); }
 
-ICMPv4Packet::ICMPv4Packet(const std::vector<uint8_t> &data) : IPv4Packet(data) {}
+ICMPv4Packet::ICMPv4Packet(const std::vector<uint8_t> &data) : IPv4Packet(data) {
+	_clear();
+	parse(data);
+}
 
 ICMPv4Packet::~ICMPv4Packet() {}
 
@@ -28,10 +31,7 @@ void ICMPv4Packet::clear() {
 	ICMPv4Packet::_clear();
 }
 
-void ICMPv4Packet::parse(const std::vector<uint8_t> &data) {
-	// bye bye world
-	IPv4Packet::parse(data);
-}
+void ICMPv4Packet::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t ICMPv4Packet::getType() const { return type; }
 void ICMPv4Packet::setType(uint8_t newType) { type = newType; }
