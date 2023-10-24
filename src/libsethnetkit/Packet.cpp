@@ -66,7 +66,7 @@ std::string Packet::asHex() const {
 		}
 
 		// Print the byte in hex format
-		oss << std::format("{:02X}", byte);
+		oss << std::format("{:02X}", static_cast<uint8_t>(byte));
 
 		count++;
 	}
