@@ -7,7 +7,7 @@
 #pragma once
 
 #include "buffers.hpp"
-#include "endian.hpp"
+#include "Endian.hpp"
 
 /*
 

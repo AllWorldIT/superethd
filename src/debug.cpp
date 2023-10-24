@@ -17,7 +17,7 @@ extern "C" {
 #include <string.h>
 }
 
-#include "endian.hpp"
+#include "Endian.hpp"
 #include "util.hpp"
 
 void print_hex_dump(const uint8_t *buffer, size_t length) {

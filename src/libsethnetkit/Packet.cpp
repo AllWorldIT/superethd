@@ -18,7 +18,7 @@ Packet::Packet(const std::vector<uint8_t> &data) : Packet() {
 // Use default destructor
 Packet::~Packet() = default;
 
-void Packet::clear() { _clear(); }
+void Packet::clear() { Packet::_clear(); }
 
 void Packet::parse(const std::vector<uint8_t> &data) { }
 

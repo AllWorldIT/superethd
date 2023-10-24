@@ -15,12 +15,18 @@
 
 namespace accl {
 
+// Inline constant to pass to pop() to allow popping all buffers
+inline constexpr size_t BUFFER_POOL_POP_ALL = 0;
+
 class BufferPool {
 	private:
 		std::list<std::unique_ptr<Buffer>> pool;
 		std::size_t buffer_size;
 		std::shared_mutex mtx;
 		std::condition_variable_any cv;
+
+		void _pop(std::vector<std::unique_ptr<Buffer>> &result, size_t count);
+		std::vector<std::unique_ptr<Buffer>> _pop(size_t count);
 
 	public:
 		BufferPool(std::size_t buffer_size);
@@ -29,8 +35,7 @@ class BufferPool {
 		~BufferPool();
 
 		std::unique_ptr<Buffer> pop();
-		std::vector<std::unique_ptr<Buffer>> popAll();
-		std::vector<std::unique_ptr<Buffer>> popMany(size_t count);
+		std::vector<std::unique_ptr<Buffer>> pop(size_t count);
 
 		void push(Buffer &&buffer);
 		void push(std::unique_ptr<Buffer> &buffer);
@@ -38,7 +43,8 @@ class BufferPool {
 
 		size_t getBufferCount();
 
-		void listener();
+		std::vector<std::unique_ptr<Buffer>> wait();
+		bool wait_for(std::chrono::seconds duration, std::vector<std::unique_ptr<Buffer>> &result);
 };
 
 } // namespace accl

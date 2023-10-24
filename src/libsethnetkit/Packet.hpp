@@ -8,7 +8,7 @@
 
 #include "../common.hpp"
 #include "../debug.hpp"
-#include "../endian.hpp"
+#include "../Endian.hpp"
 #include <array>
 #include <cstdint>
 #include <cstring>

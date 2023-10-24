@@ -38,6 +38,25 @@ t_102_buffer_pool = executable('t_102-buffer-pool',
 )
 test('Test buffer pool functionality', t_102_buffer_pool)
 
+t_103_buffer_pool_wait = executable('t_103-buffer-pool-wait',
+  't_103-buffer-pool-wait.cpp',
+  include_directories: inc,
+  link_with: libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test buffer pool wait functionality', t_103_buffer_pool_wait)
+
+t_104_buffer_pool_wait_for = executable('t_104-buffer-pool-wait_for',
+  't_104-buffer-pool-wait_for.cpp',
+  include_directories: inc,
+  link_with: libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test buffer pool wait_for functionality', t_104_buffer_pool_wait_for)
 
 
 #

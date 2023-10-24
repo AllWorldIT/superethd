@@ -94,7 +94,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to
 TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
 	accl::BufferPool buffer_pool = accl::BufferPool(1024, 5);
 
-	auto buffers = buffer_pool.popAll();
+	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 
 	// Check we got 5 buffers
 	assert(buffers.size() == 5);
@@ -106,7 +106,7 @@ TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
 TEST_CASE("Check we can push multiple buffers back into the pool", "[buffers]") {
 	accl::BufferPool buffer_pool = accl::BufferPool(1024, 5);
 
-	auto buffers = buffer_pool.popAll();
+	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 
 	// Check we got 5 buffers
 	assert(buffers.size() == 5);

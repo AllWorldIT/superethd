@@ -10,6 +10,26 @@
 
 namespace accl {
 
+// Internal method to pop many buffers from the pool WITHOUT LOCKING
+void BufferPool::_pop(std::vector<std::unique_ptr<Buffer>> &result, size_t count) {
+	// Grab iterator on first buffer in pool
+	auto iterator = pool.begin();
+	// We now look while count==0, or i < count, making sure we've not reached the pool end
+	for (size_t i = 0; (!count || i < count) && iterator != pool.end(); ++i, ++iterator) {
+		result.push_back(std::move(*iterator));
+	}
+
+	// Erase the buffers that we moved from the list
+	pool.erase(pool.begin(), iterator);
+}
+
+// Internal method to pop many buffers from the pool WITHOUT LOCKING
+std::vector<std::unique_ptr<Buffer>> BufferPool::_pop(size_t count) {
+	std::vector<std::unique_ptr<Buffer>> result;
+	_pop(result, count);
+	return result;
+}
+
 BufferPool::BufferPool(std::size_t buffer_size) : buffer_size(buffer_size) {}
 
 BufferPool::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : BufferPool(buffer_size) {
@@ -20,10 +40,14 @@ BufferPool::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : Buffe
 	}
 }
 
-BufferPool::~BufferPool() {
-	// Buffers should be automagically freed
-}
+BufferPool::~BufferPool() = default;
 
+/**
+ * @brief Pop a single buffer from the pool.
+ *
+ * @return std::unique_ptr<Buffer> Buffer popped from the pool.
+ * @exception std::bad_alloc No buffers were available to pop.
+ */
 std::unique_ptr<Buffer> BufferPool::pop() {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	if (pool.empty()) {
@@ -34,26 +58,15 @@ std::unique_ptr<Buffer> BufferPool::pop() {
 	return buffer;
 }
 
-// Return all buffers
-std::vector<std::unique_ptr<Buffer>> BufferPool::popAll() { return popMany(0); }
-
-// Return many buffers
-std::vector<std::unique_ptr<Buffer>> BufferPool::popMany(size_t count) {
-	std::vector<std::unique_ptr<Buffer>> result;
-	// Lock the pool
+/**
+ * @brief Pop buffers from the pool.
+ *
+ * @param count Number of buffers to pop from pool, using a count of `accl::BUFFER_POOL_POP_ALL` will pop all buffers.
+ * @return std::vector<std::unique_ptr<Buffer>> Vector of popped buffers.
+ */
+std::vector<std::unique_ptr<Buffer>> BufferPool::pop(size_t count) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
-
-	// Grab iterator on first buffer in pool
-	auto iterator = pool.begin();
-	// We now look while count==0, or i < count, making sure we've not reached the pool end
-	for (size_t i = 0; (!count || i < count) && iterator != pool.end(); ++i, ++iterator) {
-		result.push_back(std::move(*iterator));
-	}
-
-	// Erase the buffers that we moved from the list
-	pool.erase(pool.begin(), iterator);
-
-	return result;
+	return _pop(count);
 }
 
 void BufferPool::push(std::unique_ptr<Buffer> &buffer) {
@@ -67,7 +80,6 @@ void BufferPool::push(std::unique_ptr<Buffer> &buffer) {
 	pool.push_back(std::move(buffer));
 	cv.notify_one(); // Notify listener thread
 }
-
 
 void BufferPool::push(std::vector<std::unique_ptr<Buffer>> &buffers) {
 	// We can check all the buffers before doing the lock to save on how long we hold the lock
@@ -94,13 +106,22 @@ size_t BufferPool::getBufferCount() {
 	return pool.size();
 }
 
-void BufferPool::listener() {
-	std::shared_lock<std::shared_mutex> lock(mtx);
-	while (true) {
-		cv.wait(lock); // Wait for notification
-		std::cout << "A buffer was allocated.\n";
-		// Do additional work if necessary...
+std::vector<std::unique_ptr<Buffer>> BufferPool::wait() {
+	std::unique_lock<std::shared_mutex> lock(mtx);
+	cv.wait(lock);
+	return _pop(BUFFER_POOL_POP_ALL);
+}
+
+bool BufferPool::wait_for(std::chrono::seconds duration, std::vector<std::unique_ptr<Buffer>> &result) {
+	std::unique_lock<std::shared_mutex> lock(mtx);
+
+	// Wait for a duration
+	if (cv.wait_for(lock, duration) == std::cv_status::no_timeout) {
+		_pop(result, BUFFER_POOL_POP_ALL);
+		return true;
 	}
+
+	return false;
 }
 
 } // namespace accl

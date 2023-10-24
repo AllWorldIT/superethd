@@ -6,14 +6,11 @@
 
 #pragma once
 
-extern "C" {
-#include <stdint.h>
-}
-
 /*
  * Compile-time endianness detection
  */
 
+#include <cstdint>
 #define SETH_BIG_ENDIAN 1
 #define SETH_LITTLE_ENDIAN 2
 #if defined __BYTE_ORDER__
@@ -95,12 +92,13 @@ extern "C" {
 #error Unsupported endianness.
 #endif
 
-typedef uint16_t seth_be16_t;
-typedef uint32_t seth_be32_t;
-typedef uint64_t seth_be64_t;
-typedef uint16_t seth_le16_t;
-typedef uint32_t seth_le32_t;
-typedef uint64_t seth_le64_t;
+// Set up our BE and LE types
+using seth_be16_t = uint16_t;
+using seth_be32_t = uint32_t;
+using seth_be64_t = uint64_t;
+using seth_le16_t = uint16_t;
+using seth_le32_t = uint32_t;
+using seth_le64_t = uint64_t;
 
 // Pull in compiler optimized byte swapping
 #define seth_bswap16(x) __builtin_bswap16(x)
