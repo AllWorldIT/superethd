@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "buffers.hpp"
 #include "Endian.hpp"
+#include "buffers.hpp"
 
 /*
 
@@ -40,25 +40,25 @@
 
 typedef struct __seth_packed {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
-	uint8_t ver : 4;
-	uint8_t opt_len : 4;
+		uint8_t ver : 4;
+		uint8_t opt_len : 4;
 
-	uint8_t oam : 1;
-	uint8_t critical : 1;
-	uint8_t reserved : 6;
+		uint8_t oam : 1;
+		uint8_t critical : 1;
+		uint8_t reserved : 6;
 #else
-	uint8_t opt_len : 4;
-	uint8_t ver : 4;
+		uint8_t opt_len : 4;
+		uint8_t ver : 4;
 
-	uint8_t reserved : 6;
-	uint8_t critical : 1;
-	uint8_t oam : 1;
+		uint8_t reserved : 6;
+		uint8_t critical : 1;
+		uint8_t oam : 1;
 
 #endif
-	uint8_t format;
-	uint8_t channel;
-	seth_be32_t sequence;
-	uint32_t opts[];
+		uint8_t format;
+		uint8_t channel;
+		seth_be32_t sequence;
+		uint32_t opts[];
 } PacketHeader;
 
 /*
@@ -82,67 +82,66 @@ typedef struct __seth_packed {
 #define SETH_PACKET_PAYLOAD_HEADER_SIZE 4
 #define SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE 4
 
-typedef struct __seth_packed {
-	uint8_t type;
-	seth_be16_t packet_size;
-	uint8_t reserved;
-} PacketPayloadHeader;
+struct PacketPayloadHeader : public SETH_PackedAttributes {
+		uint8_t type;
+		seth_be16_t packet_size;
+		uint8_t reserved;
+};
 
-typedef struct __seth_packed {
-	seth_be16_t payload_length;
-	uint8_t part;
-	uint8_t reserved;
-} PacketPayloadHeaderPartial;
+struct PacketPayloadHeaderPartial : public SETH_PackedAttributes {
+		seth_be16_t payload_length;
+		uint8_t part;
+		uint8_t reserved;
+};
 
 // Packet encoder state
 typedef struct {
-	// Store the current packet sequence number
-	uint32_t seq;
+		// Store the current packet sequence number
+		uint32_t seq;
 
-	// Write buffer info
-	BufferNode *wbuffer_node;  // Current write buffer node
-	uint16_t wbuffer_count;	   // Number of write buffers filled
+		// Write buffer info
+		BufferNode *wbuffer_node; // Current write buffer node
+		uint16_t wbuffer_count;	  // Number of write buffers filled
 
-	// Compression buffer
-	Buffer cbuffer;
+		// Compression buffer
+		Buffer cbuffer;
 
-	// Payload and current pointer position for chunking
-	Buffer *payload;
-	uint16_t payload_pos;  // Position in payload we're currently at
-	uint8_t payload_part;  // Payload sequence
+		// Payload and current pointer position for chunking
+		Buffer *payload;
+		uint16_t payload_pos; // Position in payload we're currently at
+		uint8_t payload_part; // Payload sequence
 
 } PacketEncoderState;
 
-
 typedef struct {
-	uint32_t seq; // Sequence number of the packet we're processing
-	uint16_t decoded_packet_size; // Current payload header packet size
+		uint32_t seq;				  // Sequence number of the packet we're processing
+		uint16_t decoded_packet_size; // Current payload header packet size
 
-	int pos; // Encapsulating packet position
-	int cur_header; // Counter of the header number we're processing in the encapsulating packet
+		int pos;		// Encapsulating packet position
+		int cur_header; // Counter of the header number we're processing in the encapsulating packet
 
-	Buffer payload; // Pointer to the payload
+		Buffer payload; // Pointer to the payload
 } PacketDecoderEncapPacket;
 
 // Packet decoder state
 typedef struct {
-	// Flag to indicate this is the first packet we're receiving
-	int first_packet;
-	// Last packet sequence number
-	uint32_t last_seq;
+		// Flag to indicate this is the first packet we're receiving
+		int first_packet;
+		// Last packet sequence number
+		uint32_t last_seq;
 
-	// Write buffer info
-	BufferNode *wbuffer_node;  // Current write buffer node
-	uint16_t wbuffer_count;	   // Number of write buffers filled
+		// Write buffer info
+		BufferNode *wbuffer_node; // Current write buffer node
+		uint16_t wbuffer_count;	  // Number of write buffers filled
 
-	// Compression buffer
-	Buffer cbuffer;
+		// Compression buffer
+		Buffer cbuffer;
 
-	// Partial packet
-	Buffer partial_packet;
-	uint8_t partial_packet_part;	  // Payload sequence
-	uint32_t partial_packet_lastseq;  // Last encap packet sequence
-	uint16_t partial_packet_size;	  // The size of the partial packet we originally got
+		// Partial packet
+		Buffer partial_packet;
+		uint8_t partial_packet_part;	 // Payload sequence
+		uint32_t partial_packet_lastseq; // Last encap packet sequence
+		uint16_t partial_packet_size;	 // The size of the partial packet we originally got
 } PacketDecoderState;
 
 size_t get_codec_wbuffer_count(uint16_t max_ethernet_frame_size);

@@ -182,12 +182,12 @@ void *tunnel_read_socket_handler(void *arg) {
 		exit(EXIT_FAILURE);
 	}
 	// Set up iovecs and mmsghdrs
-	for (int i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
+	for (size_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
 		buffer_nodes[i] = get_buffer_node_head(&tdata->available_buffers);
 		if (buffer_nodes[i] == NULL) {
 			perror("%s(): Could not get available buffer node");
 			// Clean up allocated memory
-			for (int j = 0; j < i; ++j) {
+			for (size_t j = 0; j < i; ++j) {
 				append_buffer_node(&tdata->available_buffers, buffer_nodes[i]);
 			}
 			free(buffer_nodes);
@@ -274,7 +274,7 @@ void *tunnel_read_socket_handler(void *arg) {
 	}
 
 	// Add buffers back to available list for de-allocation
-	for (int i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
+	for (uint32_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
 		append_buffer_node(&tdata->available_buffers, buffer_nodes[i]);
 	}
 	// Free the rest of the IOV stuff

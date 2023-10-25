@@ -41,9 +41,7 @@ void IPv6Packet::clear() {
 	IPv6Packet::_clear();
 }
 
-void IPv6Packet::parse(const std::vector<uint8_t> &data) {
-	setVersion(SETH_PACKET_IP_VERSION_IPV6);
-}
+void IPv6Packet::parse(const std::vector<uint8_t> &data) { setVersion(SETH_PACKET_IP_VERSION_IPV6); }
 
 uint8_t IPv6Packet::getTrafficClass() const { return priority; }
 void IPv6Packet::setTrafficClass(uint8_t newTrafficClass) { priority = newTrafficClass; }
@@ -68,14 +66,13 @@ void IPv6Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcA
 uint32_t IPv6Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 	// The IPv6 pseudo-header is defined in RFC 2460, Section 8.1.
-	struct ipv6_pseudo_header_t {
+	struct ipv6_pseudo_header_t : public SETH_PackedAttributes {
 			uint8_t src_addr[SETH_PACKET_IPV6_IP_LEN];
 			uint8_t dst_addr[SETH_PACKET_IPV6_IP_LEN];
 			seth_be32_t length;
 			uint32_t zero : 24;
 			uint8_t next_header; // AKA protocol
-
-	} __seth_packed;
+	};
 
 	ipv6_pseudo_header_t header;
 

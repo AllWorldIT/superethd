@@ -8,22 +8,22 @@
 
 #include "IPv4Packet.hpp"
 
-#define SETH_PACKET_IP_PROTOCOL_ICMP4 1
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP4 = 1;
 
-typedef struct __seth_packed {
+struct icmp_header_t : public SETH_PackedAttributes {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code
 		seth_be16_t checksum; // Checksum
 		uint32_t unused;	  // Unused
-} icmp_header_t;
+};
 
-typedef struct __seth_packed {
+struct icmp_echo_header_t : public SETH_PackedAttributes {
 		uint8_t type;			// Type
 		uint8_t code;			// Code
 		seth_be16_t checksum;	// Checksum
 		seth_be16_t identifier; // Identifier
 		seth_be16_t sequence;	// Sequence
-} icmp_echo_header_t;
+};
 
 class ICMPv4Packet : public IPv4Packet {
 	protected:

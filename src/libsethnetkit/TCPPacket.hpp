@@ -9,9 +9,9 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
-#define SETH_PACKET_IP_PROTOCOL_TCP 6
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_TCP = 6;
 
-typedef struct __seth_packed {
+struct tcp_options_header_t : public SETH_PackedAttributes {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t cwr : 1;
 		uint8_t ece : 1;
@@ -31,9 +31,9 @@ typedef struct __seth_packed {
 		uint8_t ece : 1;
 		uint8_t cwr : 1;
 #endif
-} tcp_options_header_t;
+};
 
-typedef struct __seth_packed {
+struct tcp_header_t : public SETH_PackedAttributes {
 		seth_be16_t src_port; // Source port
 		seth_be16_t dst_port; // Destination port
 
@@ -54,7 +54,7 @@ typedef struct __seth_packed {
 
 		seth_be16_t checksum; // Checksum
 		seth_be16_t urgent;	  // Urgent pointer
-} tcp_header_t;
+};
 
 template <typename T>
 concept TCPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;

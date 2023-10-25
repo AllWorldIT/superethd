@@ -8,15 +8,15 @@
 
 #include "IPv6Packet.hpp"
 
-#define SETH_PACKET_IP_PROTOCOL_ICMP6 58
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6 = 58;
 
-typedef struct __seth_packed {
+struct icmp6_header_t : public SETH_PackedAttributes {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code
 		seth_be16_t checksum; // Checksum
 		uint32_t unused1;	  // Unused
 		uint32_t unused2;	  // Unused
-} icmp6_header_t;
+};
 
 class ICMPv6Packet : public IPv6Packet {
 	protected:
