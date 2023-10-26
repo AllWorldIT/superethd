@@ -37,7 +37,7 @@ void push_worker(accl::BufferPool &buffer_pool) {
 	auto buffer = buffer_pool.pop();
 
 	// Add some data into the buffer
-	buffer->append(reinterpret_cast<const uint8_t *>(test_string.data()), test_string.length());
+	buffer->append(reinterpret_cast<const char *>(test_string.data()), test_string.length());
 
 	// Now add the buffer back to the pool, which should trigger the wait_worker
 	buffer_pool.push(buffer);

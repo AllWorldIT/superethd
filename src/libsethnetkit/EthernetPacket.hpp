@@ -11,11 +11,11 @@
 inline constexpr uint16_t SETH_PACKET_ETHERNET_HEADER_LEN = 14;
 inline constexpr uint8_t SETH_PACKET_ETHERNET_MAC_LEN = 6;
 
-typedef struct __seth_packed {
+struct ethernet_header_t {
 		uint8_t dst_mac[SETH_PACKET_ETHERNET_MAC_LEN]; // Destination MAC address
 		uint8_t src_mac[SETH_PACKET_ETHERNET_MAC_LEN]; // Source MAC address
 		seth_be16_t ethertype;						   // Ethertype field to indicate the protocol
-} ethernet_header_t;
+} SETH_PACKED_ATTRIBUTES;
 
 class EthernetPacket : public Packet {
 	protected:

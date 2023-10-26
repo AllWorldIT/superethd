@@ -14,7 +14,7 @@ inline constexpr uint16_t SETH_PACKET_IPV4_HEADER_LEN = 20;
 inline constexpr uint16_t SETH_PACKET_IPV4_IP_LEN = 4;
 
 // IPv4 header definition
-struct ipv4_header_t : public SETH_PackedAttributes {
+struct ipv4_header_t {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t version : 4; // IP version (should be 4 for IPv4)
 		uint8_t ihl : 4;	 // Internet Header Length (header length in 32-bit words)
@@ -32,7 +32,7 @@ struct ipv4_header_t : public SETH_PackedAttributes {
 		seth_be16_t checksum;	  // Header checksum
 		uint8_t src_addr[SETH_PACKET_IPV4_IP_LEN];
 		uint8_t dst_addr[SETH_PACKET_IPV4_IP_LEN];
-};
+} SETH_PACKED_ATTRIBUTES;
 
 class IPv4Packet : public IPPacket {
 	protected:

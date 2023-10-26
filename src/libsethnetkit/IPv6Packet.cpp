@@ -66,13 +66,13 @@ void IPv6Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcA
 uint32_t IPv6Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 	// The IPv6 pseudo-header is defined in RFC 2460, Section 8.1.
-	struct ipv6_pseudo_header_t : public SETH_PackedAttributes {
+	struct ipv6_pseudo_header_t {
 			uint8_t src_addr[SETH_PACKET_IPV6_IP_LEN];
 			uint8_t dst_addr[SETH_PACKET_IPV6_IP_LEN];
 			seth_be32_t length;
 			uint32_t zero : 24;
 			uint8_t next_header; // AKA protocol
-	};
+	} SETH_PACKED_ATTRIBUTES;
 
 	ipv6_pseudo_header_t header;
 

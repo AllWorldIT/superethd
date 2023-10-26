@@ -187,3 +187,19 @@ t_427_packet_ethernet_ipv6_tcp = executable('t_427-packet-ethernet-ipv6-tcp',
   cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packet_ethernet_ipv6_tcp)
+
+
+#
+# Codec tests
+#
+
+
+t_999_new_codec = executable('t_999-new-codec',
+  't_999-new-codec.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test codec in development', t_999_new_codec)

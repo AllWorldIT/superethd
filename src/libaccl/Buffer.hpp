@@ -14,28 +14,47 @@ namespace accl {
 
 class Buffer {
 	private:
-		std::vector<uint8_t> content;
+		std::vector<char> content;
 		std::size_t dataSize;
 
 	public:
-		Buffer(std::size_t size);
+		inline Buffer(std::size_t size) : content(size), dataSize(0){};
 
 		// Add data to buffer
-		void append(const uint8_t *data, std::size_t size);
+		inline void append(const char *data, std::size_t size);
 
 		// Get pointer to data
-		const uint8_t *getData() const;
+		inline char *getData() { return content.data(); };
 
 		// Get size of buffer
-		std::size_t getBufferSize() const;
+		inline std::size_t getBufferSize() const { return content.size(); };
 
 		// Get amount of data in buffer
-		std::size_t getDataSize() const;
+		inline std::size_t getDataSize() const { return dataSize; };
 		// Set amount of data in buffer
-		void setDataSize(size_t size);
+		inline void setDataSize(size_t size);
 
 		// Clear the buffer
-		void clear();
+		inline void clear() { dataSize = 0; };
 };
+
+// Add data to buffer
+inline void Buffer::append(const char *data, std::size_t size) {
+	if (size > content.size() - dataSize) {
+		// Make sure we cannot overflow the buffer
+		throw std::out_of_range("Buffer size would be exceeded with append");
+	}
+	std::copy(data, data + size, content.begin() + dataSize);
+	dataSize += size;
+}
+
+// Set amount of data that is in the buffer
+inline void Buffer::setDataSize(size_t size) {
+	// We cannot set the data size bigger than the buffer itself
+	if (size > content.size()) {
+		throw std::out_of_range("Buffer data size cannot exceed buffer size");
+	}
+	dataSize = size;
+}
 
 } // namespace accl

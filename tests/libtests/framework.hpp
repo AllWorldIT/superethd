@@ -9,6 +9,7 @@
 
 #define CATCH_CONFIG_MAIN
 
+#include "Codec.hpp"
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/SequenceDataGenerator.hpp"

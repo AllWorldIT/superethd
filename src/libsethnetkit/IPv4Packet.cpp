@@ -110,13 +110,13 @@ void IPv4Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> newSrcA
 uint32_t IPv4Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 	// The IPv4 pseudo-header is defined in RFC 793, Section 3.1.
-	struct ipv4_pseudo_header_t : public SETH_PackedAttributes {
+	struct ipv4_pseudo_header_t {
 			uint8_t src_addr[SETH_PACKET_IPV4_IP_LEN];
 			uint8_t dst_addr[SETH_PACKET_IPV4_IP_LEN];
 			uint8_t zero;
 			uint8_t protocol;
 			seth_be16_t length;
-	};
+	} SETH_PACKED_ATTRIBUTES;
 
 	ipv4_pseudo_header_t header;
 

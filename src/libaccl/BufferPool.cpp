@@ -23,15 +23,6 @@ void BufferPool::_pop(std::vector<std::unique_ptr<Buffer>> &result, size_t count
 	pool.erase(pool.begin(), iterator);
 }
 
-// Internal method to pop many buffers from the pool WITHOUT LOCKING
-std::vector<std::unique_ptr<Buffer>> BufferPool::_pop(size_t count) {
-	std::vector<std::unique_ptr<Buffer>> result;
-	_pop(result, count);
-	return result;
-}
-
-BufferPool::BufferPool(std::size_t buffer_size) : buffer_size(buffer_size) {}
-
 BufferPool::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : BufferPool(buffer_size) {
 	// Allocate the number of buffers specified
 	for (std::size_t i = 0; i < num_buffers; ++i) {
@@ -39,8 +30,6 @@ BufferPool::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : Buffe
 		pool.push_back(std::move(buffer));
 	}
 }
-
-BufferPool::~BufferPool() = default;
 
 /**
  * @brief Pop a single buffer from the pool.
@@ -56,17 +45,6 @@ std::unique_ptr<Buffer> BufferPool::pop() {
 	auto buffer = std::move(pool.front());
 	pool.pop_front();
 	return buffer;
-}
-
-/**
- * @brief Pop buffers from the pool.
- *
- * @param count Number of buffers to pop from pool, using a count of `accl::BUFFER_POOL_POP_ALL` will pop all buffers.
- * @return std::vector<std::unique_ptr<Buffer>> Vector of popped buffers.
- */
-std::vector<std::unique_ptr<Buffer>> BufferPool::pop(size_t count) {
-	std::unique_lock<std::shared_mutex> lock(mtx);
-	return _pop(count);
 }
 
 void BufferPool::push(std::unique_ptr<Buffer> &buffer) {
@@ -99,11 +77,6 @@ void BufferPool::push(std::vector<std::unique_ptr<Buffer>> &buffers) {
 	buffers.clear();
 
 	cv.notify_one(); // Notify listener threa
-}
-
-size_t BufferPool::getBufferCount() {
-	std::shared_lock<std::shared_mutex> lock(mtx);
-	return pool.size();
 }
 
 std::vector<std::unique_ptr<Buffer>> BufferPool::wait() {

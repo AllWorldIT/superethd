@@ -82,17 +82,17 @@ typedef struct __seth_packed {
 #define SETH_PACKET_PAYLOAD_HEADER_SIZE 4
 #define SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE 4
 
-struct PacketPayloadHeader : public SETH_PackedAttributes {
+struct PacketHeaderOption {
 		uint8_t type;
 		seth_be16_t packet_size;
 		uint8_t reserved;
-};
+} SETH_PACKED_ATTRIBUTES;
 
-struct PacketPayloadHeaderPartial : public SETH_PackedAttributes {
+struct PacketHeaderOptionPartial {
 		seth_be16_t payload_length;
 		uint8_t part;
 		uint8_t reserved;
-};
+} SETH_PACKED_ATTRIBUTES;
 
 // Packet encoder state
 typedef struct {

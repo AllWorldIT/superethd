@@ -10,13 +10,13 @@
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6 = 58;
 
-struct icmp6_header_t : public SETH_PackedAttributes {
+struct icmp6_header_t {
 		uint8_t type;		  // Type
 		uint8_t code;		  // Code
 		seth_be16_t checksum; // Checksum
 		uint32_t unused1;	  // Unused
 		uint32_t unused2;	  // Unused
-};
+} SETH_PACKED_ATTRIBUTES;
 
 class ICMPv6Packet : public IPv6Packet {
 	protected:

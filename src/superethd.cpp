@@ -25,7 +25,7 @@ int stop_program = 0;
 
 void handleSIGUSR1(int signum) {
 	// Handle SIGUSR1
-	FPRINTF("Received SIGUSR1. Exiting...");
+	CERR("Received SIGUSR1. Exiting...");
 	stop_program = 1;
 	// exit(EXIT_SUCCESS);
 }
@@ -44,7 +44,7 @@ void handleSIGUSR1(int signum) {
 int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int tx_size) {
 	// Register the signal handler for SIGUSR1
 	if (signal(SIGUSR1, handleSIGUSR1) == SIG_ERR) {
-		FPRINTF("ERROR: Failed to register signal handler: %s", strerror(errno));
+		CERR("ERROR: Failed to register signal handler: {}", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
@@ -66,21 +66,21 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	// MSS
 	tdata.tx_size = tx_size;
 	if (tdata.tx_size > SETH_MAX_TXSIZE) {
-		FPRINTF("ERROR: Maximum TX_SIZE is %i", SETH_MAX_TXSIZE);
+		CERR("ERROR: Maximum TX_SIZE is {}", SETH_MAX_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
 	if (tdata.tx_size < SETH_MIN_TXSIZE) {
-		FPRINTF("ERROR: Minimum MSS is %i", SETH_MIN_TXSIZE);
+		CERR("ERROR: Minimum MSS is {}", SETH_MIN_TXSIZE);
 		exit(EXIT_FAILURE);
 	}
 	// MTU
 	tdata.mtu = mtu;
 	if (tdata.mtu > SETH_MAX_MTU_SIZE) {
-		FPRINTF("ERROR: Maximum MTU is %i!", SETH_MAX_MTU_SIZE);
+		CERR("ERROR: Maximum MTU is {}!", SETH_MAX_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
 	if (tdata.mtu < SETH_MIN_MTU_SIZE) {
-		FPRINTF("ERROR: Minimum MTU is %i!", SETH_MIN_MTU_SIZE);
+		CERR("ERROR: Minimum MTU is {}!", SETH_MIN_MTU_SIZE);
 		exit(EXIT_FAILURE);
 	}
 
@@ -89,7 +89,7 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 
 	// Get REAL maximum packet payload size
 	tdata.max_payload_size = get_max_payload_size(tdata.tx_size, &tdata.remote_addr.sin6_addr);
-	FPRINTF("Setting maximum UDP payload size to %i...", tdata.max_payload_size);
+	CERR("Setting maximum UDP payload size to {}...", tdata.max_payload_size);
 
 	// Allocate buffers
 	initialize_buffer_list(&tdata.available_buffers, SETH_BUFFER_COUNT, tdata.max_ethernet_frame_size);
@@ -104,8 +104,8 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	// Allocate actual interface
 	create_tap_interface(ifname, &tdata);
 
-	FPRINTF("Assigned MAC address: %02x:%02x:%02x:%02x:%02x:%02x", tdata.tap_device.hwaddr[0], tdata.tap_device.hwaddr[1],
-			tdata.tap_device.hwaddr[2], tdata.tap_device.hwaddr[3], tdata.tap_device.hwaddr[4], tdata.tap_device.hwaddr[5]);
+	CERR("Assigned MAC address: {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", tdata.tap_device.hwaddr[0], tdata.tap_device.hwaddr[1],
+		 tdata.tap_device.hwaddr[2], tdata.tap_device.hwaddr[3], tdata.tap_device.hwaddr[4], tdata.tap_device.hwaddr[5]);
 
 	// Create UDP socket
 	if (create_udp_socket(&tdata) != 0) {
@@ -114,31 +114,31 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	}
 
 	// Set interface MTU
-	FPRINTF("Setting ethernet device MTU...");
+	CERR("Setting ethernet device MTU...");
 	set_interface_mtu(&tdata);
 
 	// Create threads for receiving and sending data
 	pthread_t tunnel_read_tap_thread, tunnel_write_socket_thread, tunnel_read_socket_thread, tunnel_write_tap_thread;
 	if (pthread_create(&tunnel_read_tap_thread, NULL, tunnel_read_tap_handler, &tdata) != 0) {
-		FPRINTF("ERROR: Failed to create tunnel_read_tap_thread thread: %s", strerror(errno));
+		CERR("ERROR: Failed to create tunnel_read_tap_thread thread: {}", strerror(errno));
 		exit(1);
 	}
 	if (pthread_create(&tunnel_write_socket_thread, NULL, tunnel_write_socket_handler, &tdata) != 0) {
-		FPRINTF("ERROR: Failed to create tunnel_write_socket_thread thread: %s", strerror(errno));
+		CERR("ERROR: Failed to create tunnel_write_socket_thread thread: {}", strerror(errno));
 		exit(1);
 	}
 
 	if (pthread_create(&tunnel_read_socket_thread, NULL, tunnel_read_socket_handler, &tdata) != 0) {
-		FPRINTF("ERROR: Failed to create tunnel_read_socket_thread thread: %s", strerror(errno));
+		CERR("ERROR: Failed to create tunnel_read_socket_thread thread: {}", strerror(errno));
 		exit(1);
 	}
 	if (pthread_create(&tunnel_write_tap_thread, NULL, tunnel_write_tap_handler, &tdata) != 0) {
-		FPRINTF("ERROR: Failed to create tunnel_write_tap_thread thread: %s", strerror(errno));
+		CERR("ERROR: Failed to create tunnel_write_tap_thread thread: {}", strerror(errno));
 		exit(1);
 	}
 
 	// Online interface
-	FPRINTF("Enabling ethernet device '%s'...", ifname.c_str());
+	CERR("Enabling ethernet device '{}'...", ifname.c_str());
 	start_tap_interface(&tdata);
 
 	// Wait for threads to finish (should never happen)
@@ -148,7 +148,7 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	pthread_join(tunnel_read_socket_thread, NULL);
 	pthread_join(tunnel_write_tap_thread, NULL);
 
-	FPRINTF("NORMAL EXIT.....");
+	CERR("NORMAL EXIT.....");
 
 	// Cleanup
 	destroy_udp_socket(&tdata);

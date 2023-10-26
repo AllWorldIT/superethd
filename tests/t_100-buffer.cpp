@@ -16,7 +16,31 @@ TEST_CASE("Check buffer usage", "[buffers]") {
 
 	// After appending our test string to the buffer, it should be the size of the test string
 	// NK: we use c_str() to guarantee a null-terminated string, and the +1 to include the null termination
-	buffer.append(reinterpret_cast<const uint8_t *>(test_string.c_str()), test_string.length() + 1);
+	buffer.append(reinterpret_cast<const char *>(test_string.c_str()), test_string.length() + 1);
+	assert(buffer.getDataSize() == test_string.length() + 1);
+
+	// Now lets convert the buffer into a std::string and compare them
+	std::string buffer_string(reinterpret_cast<const char *>(buffer.getData()), test_string.length());
+	// Next we compare them...
+	assert(test_string == buffer_string);
+
+	// The buffer getDataSize() should be 0 after a clear
+	buffer.clear();
+	assert(buffer.getDataSize() == 0);
+}
+
+TEST_CASE("Check buffer usage when using 2 appends", "[buffers]") {
+	accl::Buffer buffer = accl::Buffer(100);
+	const std::string test_string = "hello world";
+
+	// Make sure that the buffer is the correct size
+	assert(buffer.getBufferSize() == 100);
+
+	size_t append_size = 6;
+
+	buffer.append(reinterpret_cast<const char *>(test_string.c_str()), append_size);
+
+	buffer.append(reinterpret_cast<const char *>(test_string.c_str()) + append_size, test_string.length() + 1 - append_size);
 	assert(buffer.getDataSize() == test_string.length() + 1);
 
 	// Now lets convert the buffer into a std::string and compare them
@@ -34,10 +58,10 @@ TEST_CASE("Check we cannot exceed buffer size with append", "[buffers]") {
 
 	const std::string test_string = "hello world";
 
-	buffer.append(reinterpret_cast<const uint8_t *>(test_string.c_str()), test_string.length());
+	buffer.append(reinterpret_cast<const char *>(test_string.c_str()), test_string.length());
 
 	SECTION("Expect a out_of_range is thrown if we try exceed the buffer size") {
-		REQUIRE_THROWS_AS(buffer.append(reinterpret_cast<const uint8_t *>(test_string.c_str()), test_string.length()),
+		REQUIRE_THROWS_AS(buffer.append(reinterpret_cast<const char *>(test_string.c_str()), test_string.length()),
 						  std::out_of_range);
 	}
 }
@@ -47,7 +71,7 @@ TEST_CASE("Check copying data into the buffer manually and setting size", "[buff
 	const std::string test_string = "hello world";
 
 	// Grab pointer to the buffer contents
-	const uint8_t *contents = buffer.getData();
+	const char *contents = buffer.getData();
 	std::memcpy((void *)contents, test_string.c_str(), test_string.length() + 1);
 
 	// Now set the buffer contents size

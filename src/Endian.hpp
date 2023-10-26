@@ -25,7 +25,6 @@ inline uint16_t seth_bswap16(uint16_t x) { return __builtin_bswap16(x); }
 inline uint32_t seth_bswap32(uint32_t x) { return __builtin_bswap32(x); }
 inline uint64_t seth_bswap64(uint64_t x) { return __builtin_bswap64(x); }
 
-
 /*
  * Compile-time endianness detection
  */
@@ -83,5 +82,3 @@ inline uint64_t seth_be_to_cpu_64(seth_be64_t x) { return seth_bswap64(x); }
 #else
 #error Unsupported endianness.
 #endif
-
-

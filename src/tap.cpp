@@ -28,7 +28,7 @@ void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 	int fd, err;
 
 	if ((fd = open("/dev/net/tun", O_RDWR)) < 0) {
-		FPRINTF("Cannot open TUN/TAP device file: %s", strerror(errno));
+		CERR("Cannot open TUN/TAP device file: {}", strerror(errno));
 		exit(1);
 	}
 
@@ -40,7 +40,7 @@ void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 	(void)memcpy(tdata->tap_device.ifname, ifr.ifr_name, sizeof ifr.ifr_name);
 
 	if ((err = ioctl(fd, TUNSETIFF, (void *)&ifr)) < 0) {
-		FPRINTF("Cannot ioctl TUNSETIFF: %s", strerror(errno));
+		CERR("Cannot ioctl TUNSETIFF: {}", strerror(errno));
 		close(fd);
 		exit(1);
 	}
@@ -49,7 +49,7 @@ void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 	struct ifreq ifr_hw;
 	(void)memcpy(ifr_hw.ifr_name, tdata->tap_device.ifname, sizeof(tdata->tap_device.ifname));
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr_hw) == -1) {
-		FPRINTF("Can't get link-layer address: %s", strerror(errno));
+		CERR("Can't get link-layer address: {}", strerror(errno));
 		close(fd);
 		exit(1);
 	}
@@ -67,14 +67,14 @@ int start_tap_interface(struct ThreadData *tdata) {
 	struct ifreq ifr;
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		FPRINTF("Error opening socket to set interface UP: %s", strerror(errno));
+		CERR("Error opening socket to set interface UP: {}", strerror(errno));
 		exit(1);
 	}
 
 	(void)memcpy(ifr.ifr_name, tdata->tap_device.ifname, IFNAMSIZ);
 
 	if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1) {
-		FPRINTF("Error getting interface flags: %s", strerror(errno));
+		CERR("Error getting interface flags: {}", strerror(errno));
 		close(sockfd);
 		exit(1);
 	}
@@ -82,7 +82,7 @@ int start_tap_interface(struct ThreadData *tdata) {
 	ifr.ifr_flags |= IFF_UP;
 
 	if (ioctl(sockfd, SIOCSIFFLAGS, &ifr) == -1) {
-		FPRINTF("Error setting interface up: %s", strerror(errno));
+		CERR("Error setting interface up: {}", strerror(errno));
 		close(sockfd);
 		exit(1);
 	}
@@ -96,7 +96,7 @@ int set_interface_mtu(struct ThreadData *tdata) {
 	struct ifreq ifr;
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		FPRINTF("Error opening socket to set interface MTU: %s", strerror(errno));
+		CERR("Error opening socket to set interface MTU: {}", strerror(errno));
 		exit(1);
 	}
 
@@ -106,7 +106,7 @@ int set_interface_mtu(struct ThreadData *tdata) {
 	ifr.ifr_mtu = tdata->mtu;
 
 	if (ioctl(sockfd, SIOCSIFMTU, &ifr) == -1) {
-		FPRINTF("Error setting interface MTU: %s", strerror(errno));
+		CERR("Error setting interface MTU: {}", strerror(errno));
 		close(sockfd);
 		exit(1);
 	}

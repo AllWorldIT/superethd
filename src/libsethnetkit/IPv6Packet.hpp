@@ -13,7 +13,7 @@ inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV6 = 0x86DD;
 inline constexpr uint16_t SETH_PACKET_IPV6_IP_LEN = 16;
 
 // IPv6 header definition
-struct ipv6_header_t : public SETH_PackedAttributes {
+struct ipv6_header_t {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t version : 4;  // IP version (should be 6 for IPv6)
 		uint8_t priority : 4; // Traffic Class => priority
@@ -27,7 +27,7 @@ struct ipv6_header_t : public SETH_PackedAttributes {
 		uint8_t hop_limit;			// Similar to TTL in IPv4
 		uint8_t src_addr[16];		// Source IP address
 		uint8_t dst_addr[16];		// Destination IP address
-};
+} SETH_PACKED_ATTRIBUTES;
 
 class IPv6Packet : public IPPacket {
 	protected:

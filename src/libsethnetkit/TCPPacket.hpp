@@ -11,7 +11,7 @@
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_TCP = 6;
 
-struct tcp_options_header_t : public SETH_PackedAttributes {
+struct tcp_options_header_t {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t cwr : 1;
 		uint8_t ece : 1;
@@ -31,9 +31,9 @@ struct tcp_options_header_t : public SETH_PackedAttributes {
 		uint8_t ece : 1;
 		uint8_t cwr : 1;
 #endif
-};
+} SETH_PACKED_ATTRIBUTES;
 
-struct tcp_header_t : public SETH_PackedAttributes {
+struct tcp_header_t {
 		seth_be16_t src_port; // Source port
 		seth_be16_t dst_port; // Destination port
 
@@ -54,7 +54,7 @@ struct tcp_header_t : public SETH_PackedAttributes {
 
 		seth_be16_t checksum; // Checksum
 		seth_be16_t urgent;	  // Urgent pointer
-};
+} SETH_PACKED_ATTRIBUTES;
 
 template <typename T>
 concept TCPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;
