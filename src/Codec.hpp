@@ -71,7 +71,7 @@ struct PacketHeader {
  *	  |     Type      |           Packet Size         |      RSVD     |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- *                      PARTIAL ADDITIONAL SECTION
+ *                  HEADER OPTION - PARTIAL - DATA SECTION
  *    |               |               |               |               |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *	  |         Payload Length        |     PART      |      RSVD     |
@@ -79,7 +79,7 @@ struct PacketHeader {
  *
  */
 
-enum class PacketPayloadHeaderType : uint8_t {
+enum class PacketHeaderOptionType : uint8_t {
 	PARTIAL_PACKET = 0x1,
 	COMPLETE_PACKET = 0x2,
 };
@@ -88,12 +88,12 @@ inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_SIZE = 4;
 inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE = 4;
 
 struct PacketHeaderOption {
-		PacketPayloadHeaderType type;
+		PacketHeaderOptionType type;
 		seth_be16_t packet_size;
 		uint8_t reserved;
 } SETH_PACKED_ATTRIBUTES;
 
-struct PacketHeaderOptionPartial {
+struct PacketHeaderOptionPartialData {
 		seth_be16_t payload_length;
 		uint8_t part;
 		uint8_t reserved;
@@ -114,6 +114,8 @@ class PacketEncoder {
 		uint32_t sequence;
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
+		// Active destination buffer header options length
+		uint16_t opt_len;
 
 		// Buffer pool to get buffers from
 		accl::BufferPool *avail_buffer_pool;
@@ -153,6 +155,7 @@ class PacketDecoder {
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 
+		void _clearState() ;
 		void _getDestBuffer();
 
 	public:

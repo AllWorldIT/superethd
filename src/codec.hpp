@@ -88,7 +88,7 @@ struct PacketHeaderOption {
 		uint8_t reserved;
 } SETH_PACKED_ATTRIBUTES;
 
-struct PacketHeaderOptionPartial {
+struct PacketHeaderOptionPartialData {
 		seth_be16_t payload_length;
 		uint8_t part;
 		uint8_t reserved;

@@ -190,7 +190,7 @@ int packet_encoder(PacketEncoderState *state, BufferList *wbuffers, Buffer *pbuf
 
 		// If this is a partial header, we overlay the partial header struct and set the additional values
 		if (payload_header_type == SETH_PACKET_PAYLOAD_TYPE_PARTIAL_PACKET) {
-			PacketHeaderOptionPartial *pktphdr_partial = (PacketHeaderOptionPartial *)(wbuffer->contents + wbuffer->length);
+			PacketHeaderOptionPartialData *pktphdr_partial = (PacketHeaderOptionPartialData *)(wbuffer->contents + wbuffer->length);
 
 			pktphdr_partial->payload_length = seth_cpu_to_be_16(chunk_size);
 			pktphdr_partial->part = state->payload_part;
@@ -289,7 +289,7 @@ static int _decode_complete_packet(PacketDecoderState *state, PacketDecoderEncap
 
 static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapPacket *epkt) {
 	// Overlay the partial packet header and move onto checking the partial packet below
-	PacketHeaderOptionPartial *pktphdr_partial = (PacketHeaderOptionPartial *)(epkt->payload.contents + epkt->pos);
+	PacketHeaderOptionPartialData *pktphdr_partial = (PacketHeaderOptionPartialData *)(epkt->payload.contents + epkt->pos);
 	// Bump the payload contents pointer past the partial header
 	epkt->pos += SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE;
 	DEBUG_CERR("Moved payload_pos={} past partial header", epkt->pos);
