@@ -178,6 +178,11 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 
 void PacketDecoder::_clearState() { // Clear destination buffer
 	dest_buffer->clear();
+	// Clear last encap packet sequence number
+	this->last_sequence = 0;
+	// Now for the packet parts we get, clear the info for them too
+	this->last_part = 0;
+	this->last_final_packet_size = 0;
 }
 
 void PacketDecoder::_getDestBuffer() {
@@ -190,7 +195,6 @@ PacketDecoder::PacketDecoder(uint16_t mtu, accl::BufferPool *available_buffer_po
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
 	this->mtu = mtu;
 	this->first_packet = true;
-	this->last_sequence = 0;
 
 	// Setup buffer pools
 	this->avail_buffer_pool = available_buffer_pool;
@@ -350,25 +354,31 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 		// Packet header option
 		PacketHeaderOption *packet_header_option = (PacketHeaderOption *)(packet + packet_header_pos);
 
-		uint16_t encap_packet_size = seth_be_to_cpu_16(packet_header_option->packet_size);
+		uint16_t final_packet_size = seth_be_to_cpu_16(packet_header_option->packet_size);
 
 		// When a packet is completely inside the encap packet
 		if (packet_header_option->type == PacketHeaderOptionType::COMPLETE_PACKET) {
 			uint16_t packet_pos = packet_header_pos + sizeof(PacketHeaderOption);
 
+			// Check if we had a last part?
+			if (last_part) {
+				CERR("At some stage we had a last part, but something got lost? clearing state");
+				_clearState();
+			}
+
 			// Make sure that our encapsulated packet doesnt exceed the packet size
-			if (packet_pos + encap_packet_size > size) {
+			if (packet_pos + final_packet_size > size) {
 				CERR("ERROR: Encapsulated packet size {} would exceed encapsulating packet size {} at offset {}",
-					 static_cast<uint16_t>(encap_packet_size), size, packet_pos);
+					 static_cast<uint16_t>(final_packet_size), size, packet_pos);
 				// Clear current state
 				_clearState();
 				return;
 			}
 
 			// Append packet to dest buffer
-			DEBUG_CERR("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, encap_packet_size,
+			DEBUG_CERR("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, final_packet_size,
 					   dest_buffer->getDataSize());
-			dest_buffer->append(packet + packet_pos, encap_packet_size);
+			dest_buffer->append(packet + packet_pos, final_packet_size);
 
 			// Buffer ready, push to destination pool
 			dest_buffer_pool->push(dest_buffer);
@@ -376,10 +386,10 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 			// direct IO path
 			_getDestBuffer();
 
-			// FIXME - remove
-			if (packet_pos + encap_packet_size < size) {
+			// FIXME - we have another packet in this encap packet?
+			if (packet_pos + final_packet_size < size) {
 				DEBUG_CERR("WE NEED TO CHEW ON ANOTHER PACKET: packet_pos={}, encap_packet_size={}, size={}", packet_pos,
-						   encap_packet_size, size);
+						   final_packet_size, size);
 			}
 
 			// when a packet is split between encap packets
@@ -388,6 +398,31 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 			// Packet header option partial data
 			PacketHeaderOptionPartialData *packet_header_option_partial_data =
 				(PacketHeaderOptionPartialData *)(packet + packet_header_pos + sizeof(PacketHeaderOption));
+
+			// If our part is 0, it means we probably lost something if we had a last_part, we can clear the buffer and reset
+			// last_part
+			if (packet_header_option_partial_data->part == 1 && last_part) {
+				CERR("ERROR: Something got lost, we're dropping the current partial packet we have")
+				_clearState();
+
+			} else {
+				// Verify part number
+				if (packet_header_option_partial_data->part != last_part + 1) {
+					CERR("ERROR: Partial payload part {} does not match last_part={} + 1", packet_header_option_partial_data->part,
+						 last_part);
+					// Clear current state
+					_clearState();
+					return;
+				}
+				// Verify packet size is the same as the last one
+				if (last_part && final_packet_size != last_final_packet_size) {
+					CERR("ERROR: This final_packet_size={} does not match last_final_packet_size={}", final_packet_size,
+						 last_final_packet_size);
+					// Clear current state
+					_clearState();
+					return;
+				}
+			}
 
 			uint16_t packet_pos = packet_header_pos + sizeof(PacketHeaderOption) + sizeof(PacketHeaderOptionPartialData);
 			uint16_t payload_length = seth_be_to_cpu_16(packet_header_option_partial_data->payload_length);
@@ -409,31 +444,37 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 				_clearState();
 				return;
 			}
-
-			// TODO: Check packet sequence
-			// TODO: Check packet part number
+			// Check if the current buffer plus the payload we got now exceeds what the final packet size should be
+			if (dest_buffer->getDataSize() + payload_length > final_packet_size) {
+				CERR("This should never happen, our packet getDataSize()={} + payload_length={} is bigger than the packet size of "
+					 "{}, DROPPING!!!",
+					 dest_buffer->getDataSize(), payload_length, size);
+				_clearState();
+			}
 
 			// Append packet to dest buffer
 			DEBUG_CERR("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, payload_length,
 					   dest_buffer->getDataSize());
 			dest_buffer->append(packet + packet_pos, payload_length);
 
-			// Check if we have the entire packet
-			if (dest_buffer->getDataSize() == encap_packet_size) {
+			if (dest_buffer->getDataSize() == final_packet_size) {
 				DEBUG_CERR("  - Entire packet read... dumping into dest_buffer_pool")
 				// Buffer ready, push to destination pool
 				dest_buffer_pool->push(dest_buffer);
-				// We're now outsie the path of direct IO (maybe), so get a new buffer here so we can be ready for when we're in the
-				// direct IO path
+				// We're now outsie the path of direct IO (maybe), so get a new buffer here so we can be ready for when we're in
+				// the direct IO path
 				_getDestBuffer();
 			} else {
 				DEBUG_CERR("  - Packet not entirely read, we need more")
+				// Bump last part and set last_final_packet_size
+				last_part = packet_header_option_partial_data->part;
+				last_final_packet_size = final_packet_size;
 			}
 
 			// FIXME - remove
-			if (packet_pos + encap_packet_size < size) {
+			if (packet_pos + final_packet_size < size) {
 				DEBUG_CERR("WE NEED TO CHEW ON ANOTHER PACKET: packet_pos={}, encap_packet_size={}, size={}", packet_pos,
-						   encap_packet_size, size);
+						   final_packet_size, size);
 			}
 		}
 	}

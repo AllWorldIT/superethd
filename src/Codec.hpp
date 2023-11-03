@@ -147,6 +147,8 @@ class PacketDecoder {
 		// Sequence counter
 		bool first_packet;
 		uint32_t last_sequence;
+		uint8_t last_part;
+		uint16_t last_final_packet_size;
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
 
