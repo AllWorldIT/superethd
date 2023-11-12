@@ -39,7 +39,7 @@ TEST_CASE("Check encoding of a packet that will fit into MSS", "[codec]") {
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mss, 10);
 	accl::BufferPool enc_buffer_pool(mss);
@@ -111,7 +111,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mss, 10);
 	accl::BufferPool enc_buffer_pool(mss);
@@ -186,7 +186,7 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mtu + SETH_PACKET_ETHERNET_HEADER_LEN, 10);
 	accl::BufferPool enc_buffer_pool(mtu + SETH_PACKET_ETHERNET_HEADER_LEN);
@@ -281,7 +281,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet", "[c
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mss, 10);
 	accl::BufferPool enc_buffer_pool(mss);
@@ -379,7 +379,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mss, 10);
 	accl::BufferPool enc_buffer_pool(mss);
@@ -477,7 +477,7 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu = {1500};
+	uint16_t mtu{1500};
 	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
 	accl::BufferPool avail_buffer_pool(mss, 10);
 	accl::BufferPool enc_buffer_pool(mss);

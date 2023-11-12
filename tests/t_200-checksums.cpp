@@ -7,7 +7,7 @@
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check checksum generation using compute_checksum", "[checksums]") {
-	size_t buffer_size = 0xffff;
+	size_t buffer_size{0xffff};
 
 	char *test_buffer = create_sequence_data(buffer_size);
 
@@ -19,7 +19,7 @@ TEST_CASE("Check checksum generation using compute_checksum", "[checksums]") {
 }
 
 TEST_CASE("Check checksum generation using partial checksum", "[checksums]") {
-	size_t buffer_size = 0xffff;
+	size_t buffer_size{0xffff};
 
 	// TODO: convert to c++
 

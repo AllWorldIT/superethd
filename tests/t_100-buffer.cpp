@@ -36,7 +36,7 @@ TEST_CASE("Check buffer usage when using 2 appends", "[buffers]") {
 	// Make sure that the buffer is the correct size
 	assert(buffer.getBufferSize() == 100);
 
-	size_t append_size = 6;
+	size_t append_size{6};
 
 	buffer.append(reinterpret_cast<const char *>(test_string.c_str()), append_size);
 
