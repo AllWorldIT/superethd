@@ -116,6 +116,8 @@ class PacketEncoder {
 		std::unique_ptr<accl::Buffer> dest_buffer;
 		// Active destination buffer header options length
 		uint16_t opt_len;
+		// Number of packets currently encoded
+		uint32_t packet_count;
 
 		// Buffer pool to get buffers from
 		accl::BufferPool *avail_buffer_pool;
@@ -123,6 +125,7 @@ class PacketEncoder {
 		accl::BufferPool *dest_buffer_pool;
 
 		void _getDestBuffer();
+		inline uint16_t _getMaxPayloadSize();
 
 	public:
 		PacketEncoder(uint16_t mss, uint16_t mtu, accl::BufferPool *available_buffer_pool,
@@ -131,7 +134,23 @@ class PacketEncoder {
 
 		inline void encode(accl::Buffer &packetBuffer);
 		void encode(const char *packet, uint16_t size);
+
+		void flushBuffer();
 };
+
+inline uint16_t PacketEncoder::_getMaxPayloadSize() {
+	uint16_t max_payload_size = mss - sizeof(PacketHeaderOption) - sizeof(PacketHeaderOptionPartialData);
+
+	// Check if we have data in the buffer
+	if (dest_buffer->getDataSize())
+		// If we do, reduce by current buffer size
+		max_payload_size -= dest_buffer->getDataSize();
+	else
+		// If we don't, we will be adding a packet header too, so we need to cater for that
+		max_payload_size -= sizeof(PacketHeader);
+
+	return max_payload_size;
+}
 
 inline void PacketEncoder::encode(accl::Buffer &packetBuffer) { encode(packetBuffer.getData(), packetBuffer.getDataSize()); }
 
@@ -157,12 +176,11 @@ class PacketDecoder {
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 
-		void _clearState() ;
+		void _clearState();
 		void _getDestBuffer();
 
 	public:
-		PacketDecoder(uint16_t mtu, accl::BufferPool *available_buffer_pool,
-					  accl::BufferPool *destination_buffer_pool);
+		PacketDecoder(uint16_t mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
 		~PacketDecoder();
 
 		inline void decode(accl::Buffer &packetBuffer);
