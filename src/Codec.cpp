@@ -57,17 +57,17 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 	}
 
 	// Handle packets that are larger than the MSS
-	if (size > _getMaxPayloadSize()) {
+	if (size > _getMaxPayloadSize(size)) {
 		// Start off at packet part 1 and position 0...
 		uint8_t part = 1;
 		uint16_t packet_pos = 0; // Position in the packet we're stuffing into the encap packet
 
 		// Loop while we still have bits of the packet to stuff into the encap packets
 		while (packet_pos < size) {
-			// Maximum payload size for the current encap packet
-			uint16_t max_payload_size = _getMaxPayloadSize();
 			// Amount of data left in the packet still to encode
 			uint16_t packet_left = size - packet_pos;
+			// Maximum payload size for the current encap packet
+			uint16_t max_payload_size = _getMaxPayloadSize(packet_left);
 			// Work out how much of this packet we're going to stuff into the encap packet
 			uint16_t part_size = (packet_left > max_payload_size) ? max_payload_size : packet_left;
 
@@ -131,7 +131,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 		packet_header_option->type = PacketHeaderOptionType::COMPLETE_PACKET;
 		packet_header_option->packet_size = seth_cpu_to_be_16(size);
 
-		DEBUG_CERR("  - OPTION HEADER: max_payload_size={}, cur_buffer_size={}, header_option_size={}", _getMaxPayloadSize(),
+		DEBUG_CERR("  - OPTION HEADER: max_payload_size={}, cur_buffer_size={}, header_option_size={}", _getMaxPayloadSize(size),
 				   cur_buffer_size, sizeof(PacketHeaderOption));
 
 		// Add packet header option
@@ -153,7 +153,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 
 	// If the buffer is full, push it to the destination pool
 	// NK: We need to make provision for a header
-	if (_getMaxPayloadSize() < sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10))
+	if (_getMaxPayloadSize(SETH_PACKET_MAX_SIZE) < sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10))
 		flushBuffer();
 }
 

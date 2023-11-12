@@ -8,7 +8,7 @@
 
 #include "IPv6Packet.hpp"
 
-inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6 = 58;
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6{58};
 
 struct icmp6_header_t {
 		uint8_t type;		  // Type

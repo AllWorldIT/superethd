@@ -9,6 +9,10 @@
 #include "Endian.hpp"
 #include "common.hpp"
 #include "libaccl/BufferPool.hpp"
+#include "libsethnetkit/EthernetPacket.hpp"
+
+// Maximum packet size
+inline constexpr uint16_t SETH_PACKET_MAX_SIZE = UINT16_MAX - SETH_PACKET_ETHERNET_HEADER_LEN;
 
 /*
  *
@@ -32,14 +36,12 @@
  *	- Channel: 8 bits, Network channel to use.
  */
 
-inline constexpr uint8_t SETH_PACKET_HEADER_VERSION_V1 = 0x1;
+inline constexpr uint8_t SETH_PACKET_HEADER_VERSION_V1{0x1};
 
 enum class PacketHeaderFormat : uint8_t {
 	ENCAPSULATED = 0x1,
 	COMPRESSED = 0x2,
 };
-
-inline constexpr uint16_t SETH_PACKET_HEADER_SIZE = 8;
 
 struct PacketHeader {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
@@ -84,8 +86,8 @@ enum class PacketHeaderOptionType : uint8_t {
 	COMPLETE_PACKET = 0x2,
 };
 
-inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_SIZE = 4;
-inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE = 4;
+inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_SIZE{4};
+inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE{4};
 
 struct PacketHeaderOption {
 		PacketHeaderOptionType type;
@@ -125,7 +127,7 @@ class PacketEncoder {
 		accl::BufferPool *dest_buffer_pool;
 
 		void _getDestBuffer();
-		inline uint16_t _getMaxPayloadSize();
+		inline uint16_t _getMaxPayloadSize(uint16_t size);
 
 	public:
 		PacketEncoder(uint16_t mss, uint16_t mtu, accl::BufferPool *available_buffer_pool,
@@ -138,8 +140,8 @@ class PacketEncoder {
 		void flushBuffer();
 };
 
-inline uint16_t PacketEncoder::_getMaxPayloadSize() {
-	uint16_t max_payload_size = mss - sizeof(PacketHeaderOption) - sizeof(PacketHeaderOptionPartialData);
+inline uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) {
+	uint16_t max_payload_size = mss - sizeof(PacketHeaderOption);
 
 	// Check if we have data in the buffer
 	if (dest_buffer->getDataSize())
@@ -147,7 +149,11 @@ inline uint16_t PacketEncoder::_getMaxPayloadSize() {
 		max_payload_size -= dest_buffer->getDataSize();
 	else
 		// If we don't, we will be adding a packet header too, so we need to cater for that
-		max_payload_size -= sizeof(PacketHeader);
+		max_payload_size -= sizeof(PacketHeader) + sizeof(PacketHeaderOption);
+
+	// Now we take the reference size of what we need to fit in and see if we need the parital header or not
+	if (size > max_payload_size)
+		max_payload_size -= sizeof(PacketHeaderOptionPartialData);
 
 	return max_payload_size;
 }

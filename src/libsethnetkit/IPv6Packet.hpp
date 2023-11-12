@@ -8,9 +8,9 @@
 
 #include "IPPacket.hpp"
 
-inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV6 = 0x86DD;
+inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV6{0x86DD};
 
-inline constexpr uint16_t SETH_PACKET_IPV6_IP_LEN = 16;
+inline constexpr uint16_t SETH_PACKET_IPV6_IP_LEN{16};
 
 // IPv6 header definition
 struct ipv6_header_t {

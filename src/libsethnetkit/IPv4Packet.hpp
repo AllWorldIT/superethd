@@ -8,10 +8,10 @@
 
 #include "IPPacket.hpp"
 
-inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV4 = 0x0800;
+inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV4{0x0800};
 
-inline constexpr uint16_t SETH_PACKET_IPV4_HEADER_LEN = 20;
-inline constexpr uint16_t SETH_PACKET_IPV4_IP_LEN = 4;
+inline constexpr uint16_t SETH_PACKET_IPV4_HEADER_LEN{20};
+inline constexpr uint16_t SETH_PACKET_IPV4_IP_LEN{4};
 
 // IPv4 header definition
 struct ipv4_header_t {

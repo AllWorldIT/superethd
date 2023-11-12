@@ -8,7 +8,7 @@
 
 #include "IPv4Packet.hpp"
 
-inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP4 = 1;
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP4{1};
 
 struct icmp_header_t {
 		uint8_t type;		  // Type

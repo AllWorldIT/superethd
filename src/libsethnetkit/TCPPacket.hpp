@@ -9,7 +9,7 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
-inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_TCP = 6;
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_TCP{6};
 
 struct tcp_options_header_t {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN

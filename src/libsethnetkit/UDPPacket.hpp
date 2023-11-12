@@ -9,7 +9,7 @@
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 
-inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_UDP = 17;
+inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_UDP{17};
 
 struct udp_header_t {
 		seth_be16_t src_port; // Source port

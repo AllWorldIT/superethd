@@ -8,11 +8,11 @@
 
 #include "EthernetPacket.hpp"
 
-inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV4 = 0x4;
-inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV6 = 0x6;
+inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV4{0x4};
+inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV6{0x6};
 
 // IP header definition
-struct ip_header_t  {
+struct ip_header_t {
 #if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
 		uint8_t version : 4; // IP version (should be 4 for IPv4)
 		uint8_t unused : 4;	 // Unused bits

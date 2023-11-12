@@ -18,7 +18,7 @@
 namespace accl {
 
 // Inline constant to pass to pop() to allow popping all buffers
-inline constexpr size_t BUFFER_POOL_POP_ALL = 0;
+inline constexpr size_t BUFFER_POOL_POP_ALL{0};
 
 class BufferPool {
 	private:

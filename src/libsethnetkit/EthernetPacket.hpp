@@ -8,8 +8,8 @@
 
 #include "Packet.hpp"
 
-inline constexpr uint16_t SETH_PACKET_ETHERNET_HEADER_LEN = 14;
-inline constexpr uint8_t SETH_PACKET_ETHERNET_MAC_LEN = 6;
+inline constexpr uint16_t SETH_PACKET_ETHERNET_HEADER_LEN{14};
+inline constexpr uint8_t SETH_PACKET_ETHERNET_MAC_LEN{6};
 
 struct ethernet_header_t {
 		uint8_t dst_mac[SETH_PACKET_ETHERNET_MAC_LEN]; // Destination MAC address
