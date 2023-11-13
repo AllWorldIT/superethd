@@ -6,13 +6,9 @@
 
 #pragma once
 
-
-extern "C" {
-#include <stdint.h>
-#include <sys/types.h>
-}
-
 #include "common.hpp"
+#include <pthread.h>
+#include <unistd.h>
 
 typedef struct {
 	char* contents;

@@ -6,6 +6,7 @@
 
 #include "BufferPool.hpp"
 #include "Buffer.hpp"
+#include <chrono>
 #include <sstream>
 
 namespace accl {
@@ -85,8 +86,15 @@ std::vector<std::unique_ptr<Buffer>> BufferPool::wait() {
 	return _pop(BUFFER_POOL_POP_ALL);
 }
 
-bool BufferPool::wait_for(std::chrono::seconds duration, std::vector<std::unique_ptr<Buffer>> &result) {
+bool BufferPool::wait_for(std::chrono::milliseconds duration, std::vector<std::unique_ptr<Buffer>> &result) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
+
+	// If we have a zero tick count, wait indefinitely
+	if (!duration.count()) {
+		cv.wait(lock);
+		_pop(result, BUFFER_POOL_POP_ALL);
+		return true;
+	}
 
 	// Wait for a duration
 	if (cv.wait_for(lock, duration) == std::cv_status::no_timeout) {

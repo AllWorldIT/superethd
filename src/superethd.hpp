@@ -6,9 +6,7 @@
 
 #pragma once
 
-extern "C" {
 #include <netinet/in.h>
-}
 
 #include <string>
 

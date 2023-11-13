@@ -6,6 +6,8 @@
 #include "debug.hpp"
 #include <iomanip>
 
+bool seth_debug{true};
+
 std::string hex_dump(const std::string buffer) {
 
 	std::ostringstream oss;

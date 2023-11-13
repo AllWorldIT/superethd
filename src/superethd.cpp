@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include <string>
-extern "C" {
+#include "common.hpp"
+#include "libaccl/Buffer.hpp"
+#include "libaccl/BufferPool.hpp"
+
 #include <errno.h>
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-}
 
 #include "buffers.hpp"
 #include "debug.hpp"
@@ -91,11 +90,12 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.max_payload_size = get_max_payload_size(tdata.tx_size, &tdata.remote_addr.sin6_addr);
 	CERR("Setting maximum UDP payload size to {}...", tdata.max_payload_size);
 
-	// Allocate buffers
-	initialize_buffer_list(&tdata.available_buffers, SETH_BUFFER_COUNT, tdata.max_ethernet_frame_size);
-	// Initialize our queues
-	initialize_buffer_list(&tdata.tx_packet_queue, 0, 0);
-	initialize_buffer_list(&tdata.rx_packet_queue, 0, 0);
+	// Allocate buffer pools
+	tdata.available_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size, SETH_BUFFER_COUNT);
+	tdata.encoder_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
+	tdata.decoder_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
+	tdata.tx_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
+	tdata.rx_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
 
 	/*
 	 * End thread data setup
@@ -117,7 +117,16 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	CERR("Setting ethernet device MTU...");
 	set_interface_mtu(&tdata);
 
-	// Create threads for receiving and sending data
+	std::thread tunnel_read_tap_thread(tunnel_read_tap_handler, &tdata);
+	std::thread tunnel_write_socket_thread(tunnel_write_socket_handler, &tdata);
+	std::thread tunnel_encoding_thread(tunnel_encoding_handler, &tdata);
+	/*
+
+	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
+	std::thread tunnel_write_tap_thread(tunnel_write_tap_handler, &tdata);
+	*/
+// FIXME
+#if 0
 	pthread_t tunnel_read_tap_thread, tunnel_write_socket_thread, tunnel_read_socket_thread, tunnel_write_tap_thread;
 	if (pthread_create(&tunnel_read_tap_thread, NULL, tunnel_read_tap_handler, &tdata) != 0) {
 		CERR("ERROR: Failed to create tunnel_read_tap_thread thread: {}", strerror(errno));
@@ -136,17 +145,29 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 		CERR("ERROR: Failed to create tunnel_write_tap_thread thread: {}", strerror(errno));
 		exit(1);
 	}
+#endif
 
 	// Online interface
 	CERR("Enabling ethernet device '{}'...", ifname.c_str());
 	start_tap_interface(&tdata);
 
+	// Join all threads after the interface comes online
+	tunnel_read_tap_thread.join();
+	// FIXME
+	/*
+	tunnel_write_socket_thread.join();
+	tunnel_read_socket_thread.join();
+	tunnel_write_tap_thread.join();
+	*/
+
+// FIXME
+#if 0
 	// Wait for threads to finish (should never happen)
-	// pthread_join(send_thread, NULL);
 	pthread_join(tunnel_read_tap_thread, NULL);
 	pthread_join(tunnel_write_socket_thread, NULL);
 	pthread_join(tunnel_read_socket_thread, NULL);
 	pthread_join(tunnel_write_tap_thread, NULL);
+#endif
 
 	CERR("NORMAL EXIT.....");
 

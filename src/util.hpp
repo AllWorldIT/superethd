@@ -6,9 +6,7 @@
 
 #pragma once
 
-extern "C" {
 #include <netinet/in.h>
-}
 
 int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length);
 char *uint8_array_to_char_buffer(const uint8_t *array, size_t length);

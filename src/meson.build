@@ -47,12 +47,12 @@ libsuperethd = static_library('superethd', libsuperethd_sources)
 # Executables
 #
 
-executable('superethd-debug', 'main.cpp', link_with: libsuperethd, dependencies: deps,
+executable('superethd-debug', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps,
     c_args: c_args_debug,
     cpp_args: cpp_args_debug,
     link_args: link_args_debug,
 )
-executable('superethd', 'main.cpp', link_with: libsuperethd, dependencies: deps)
+executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps)
 
 
 

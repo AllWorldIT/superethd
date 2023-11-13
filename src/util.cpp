@@ -6,18 +6,17 @@
 
 #include "util.hpp"
 
-extern "C" {
 #include <arpa/inet.h>
-#include <stdint.h>
+
+#include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-}
 
 int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length) {
-	*buffer = (uint8_t *)malloc(strlen(hex_dump));	// Maximum possible size
+	*buffer = (uint8_t *)malloc(strlen(hex_dump)); // Maximum possible size
 	if (!*buffer) {
-		return -1;	// Memory allocation failed
+		return -1; // Memory allocation failed
 	}
 
 	size_t offset = 0;
@@ -25,35 +24,35 @@ int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *le
 	const char *cursor = hex_dump;
 
 	while (sscanf(cursor, "%4zx", &offset) == 1) {
-		cursor += 5;  // Move past offset and space
+		cursor += 5; // Move past offset and space
 
 		for (int i = 0; i < 16 && *cursor && *cursor != '\n'; i++) {
 			if (sscanf(cursor, " %2hhx", &(*buffer)[byte_count]) != 1) {
-				break;	// End of line or invalid data
+				break; // End of line or invalid data
 			}
 			byte_count++;
-			cursor += 3;  // Move past hex byte and space
+			cursor += 3; // Move past hex byte and space
 		}
 
 		while (*cursor && *cursor != '\n') {
-			cursor++;  // Move to next line
+			cursor++; // Move to next line
 		}
 		if (*cursor == '\n') {
-			cursor++;  // Move past newline
+			cursor++; // Move past newline
 		}
 	}
 
-	*buffer = (uint8_t *)realloc(*buffer, byte_count);	// Resize to actual size
+	*buffer = (uint8_t *)realloc(*buffer, byte_count); // Resize to actual size
 	*length = byte_count;
 
-	return 0;  // Success
+	return 0; // Success
 }
 
 char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
 	// Allocate memory for the buffer (+1 for the null terminator)
 	char *buffer = (char *)malloc(length + 1);
 	if (!buffer) {
-		return NULL;  // Memory allocation failed
+		return NULL; // Memory allocation failed
 	}
 
 	// Copy the values
@@ -68,16 +67,18 @@ char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
 }
 
 char *create_sequence_data(size_t length) {
-	if (length < 2) return NULL;  // Ensure at least space for one character and a null terminator
+	if (length < 2)
+		return NULL; // Ensure at least space for one character and a null terminator
 
 	char *buffer = (char *)malloc(length + 1);
-	if (!buffer) return NULL;  // Memory allocation failed
+	if (!buffer)
+		return NULL; // Memory allocation failed
 
 	char letter = 'A';
 	char number = '0';
 	uint16_t index = 0;
 
-	while (index < length) {  // Leave space for null terminator
+	while (index < length) { // Leave space for null terminator
 		buffer[index++] = letter;
 		for (number = '0'; number <= '9' && index < length; number++) {
 			buffer[index++] = number;
@@ -91,7 +92,7 @@ char *create_sequence_data(size_t length) {
 		}
 	}
 
-	buffer[index] = '\0';  // Null terminate the buffer
+	buffer[index] = '\0'; // Null terminate the buffer
 	return buffer;
 }
 
@@ -105,7 +106,7 @@ char *create_sequence_data(size_t length) {
 int to_sin6addr(const char *str, struct in6_addr *result) {
 	// Try converting as IPv6 address
 	if (inet_pton(AF_INET6, str, result) > 0) {
-		return 1;  // Successfully converted as IPv6
+		return 1; // Successfully converted as IPv6
 	}
 
 	// Try converting as IPv4 address and map it to IPv6
@@ -116,7 +117,7 @@ int to_sin6addr(const char *str, struct in6_addr *result) {
 		result->s6_addr[10] = 0xFF;
 		result->s6_addr[11] = 0xFF;
 		memcpy(&result->s6_addr[12], &ipv4_addr.s_addr, sizeof(ipv4_addr.s_addr));
-		return 1;  // Successfully converted as IPv4-mapped IPv6
+		return 1; // Successfully converted as IPv4-mapped IPv6
 	}
 
 	// Conversion failed
@@ -152,10 +153,10 @@ uint16_t get_max_payload_size(uint8_t max_packet_size, struct in6_addr *dest_add
 
 	// Reduce by IP header size
 	if (is_ipv4_mapped_ipv6(dest_addr6))
-		max_payload_size -= 20;	 // IPv4 header
+		max_payload_size -= 20; // IPv4 header
 	else
-		max_payload_size -= 40;	 // IPv6 header
-	max_payload_size -= 8;		 // UDP frame
+		max_payload_size -= 40; // IPv6 header
+	max_payload_size -= 8;		// UDP frame
 
 	return max_payload_size;
 }
@@ -171,8 +172,8 @@ uint16_t get_max_ethernet_frame_size(uint8_t mtu) {
 	// Set the initial maximum frame size to the specified MTU
 	uint8_t frame_size = mtu;
 
-	// Maximum ethernet frame size is 18 bytes, 14 + 4 for VLAN
-	frame_size -= 18;
+	// Maximum ethernet frame size is 22 bytes, ethernet header + 802.1ad (8 bytes)
+	frame_size -= 14 + 8;
 
 	return frame_size;
 }

@@ -308,13 +308,13 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 			return;
 		}
 		// For now we just output the info
-		CERR("  - Packet header option: header={}, type={:02X}", header_num + 1, static_cast<uint8_t>(packet_header_option->type));
+		DEBUG_CERR("  - Packet header option: header={}, type={:02X}", header_num + 1, static_cast<uint8_t>(packet_header_option->type));
 
 		// If this header is a packet, we need to set packet_pos, data should immediately follow it
 		if (!packet_header_pos &&
 			static_cast<uint8_t>(packet_header_option->type) & (static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |
 																static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) {
-			CERR("  - Found packet @{}", cur_pos);
+			DEBUG_CERR("  - Found packet @{}", cur_pos);
 
 			// Make sure our headers are in the correct positions, else something is wrong
 			if (header_num + 1 != packet_header->opt_len) {

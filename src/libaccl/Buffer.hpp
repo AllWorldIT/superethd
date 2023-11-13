@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <cstdint> // for uint8_t
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 

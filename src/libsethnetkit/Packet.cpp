@@ -20,7 +20,7 @@ Packet::~Packet() = default;
 
 void Packet::clear() { Packet::_clear(); }
 
-void Packet::parse(const std::vector<uint8_t> &data) { }
+void Packet::parse(const std::vector<uint8_t> &data) {}
 
 // Payload handling
 void Packet::addPayload(const std::vector<uint8_t> &data) { payload = data; }

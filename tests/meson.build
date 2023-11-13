@@ -194,12 +194,23 @@ test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packe
 #
 
 
-t_999_new_codec = executable('t_999-new-codec',
-  't_999-new-codec.cpp',
+t_998_new_codec = executable('t_998-new-codec',
+  't_998-new-codec.cpp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
   c_args: c_args,
   cpp_args: cpp_args,
 )
-test('Test codec in development', t_999_new_codec)
+test('Test codec in development', t_998_new_codec)
+
+
+t_999_new_codec_benchmark = executable('t_999-new-codec-benchmark',
+  't_999-new-codec-benchmark.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+  c_args: c_args,
+  cpp_args: cpp_args,
+)
+test('Test codec_benchmark in development', t_999_new_codec_benchmark)

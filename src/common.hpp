@@ -24,14 +24,14 @@ inline constexpr uint32_t SETH_MAX_RECVMM_MESSAGES{1000};
 // Minimum transmission packet size
 inline constexpr uint16_t SETH_MIN_TXSIZE{1200};
 
-// Maximum transmission packet size
-inline constexpr uint16_t SETH_MAX_TXSIZE{UINT16_MAX};
+// Maximum transmission packet size, max minus L2 header, minus VLAN
+inline constexpr uint16_t SETH_MAX_TXSIZE(UINT16_MAX - 14 - 8);
 
 // Minimum device MTU size
 inline constexpr uint16_t SETH_MIN_MTU_SIZE{1200};
 
-// Maximum device MTU size
-inline constexpr uint16_t SETH_MAX_MTU_SIZE{UINT16_MAX};
+// Maximum device MTU size, max minus L2 header, minus VLAN
+inline constexpr uint16_t SETH_MAX_MTU_SIZE(UINT16_MAX - 14 - 8);
 
 /*
  * Other useful constants

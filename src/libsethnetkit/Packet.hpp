@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "../Endian.hpp"
 #include "../common.hpp"
 #include "../debug.hpp"
-#include "../Endian.hpp"
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -52,7 +52,7 @@ class Packet {
 
 		bool compare(std::string bin);
 
-			virtual std::string asHex() const;
+		virtual std::string asHex() const;
 		virtual std::string asText() const;
 		virtual std::string asBinary() const;
 };

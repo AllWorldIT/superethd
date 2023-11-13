@@ -6,19 +6,16 @@
 
 #include "codec.hpp"
 
-extern "C" {
-#include <assert.h>
-#include <lz4.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-}
 
 #include "buffers.hpp"
 #include "common.hpp"
 #include "debug.hpp"
 #include "util.hpp"
+
+extern "C" {
+#include <lz4.h>
+}
 
 /**
  * @brief Get the codec wbuffer count to allocate and pass to the codec.
@@ -265,7 +262,7 @@ static int _decode_complete_packet(PacketDecoderState *state, PacketDecoderEncap
 	// Sanity check of options
 	if (epkt->decoded_packet_size > epkt->payload.length - epkt->pos) {
 		CERR("Packet size {} exceeds available payload length of {} in header {}, DROPPING!", epkt->decoded_packet_size,
-				epkt->payload.length - epkt->pos, epkt->cur_header);
+			 epkt->payload.length - epkt->pos, epkt->cur_header);
 		return -1;
 	}
 
@@ -301,7 +298,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Make sure we have space to overlay the partial packet header
 	if (epkt->payload.length - epkt->pos <= SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE * 2) {
 		CERR("Invalid payload length {}, should be > {} to fit partial packet header {}, DROPPING!", epkt->payload.length,
-				SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, epkt->cur_header);
+			 SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE, epkt->cur_header);
 		// Something is pretty wrong here, so clear partial packet state and go to next encap packet
 		_clear_packet_decoder_partial_state(state);
 		return -1;
@@ -321,7 +318,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Check that this partial packet size does not exceed the encap payload memory space left
 	if (partial_packet_payload_length > epkt->payload.length - epkt->pos) {
 		CERR("Partial packet payload size {} exceeds available payload length of {} in header {}, DROPPING!",
-				epkt->decoded_packet_size, epkt->payload.length - epkt->pos, epkt->cur_header);
+			 epkt->decoded_packet_size, epkt->payload.length - epkt->pos, epkt->cur_header);
 		// The partial packet size can never exceed the memory left in the payload, if this is true, something is wrong
 		// clear the state and move to the next encap packet.
 		_clear_packet_decoder_partial_state(state);
@@ -336,8 +333,8 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Check that the partial packet size matches what we got originally
 	if (state->partial_packet_size && state->partial_packet_size != epkt->decoded_packet_size) {
 		CERR("Partial packet size does not match the one in the first header state->partial_packet_size={}, "
-				"partial_packet_size={}, DROPPING!",
-				state->partial_packet_size, epkt->decoded_packet_size);
+			 "partial_packet_size={}, DROPPING!",
+			 state->partial_packet_size, epkt->decoded_packet_size);
 		// The original packet size we got does not match what we got now, this shouldn't happen, drop packet and
 		// continue onto the next encap packet.
 		_clear_packet_decoder_partial_state(state);
@@ -348,7 +345,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Check encap packet sequence is in order
 	if (state->partial_packet_lastseq && state->partial_packet_lastseq != epkt->seq - 1) {
 		CERR("Partial packet encap sequence mismatch partial_packet_lastseq={}, (sequence - 1)={}, DROPPING!",
-				state->partial_packet_lastseq, epkt->seq - 1);
+			 state->partial_packet_lastseq, epkt->seq - 1);
 		// We obviously lost data, so reset the partial packet assembly
 		_clear_packet_decoder_partial_state(state);
 		epkt->pos += epkt->decoded_packet_size;
@@ -358,7 +355,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Verify packet part is in numerical order
 	if (state->partial_packet_size && state->partial_packet_part != pktphdr_partial->part - 1) {
 		CERR("Partial packet part mismatch partial_packet_part={}, (partial_packet_part - 1)={}, DROPPING!",
-				state->partial_packet_part, pktphdr_partial->part - 1);
+			 state->partial_packet_part, pktphdr_partial->part - 1);
 		// Payload part did not match what it should be, probably corruption?
 		_clear_packet_decoder_partial_state(state);
 		return -1;
@@ -376,7 +373,7 @@ static int _decode_partial_packet(PacketDecoderState *state, PacketDecoderEncapP
 	// Make sure if we add this payload, the packet will not exceed the size it said it was
 	if (state->partial_packet.length + partial_packet_payload_length > epkt->decoded_packet_size) {
 		CERR("Partial packet size will exceed packet size in header {} with payload {}, DROPPING!", epkt->decoded_packet_size,
-				partial_packet_payload_length);
+			 partial_packet_payload_length);
 		// This should never happen, so maybe its corruption? clear start and discard rest of encap packet
 		_clear_packet_decoder_partial_state(state);
 		return -1;
@@ -513,7 +510,7 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 		// Make sure we have space to overlay the optional packet header
 		if (epkt.payload.length - epkt.pos <= SETH_PACKET_PAYLOAD_HEADER_SIZE) {
 			CERR("Invalid payload length {}, should be > {} to fit header {}, DROPPING!", epkt.payload.length,
-					SETH_PACKET_PAYLOAD_HEADER_SIZE, epkt.cur_header);
+				 SETH_PACKET_PAYLOAD_HEADER_SIZE, epkt.cur_header);
 			goto bump_seq;
 		}
 
@@ -530,7 +527,7 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 		// Packets should be at least SETH_MIN_ETHERNET_FRAME_SIZE bytes in size
 		if (epkt.decoded_packet_size < SETH_MIN_ETHERNET_FRAME_SIZE) {
 			CERR("Packet size {} is too small to be an ethernet frame in header {}, DROPPING!", epkt.decoded_packet_size,
-					epkt.cur_header);
+				 epkt.cur_header);
 			// Something is probably pretty wrong here too, so lets again clear the state and continue to the next encap
 			// packet
 			_clear_packet_decoder_partial_state(state);
@@ -538,7 +535,7 @@ int packet_decoder(PacketDecoderState *state, BufferList *wbuffers, Buffer *pbuf
 		}
 		if (epkt.decoded_packet_size > max_ethernet_frame_size) {
 			CERR("DROPPING PACKET! packet size {} bigger than MTU {}, DROPPING!", epkt.decoded_packet_size,
-					max_ethernet_frame_size);
+				 max_ethernet_frame_size);
 			// Things should be properly setup, so this should not be able to happen, clear state and contine to next encap
 			// packet
 			_clear_packet_decoder_partial_state(state);

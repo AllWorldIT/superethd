@@ -7,18 +7,10 @@
 #include "tap.hpp"
 #include <string>
 
-extern "C" {
-#include <errno.h>
 #include <fcntl.h>
 #include <libnetlink.h>
 #include <linux/if_tun.h>
-#include <net/if.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
-}
 
 #include "debug.hpp"
 #include "threads.hpp"
@@ -59,7 +51,8 @@ void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 }
 
 void destroy_tap_interface(struct ThreadData *tdata) {
-	if (tdata->tap_device.fd) close(tdata->tap_device.fd);
+	if (tdata->tap_device.fd)
+		close(tdata->tap_device.fd);
 }
 
 int start_tap_interface(struct ThreadData *tdata) {

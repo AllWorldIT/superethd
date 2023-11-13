@@ -4,12 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-extern "C" {
-#include <stddef.h>
-#include <stdint.h>
-}
-
 #include "../Endian.hpp"
+#include <cstddef>
 
 uint32_t compute_checksum_partial(uint8_t *addr8, size_t count, uint32_t sum) {
 	uint16_t *addr = (uint16_t *)addr8;
@@ -38,4 +34,3 @@ uint16_t compute_checksum(uint8_t *addr8, int count) {
 	uint32_t sum = compute_checksum_partial(addr8, count, 0);
 	return compute_checksum_finalize(sum);
 }
-

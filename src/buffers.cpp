@@ -6,18 +6,13 @@
 
 #include "buffers.hpp"
 
-extern "C" {
-#include <assert.h>
-#include <errno.h>
 #include <pthread.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-}
 
 #include "common.hpp"
 
-void initialize_buffer_list(BufferList* buffer_list, size_t count, size_t buffer_size) {
+void initialize_buffer_list(BufferList *buffer_list, size_t count, size_t buffer_size) {
 	// Initialize the list data
 	buffer_list->size = 0;
 	buffer_list->head = NULL;
@@ -38,15 +33,15 @@ void initialize_buffer_list(BufferList* buffer_list, size_t count, size_t buffer
 
 	// Now inititalize the nodes
 	for (size_t i = 0; i < count; ++i) {
-		BufferNode* node = (BufferNode*)calloc(1, sizeof(BufferNode));
+		BufferNode *node = (BufferNode *)calloc(1, sizeof(BufferNode));
 		if (node == NULL) {
 			perror("initialize_buffer_list(): Error allocating memory for buffers");
 			exit(EXIT_FAILURE);
 		}
 
 		// Allocate buffer and its contents
-		node->buffer = (Buffer*)calloc(1, sizeof(Buffer));
-		node->buffer->contents = (char*)malloc(buffer_size);
+		node->buffer = (Buffer *)calloc(1, sizeof(Buffer));
+		node->buffer->contents = (char *)malloc(buffer_size);
 
 		if (buffer_list->tail == NULL) {
 			buffer_list->head = node;
@@ -60,7 +55,7 @@ void initialize_buffer_list(BufferList* buffer_list, size_t count, size_t buffer
 }
 
 // Return buffer list size
-ssize_t get_buffer_list_size(BufferList* buffer_list) {
+ssize_t get_buffer_list_size(BufferList *buffer_list) {
 	pthread_mutex_lock(&buffer_list->mutex);
 	ssize_t size = buffer_list->size;
 	pthread_mutex_unlock(&buffer_list->mutex);
@@ -68,13 +63,13 @@ ssize_t get_buffer_list_size(BufferList* buffer_list) {
 }
 
 // Internal function with no locking to grab the buffer node head
-BufferNode* _get_buffer_node_head(BufferList* buffer_list) {
+BufferNode *_get_buffer_node_head(BufferList *buffer_list) {
 	// If the buffer list is empty, just return NULL
 	if (buffer_list->head == NULL) {
 		return NULL;
 	}
 
-	BufferNode* node = buffer_list->head;
+	BufferNode *node = buffer_list->head;
 	buffer_list->head = node->next;
 	if (buffer_list->head == NULL) {
 		buffer_list->tail = NULL;
@@ -94,17 +89,17 @@ BufferNode* _get_buffer_node_head(BufferList* buffer_list) {
 }
 
 // Return the buffer node head
-BufferNode* get_buffer_node_head(BufferList* buffer_list) {
+BufferNode *get_buffer_node_head(BufferList *buffer_list) {
 	// Lock, get and unlock
 	pthread_mutex_lock(&buffer_list->mutex);
-	BufferNode* node = _get_buffer_node_head(buffer_list);
+	BufferNode *node = _get_buffer_node_head(buffer_list);
 	pthread_mutex_unlock(&buffer_list->mutex);
 
 	return node;
 }
 
 // Grab the buffer node head, but wait until one is available
-int get_buffer_node_head_wait(BufferList* buffer_list, BufferNode** buffer_node, uint16_t tv_sec, uint16_t tv_nsec) {
+int get_buffer_node_head_wait(BufferList *buffer_list, BufferNode **buffer_node, uint16_t tv_sec, uint16_t tv_nsec) {
 	pthread_mutex_lock(&buffer_list->mutex);
 
 	// NK: Quick short circuit, check first if we actually have a node we can hand out
@@ -137,7 +132,7 @@ int get_buffer_node_head_wait(BufferList* buffer_list, BufferNode** buffer_node,
 	return result;
 }
 
-void append_buffer_node(BufferList* buffer_list, BufferNode* node) {
+void append_buffer_node(BufferList *buffer_list, BufferNode *node) {
 	// We can safely modify the node outside of the mutex
 	node->next = NULL;
 
@@ -159,8 +154,8 @@ void append_buffer_node(BufferList* buffer_list, BufferNode* node) {
 	pthread_mutex_unlock(&buffer_list->mutex);
 }
 
-void free_buffers(BufferList* buffer_list) {
-	BufferNode* node;
+void free_buffers(BufferList *buffer_list) {
+	BufferNode *node;
 
 	while (buffer_list->head != NULL) {
 		// Remove node

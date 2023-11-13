@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Buffer.hpp"
+#include <chrono>
 #include <condition_variable>
 #include <iostream>
 #include <list>
@@ -46,7 +47,7 @@ class BufferPool {
 		inline size_t getBufferCount();
 
 		std::vector<std::unique_ptr<Buffer>> wait();
-		bool wait_for(std::chrono::seconds duration, std::vector<std::unique_ptr<Buffer>> &result);
+		bool wait_for(std::chrono::milliseconds duration, std::vector<std::unique_ptr<Buffer>> &result);
 };
 
 // Internal method to pop many buffers from the pool WITHOUT LOCKING
