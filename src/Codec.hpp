@@ -107,10 +107,10 @@ struct PacketHeaderOptionPartialData {
 
 class PacketEncoder {
 	private:
+		// Interface L2MTU
+		uint16_t l2mtu;
 		// Maximum layer 4 segment size, this is the maximum size our layer 4 transport can handle
-		uint16_t mss;
-		// Interface MTU
-		uint16_t mtu;
+		uint16_t l4mtu;
 
 		// Sequence counter
 		uint32_t sequence;
@@ -130,18 +130,18 @@ class PacketEncoder {
 		inline uint16_t _getMaxPayloadSize(uint16_t size);
 
 	public:
-		PacketEncoder(uint16_t mss, uint16_t mtu, accl::BufferPool *available_buffer_pool,
+		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
 					  accl::BufferPool *destination_buffer_pool);
 		~PacketEncoder();
 
 		inline void encode(accl::Buffer &packetBuffer);
 		void encode(const char *packet, uint16_t size);
 
-		void flushBuffer();
+		void flush();
 };
 
 inline uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) {
-	uint16_t max_payload_size = mss - sizeof(PacketHeaderOption);
+	uint16_t max_payload_size = l4mtu - sizeof(PacketHeaderOption);
 
 	// Check if we have data in the buffer
 	if (dest_buffer->getDataSize())
@@ -167,7 +167,7 @@ inline void PacketEncoder::encode(accl::Buffer &packetBuffer) { encode(packetBuf
 class PacketDecoder {
 	private:
 		// Interface MTU
-		uint16_t mtu;
+		uint16_t l2mtu;
 
 		// Sequence counter
 		bool first_packet;
@@ -186,7 +186,7 @@ class PacketDecoder {
 		void _getDestBuffer();
 
 	public:
-		PacketDecoder(uint16_t mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
+		PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
 		~PacketDecoder();
 
 		inline void decode(accl::Buffer &packetBuffer);

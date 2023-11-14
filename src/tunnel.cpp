@@ -30,12 +30,14 @@ extern "C" {
 void tunnel_read_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
+	std::unique_ptr<accl::Buffer> buffer;
+
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		// Grab a new buffer for our data
-		auto buffer = tdata->available_buffer_pool->pop();
+		buffer = tdata->available_buffer_pool->pop();
 
 		// Read data from TAP interface
 		ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
@@ -63,7 +65,7 @@ void tunnel_encoding_handler(void *arg) {
 	ssize_t max_queue_size = 0;
 
 	// Packet encoder
-	PacketEncoder encoder(tdata->tx_size, tdata->mtu, tdata->available_buffer_pool, tdata->tx_buffer_pool);
+	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, tdata->available_buffer_pool, tdata->tx_buffer_pool);
 
 	// Main IO loop
 	std::chrono::milliseconds buffer_wait_time{0};
@@ -72,6 +74,7 @@ void tunnel_encoding_handler(void *arg) {
 		if (*tdata->stop_program)
 			break;
 
+			/*
 		// Grab buffer
 		bool res = tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers);
 		if (!res) {
@@ -80,6 +83,8 @@ void tunnel_encoding_handler(void *arg) {
 			buffer_wait_time = std::chrono::milliseconds{0};
 			continue;
 		}
+		*/
+		tdata->encoder_buffer_pool->wait(buffers);
 
 		// Grab buffer list size
 		int cur_queue_size = buffers.size();
@@ -91,12 +96,14 @@ void tunnel_encoding_handler(void *arg) {
 		// Loop with buffers and encode
 		for (auto &buffer : buffers) {
 			encoder.encode(*buffer);
-			tdata->available_buffer_pool->push(buffer);
 		}
+		encoder.flush();
 
 		// Set sleep to 1ms
 		buffer_wait_time = std::chrono::milliseconds(1);
 
+		// Push all buffers into available list
+		tdata->available_buffer_pool->push(buffers);
 		// Clear buffer list
 		buffers.clear();
 	}
@@ -112,12 +119,13 @@ void tunnel_write_socket_handler(void *arg) {
 	// sendto() flags
 	int flags = 0;
 
+	std::vector<std::unique_ptr<accl::Buffer>> buffers;
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		// Grab buffer
-		std::vector<std::unique_ptr<accl::Buffer>> buffers = tdata->tx_buffer_pool->wait();
+		tdata->tx_buffer_pool->wait(buffers);
 
 		// Loop with buffers and send to the remote end
 		size_t i{0};
@@ -130,10 +138,13 @@ void tunnel_write_socket_handler(void *arg) {
 				exit(EXIT_FAILURE);
 			}
 			DEBUG_CERR("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i + 1, buffers.size());
-			// Push buffer back to pool
-			tdata->available_buffer_pool->push(buffer);
 			i++;
 		}
+
+		// Push all buffers in one go
+		tdata->available_buffer_pool->push(buffers);
+		// Clear buffers
+		buffers.clear();
 	}
 }
 
@@ -180,6 +191,7 @@ void tunnel_read_socket_handler(void *arg) {
 	}
 	// END - IO vector buffers
 
+	std::vector<std::unique_ptr<accl::Buffer>> decoder_queue;
 	while (1) {
 		if (*tdata->stop_program)
 			break;
@@ -240,13 +252,18 @@ void tunnel_read_socket_handler(void *arg) {
 				continue;
 			}
 
-			// Add buffer node to RX queue
-			tdata->decoder_buffer_pool->push(buffers[i]);
+			// Add buffer node to the recycle list
+			decoder_queue.push_back(std::move(buffers[i]));
 
 			// Replenish the buffer
 			buffers[i] = tdata->available_buffer_pool->pop();
 			msgs[i].msg_hdr.msg_iov->iov_base = buffers[i]->getData();
 		}
+
+		// Recycle our buffers
+		tdata->decoder_buffer_pool->push(decoder_queue);
+		// Clear the recycle list
+		decoder_queue.clear();
 	}
 
 	// Add buffers back to available list for de-allocation
@@ -264,21 +281,23 @@ void tunnel_decoding_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
 	// Packet decoder
-	PacketDecoder decoder(tdata->mtu, tdata->available_buffer_pool, tdata->rx_buffer_pool);
+	PacketDecoder decoder(tdata->l2mtu, tdata->available_buffer_pool, tdata->rx_buffer_pool);
 
+	std::vector<std::unique_ptr<accl::Buffer>> buffers;
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		// Grab buffer
-		std::vector<std::unique_ptr<accl::Buffer>> buffers = tdata->decoder_buffer_pool->wait();
+		tdata->decoder_buffer_pool->wait(buffers);
 
 		// Loop with buffers and decode
 		for (auto &buffer : buffers) {
 			decoder.decode(*buffer);
-			// Push buffer back to pool
-			tdata->available_buffer_pool->push(buffer);
 		}
+		// Push buffer back to pool
+		tdata->available_buffer_pool->push(buffers);
+		buffers.clear();
 	}
 }
 
@@ -287,12 +306,13 @@ void tunnel_write_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 	ssize_t max_queue_size = 0;
 
+	std::vector<std::unique_ptr<accl::Buffer>> buffers;
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		// Grab buffer
-		std::vector<std::unique_ptr<accl::Buffer>> buffers = tdata->decoder_buffer_pool->wait();
+		tdata->rx_buffer_pool->wait(buffers);
 
 		// Grab buffer list size
 		int cur_queue_size = buffers.size();
@@ -311,9 +331,11 @@ void tunnel_write_tap_handler(void *arg) {
 				exit(EXIT_FAILURE);
 			}
 			DEBUG_CERR("Wrote {} bytes to TAP [{}/{}]", bytes_written, i + 1, buffers.size());
-
-			// Push buffer back to pool
-			tdata->available_buffer_pool->push(buffer);
 		}
+
+		// Push buffer back to pool
+		tdata->available_buffer_pool->push(buffers);
+		// Clear buffer list
+		buffers.clear();
 	}
 }

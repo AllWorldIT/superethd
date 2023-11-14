@@ -16,7 +16,7 @@ char *create_sequence_data(size_t length);
 int to_sin6addr(const char *address_str, struct in6_addr *result);
 int is_ipv4_mapped_ipv6(const struct in6_addr *addr);
 
-uint16_t get_max_payload_size(uint8_t max_packet_size, struct in6_addr *dest_addr6);
-uint16_t get_max_ethernet_frame_size(uint8_t mtu);
+uint16_t get_l4mtu(uint16_t max_packet_size, struct in6_addr *dest_addr6);
+uint16_t get_l2mtu_from_mtu(uint16_t mtu);
 
 int is_sequence_wrapping(uint32_t cur, uint32_t prev);

@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 	int c;
 	int option_index = 0;
 	int mtu_value = 1500;
-	int tsize_value = 1500;
+	int txsize_value = 1500;
 	int port_value = 58023;
 	char *src_value = NULL;
 	char *dst_value = NULL;
@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 't':
-			tsize_value = atoi(optarg);
-			if (tsize_value < SETH_MIN_TXSIZE || tsize_value > SETH_MAX_TXSIZE) {
+			txsize_value = atoi(optarg);
+			if (txsize_value < SETH_MIN_TXSIZE || txsize_value > SETH_MAX_TXSIZE) {
 				CERR("ERROR: Invalid TX_SIZE value. It should be between {} and {}.", SETH_MIN_TXSIZE, SETH_MAX_TXSIZE);
 				return 1;
 			}
@@ -148,10 +148,10 @@ int main(int argc, char *argv[]) {
 	CERR("Destination.: {}", dst_addr_str);
 	CERR("UDP Port....: {}", port_value);
 	CERR("MTU.........: {}", mtu_value);
-	CERR("MSS.........: {}", tsize_value);
+	CERR("TX Size.....: {}", txsize_value);
 	CERR("");
 
-	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, tsize_value);
+	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, txsize_value);
 
 	return 0;
 }

@@ -39,18 +39,18 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
 
-	accl::BufferPool avail_buffer_pool(mss, 4);
+	accl::BufferPool avail_buffer_pool(l2mtu, 4);
 
-	accl::BufferPool enc_buffer_pool(mss);
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool enc_buffer_pool(l2mtu);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketDecoder decoder(l4mtu, &avail_buffer_pool, &dec_buffer_pool);
 
 	// Disable debugging
 	seth_debug = false;
@@ -59,7 +59,7 @@ TEST_CASE("Benchmark codec", "[codec]") {
 		for (int i = 0; i < 10000; ++i) {
 			// Encode packet
 			encoder.encode(reinterpret_cast<char *>(packet_bin.data()), packet_bin.length());
-			encoder.flushBuffer();
+			encoder.flush();
 
 			// Grab encoded packet and try decode
 			auto enc_buffer = enc_buffer_pool.pop();

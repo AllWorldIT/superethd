@@ -147,9 +147,9 @@ inline int is_ipv4_mapped_ipv6(const struct in6_addr *addr) {
  * @return uint16_t Maximum payload size.
  */
 
-uint16_t get_max_payload_size(uint8_t max_packet_size, struct in6_addr *dest_addr6) {
+uint16_t get_l4mtu(uint16_t max_packet_size, struct in6_addr *dest_addr6) {
 	// Set the initial maximum payload size to the specified max packet size
-	uint8_t max_payload_size = max_packet_size;
+	uint16_t max_payload_size = max_packet_size;
 
 	// Reduce by IP header size
 	if (is_ipv4_mapped_ipv6(dest_addr6))
@@ -162,18 +162,18 @@ uint16_t get_max_payload_size(uint8_t max_packet_size, struct in6_addr *dest_add
 }
 
 /**
- * @brief Get the max ethernet frame size based on MTU size.
+ * @brief Get the max ethernet frame size based on MTU size. This is the raw L2MTU we support.
  *
- * @param mtu Maximum .
+ * @param mtu Device MTU.
  * @return uint16_t Maximum packet size.
  */
 
-uint16_t get_max_ethernet_frame_size(uint8_t mtu) {
+uint16_t get_l2mtu_from_mtu(uint16_t mtu) {
 	// Set the initial maximum frame size to the specified MTU
-	uint8_t frame_size = mtu;
+	uint16_t frame_size = mtu;
 
 	// Maximum ethernet frame size is 22 bytes, ethernet header + 802.1ad (8 bytes)
-	frame_size -= 14 + 8;
+	frame_size += 14 + 8;
 
 	return frame_size;
 }

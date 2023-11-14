@@ -28,8 +28,8 @@ struct ThreadData {
 		// Settings
 		uint16_t tx_size;
 		uint16_t mtu;
-		uint16_t max_payload_size;
-		uint16_t max_ethernet_frame_size;
+		uint16_t l4mtu;
+		uint16_t l2mtu;
 		// Local and remote address
 		struct sockaddr_in6 local_addr;
 		struct sockaddr_in6 remote_addr;

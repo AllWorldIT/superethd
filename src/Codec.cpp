@@ -30,11 +30,11 @@ void PacketEncoder::_getDestBuffer() {
 	packet_count = 0;
 }
 
-PacketEncoder::PacketEncoder(uint16_t mss, uint16_t mtu, accl::BufferPool *available_buffer_pool,
+PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
 							 accl::BufferPool *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
-	this->mss = mss;
-	this->mtu = mtu;
+	this->l2mtu = l2mtu;
+	this->l4mtu = l4mtu;
 	this->sequence = 1;
 
 	// Setup buffer pools
@@ -48,11 +48,11 @@ PacketEncoder::PacketEncoder(uint16_t mss, uint16_t mtu, accl::BufferPool *avail
 PacketEncoder::~PacketEncoder() = default;
 
 void PacketEncoder::encode(const char *packet, uint16_t size) {
-	DEBUG_CERR("INCOMING PACKET: size={} [mtu: {}, mss: {}], buffer_size={}", size, mtu, mss, dest_buffer->getDataSize());
+	DEBUG_CERR("INCOMING PACKET: size={} [l2mtu: {}, l4mtu: {}], buffer_size={}", size, l2mtu, l4mtu, dest_buffer->getDataSize());
 
 	// Make sure we cannot receive a packet that is greater than our MTU size
-	if (size > mtu + SETH_PACKET_ETHERNET_HEADER_LEN) {
-		CERR("Packet size {} exceeds MTU size {}?", size, mtu);
+	if (size > l2mtu) {
+		CERR("Packet size {} exceeds L2MTU size {}?", size, l2mtu);
 		return;
 	}
 
@@ -109,8 +109,8 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 			DEBUG_CERR("    - FINAL DEST BUFFER SIZE FOR SPLIT: {}", dest_buffer->getDataSize());
 
 			// If the buffer is full, push it to the destination pool
-			if (dest_buffer->getDataSize() == mss)
-				flushBuffer();
+			if (dest_buffer->getDataSize() == l4mtu)
+				flush();
 
 			// Adjust packet position
 			packet_pos += part_size;
@@ -154,10 +154,10 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 	// If the buffer is full, push it to the destination pool
 	// NK: We need to make provision for a header
 	if (_getMaxPayloadSize(SETH_PACKET_MAX_SIZE) < sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10))
-		flushBuffer();
+		flush();
 }
 
-void PacketEncoder::flushBuffer() {
+void PacketEncoder::flush() {
 	// If we don't have data in the buffer, just return
 	if (!dest_buffer->getDataSize())
 		return;
@@ -202,9 +202,9 @@ void PacketDecoder::_getDestBuffer() {
 	_clearState();
 }
 
-PacketDecoder::PacketDecoder(uint16_t mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool) {
+PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
-	this->mtu = mtu;
+	this->l2mtu = l2mtu;
 	this->first_packet = true;
 
 	// Setup buffer pools
@@ -371,9 +371,8 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 			uint16_t final_packet_size = seth_be_to_cpu_16(packet_header_option->packet_size);
 
 			// Make sure final packet size does not exceed MTU + ETHERNET_HEADER_LEN
-			if (final_packet_size > mtu + SETH_PACKET_ETHERNET_HEADER_LEN) {
-				CERR("ERROR: Packet too bit for interface MTU, {} > {} + {} (ethernet header length)", final_packet_size, mtu,
-					 SETH_PACKET_ETHERNET_HEADER_LEN);
+			if (final_packet_size > l2mtu) {
+				CERR("ERROR: Packet too big for interface L2MTU, {} > {}", final_packet_size, l2mtu);
 				_clearState();
 				return;
 			}

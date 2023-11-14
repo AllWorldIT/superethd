@@ -8,6 +8,7 @@
 #include "libaccl/BufferPool.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
+#include "util.hpp"
 
 TEST_CASE("Check encoding of a packet that will fit into MSS", "[codec]") {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
@@ -39,16 +40,16 @@ TEST_CASE("Check encoding of a packet that will fit into MSS", "[codec]") {
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mss, 10);
-	accl::BufferPool enc_buffer_pool(mss);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet_bin.data()), packet_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 1);
@@ -59,12 +60,12 @@ TEST_CASE("Check encoding of a packet that will fit into MSS", "[codec]") {
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer);
 
 	// Our decoded buffer pool should now have 1 packet in it
@@ -111,16 +112,16 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mss, 10);
-	accl::BufferPool enc_buffer_pool(mss);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet_bin.data()), packet_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 1);
@@ -131,7 +132,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
@@ -139,7 +140,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	// Make sure the encoded packet is the right size
 	assert(enc_buffer->getDataSize() == 1468);
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer);
 
 	// Our decoded buffer pool should now have 1 packet in it
@@ -186,16 +187,16 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mtu + SETH_PACKET_ETHERNET_HEADER_LEN, 10);
-	accl::BufferPool enc_buffer_pool(mtu + SETH_PACKET_ETHERNET_HEADER_LEN);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet_bin.data()), packet_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 2);
@@ -206,13 +207,13 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mtu + SETH_PACKET_ETHERNET_HEADER_LEN);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer1 = enc_buffer_pool.pop();
 	auto enc_buffer2 = enc_buffer_pool.pop();
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer1);
 	decoder.decode(*enc_buffer2);
 
@@ -281,18 +282,18 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet", "[c
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mss, 10);
-	accl::BufferPool enc_buffer_pool(mss);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet1_bin = packet1.asBinary();
 	std::string packet2_bin = packet1.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet1_bin.data()), packet1_bin.length());
 	encoder.encode(reinterpret_cast<char *>(packet2_bin.data()), packet2_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 1);
@@ -303,12 +304,12 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet", "[c
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer);
 
 	// Our decoded buffer pool should now have 2 packets in it
@@ -379,18 +380,18 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mss, 10);
-	accl::BufferPool enc_buffer_pool(mss);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet1_bin = packet1.asBinary();
 	std::string packet2_bin = packet1.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet1_bin.data()), packet1_bin.length());
 	encoder.encode(reinterpret_cast<char *>(packet2_bin.data()), packet2_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 1);
@@ -401,12 +402,12 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer);
 
 	// Our decoded buffer pool should now have 2 packets in it
@@ -477,18 +478,18 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	 */
 
 	// Lets fire up the encoder
-	uint16_t mtu{1500};
-	uint16_t mss = mtu - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(mss, 10);
-	accl::BufferPool enc_buffer_pool(mss);
+	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
+	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
+	accl::BufferPool avail_buffer_pool(l2mtu, 10);
+	accl::BufferPool enc_buffer_pool(l2mtu);
 
 	std::string packet1_bin = packet1.asBinary();
 	std::string packet2_bin = packet1.asBinary();
 
-	PacketEncoder encoder(mss, mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(reinterpret_cast<char *>(packet1_bin.data()), packet1_bin.length());
 	encoder.encode(reinterpret_cast<char *>(packet2_bin.data()), packet2_bin.length());
-	encoder.flushBuffer();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	assert(enc_buffer_pool.getBufferCount() == 2);
@@ -499,13 +500,13 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	 * Test decoding
 	 */
 
-	accl::BufferPool dec_buffer_pool(mss);
+	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer1 = enc_buffer_pool.pop();
 	auto enc_buffer2 = enc_buffer_pool.pop();
 
-	PacketDecoder decoder(mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(*enc_buffer1);
 	decoder.decode(*enc_buffer2);
 

@@ -62,16 +62,6 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.local_addr.sin6_port = tdata.remote_addr.sin6_port = htons(port);
 	tdata.remote_addr.sin6_addr = *dst;
 
-	// MSS
-	tdata.tx_size = tx_size;
-	if (tdata.tx_size > SETH_MAX_TXSIZE) {
-		CERR("ERROR: Maximum TX_SIZE is {}", SETH_MAX_TXSIZE);
-		exit(EXIT_FAILURE);
-	}
-	if (tdata.tx_size < SETH_MIN_TXSIZE) {
-		CERR("ERROR: Minimum MSS is {}", SETH_MIN_TXSIZE);
-		exit(EXIT_FAILURE);
-	}
 	// MTU
 	tdata.mtu = mtu;
 	if (tdata.mtu > SETH_MAX_MTU_SIZE) {
@@ -83,19 +73,34 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 		exit(EXIT_FAILURE);
 	}
 
+	// Maximum TX size
+	tdata.tx_size = tx_size;
+	if (tdata.tx_size > SETH_MAX_TXSIZE) {
+		CERR("ERROR: Maximum TX_SIZE is {}", SETH_MAX_TXSIZE);
+		exit(EXIT_FAILURE);
+	}
+	if (tdata.tx_size < SETH_MIN_TXSIZE) {
+		CERR("ERROR: Minimum TX_SIZE is {}", SETH_MIN_TXSIZE);
+		exit(EXIT_FAILURE);
+	}
+	if (tdata.tx_size > tdata.mtu) {
+		CERR("ERROR: TX_SIZE {} cannot be greater than MTU is {}", tdata.tx_size, tdata.mtu);
+		exit(EXIT_FAILURE);
+	}
+
 	// Get maximum ethernet frame size we can get
-	tdata.max_ethernet_frame_size = get_max_ethernet_frame_size(tdata.mtu);
+	tdata.l2mtu = get_l2mtu_from_mtu(tdata.mtu);
 
 	// Get REAL maximum packet payload size
-	tdata.max_payload_size = get_max_payload_size(tdata.tx_size, &tdata.remote_addr.sin6_addr);
-	CERR("Setting maximum UDP payload size to {}...", tdata.max_payload_size);
+	tdata.l4mtu = get_l4mtu(tdata.tx_size, &tdata.remote_addr.sin6_addr);
+	CERR("Setting maximum payload size to {}...", tdata.l4mtu);
 
 	// Allocate buffer pools
-	tdata.available_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size, SETH_BUFFER_COUNT);
-	tdata.encoder_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
-	tdata.decoder_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
-	tdata.tx_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
-	tdata.rx_buffer_pool = new accl::BufferPool(tdata.max_ethernet_frame_size);
+	tdata.available_buffer_pool = new accl::BufferPool(tdata.l2mtu, SETH_BUFFER_COUNT);
+	tdata.encoder_buffer_pool = new accl::BufferPool(tdata.l2mtu);
+	tdata.decoder_buffer_pool = new accl::BufferPool(tdata.l2mtu);
+	tdata.tx_buffer_pool = new accl::BufferPool(tdata.l2mtu);
+	tdata.rx_buffer_pool = new accl::BufferPool(tdata.l2mtu);
 
 	/*
 	 * End thread data setup
