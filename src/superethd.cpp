@@ -118,34 +118,12 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	set_interface_mtu(&tdata);
 
 	std::thread tunnel_read_tap_thread(tunnel_read_tap_handler, &tdata);
-	std::thread tunnel_write_socket_thread(tunnel_write_socket_handler, &tdata);
 	std::thread tunnel_encoding_thread(tunnel_encoding_handler, &tdata);
-	/*
+	std::thread tunnel_write_socket_thread(tunnel_write_socket_handler, &tdata);
 
 	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
+	std::thread tunnel_decoding_thread(tunnel_decoding_handler, &tdata);
 	std::thread tunnel_write_tap_thread(tunnel_write_tap_handler, &tdata);
-	*/
-// FIXME
-#if 0
-	pthread_t tunnel_read_tap_thread, tunnel_write_socket_thread, tunnel_read_socket_thread, tunnel_write_tap_thread;
-	if (pthread_create(&tunnel_read_tap_thread, NULL, tunnel_read_tap_handler, &tdata) != 0) {
-		CERR("ERROR: Failed to create tunnel_read_tap_thread thread: {}", strerror(errno));
-		exit(1);
-	}
-	if (pthread_create(&tunnel_write_socket_thread, NULL, tunnel_write_socket_handler, &tdata) != 0) {
-		CERR("ERROR: Failed to create tunnel_write_socket_thread thread: {}", strerror(errno));
-		exit(1);
-	}
-
-	if (pthread_create(&tunnel_read_socket_thread, NULL, tunnel_read_socket_handler, &tdata) != 0) {
-		CERR("ERROR: Failed to create tunnel_read_socket_thread thread: {}", strerror(errno));
-		exit(1);
-	}
-	if (pthread_create(&tunnel_write_tap_thread, NULL, tunnel_write_tap_handler, &tdata) != 0) {
-		CERR("ERROR: Failed to create tunnel_write_tap_thread thread: {}", strerror(errno));
-		exit(1);
-	}
-#endif
 
 	// Online interface
 	CERR("Enabling ethernet device '{}'...", ifname.c_str());
@@ -153,21 +131,12 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 
 	// Join all threads after the interface comes online
 	tunnel_read_tap_thread.join();
-	// FIXME
-	/*
+	tunnel_encoding_thread.join();
 	tunnel_write_socket_thread.join();
-	tunnel_read_socket_thread.join();
-	tunnel_write_tap_thread.join();
-	*/
 
-// FIXME
-#if 0
-	// Wait for threads to finish (should never happen)
-	pthread_join(tunnel_read_tap_thread, NULL);
-	pthread_join(tunnel_write_socket_thread, NULL);
-	pthread_join(tunnel_read_socket_thread, NULL);
-	pthread_join(tunnel_write_tap_thread, NULL);
-#endif
+	tunnel_read_socket_thread.join();
+	tunnel_decoding_thread.join();
+	tunnel_write_tap_thread.join();
 
 	CERR("NORMAL EXIT.....");
 
