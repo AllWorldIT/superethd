@@ -7,6 +7,7 @@
 #include "common.hpp"
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
+#include "libaccl/Logger.hpp"
 
 #include <errno.h>
 #include <signal.h>

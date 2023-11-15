@@ -6,7 +6,7 @@
 
 #include "Codec.hpp"
 #include "Endian.hpp"
-#include "debug.hpp"
+#include "libaccl/Logger.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include <cstring>
@@ -48,11 +48,11 @@ PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *a
 PacketEncoder::~PacketEncoder() = default;
 
 void PacketEncoder::encode(const char *packet, uint16_t size) {
-	DEBUG_CERR("INCOMING PACKET: size={} [l2mtu: {}, l4mtu: {}], buffer_size={}", size, l2mtu, l4mtu, dest_buffer->getDataSize());
+	LOG_DEBUG_INTERNAL("INCOMING PACKET: size={} [l2mtu: {}, l4mtu: {}], buffer_size={}", size, l2mtu, l4mtu, dest_buffer->getDataSize());
 
 	// Make sure we cannot receive a packet that is greater than our MTU size
 	if (size > l2mtu) {
-		CERR("Packet size {} exceeds L2MTU size {}?", size, l2mtu);
+		LOG_ERROR("Packet size {} exceeds L2MTU size {}?", size, l2mtu);
 		return;
 	}
 
@@ -71,7 +71,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 			// Work out how much of this packet we're going to stuff into the encap packet
 			uint16_t part_size = (packet_left > max_payload_size) ? max_payload_size : packet_left;
 
-			DEBUG_CERR("  - PARTIAL PACKET: max_payload_size={}, part={}, packet_pos={}, part_size={}", max_payload_size, part,
+			LOG_DEBUG_INTERNAL("  - PARTIAL PACKET: max_payload_size={}, part={}, packet_pos={}, part_size={}", max_payload_size, part,
 					   packet_pos, part_size);
 
 			// Grab current buffer size so we can do some magic memory meddling below
@@ -83,7 +83,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 			packet_header_option->type = PacketHeaderOptionType::PARTIAL_PACKET;
 			packet_header_option->packet_size = seth_cpu_to_be_16(size);
 
-			DEBUG_CERR("    - OPTION HEADER SIZE: {}", sizeof(PacketHeaderOption));
+			LOG_DEBUG_INTERNAL("    - OPTION HEADER SIZE: {}", sizeof(PacketHeaderOption));
 
 			// Add packet header option
 			cur_buffer_size += sizeof(PacketHeaderOption);
@@ -106,7 +106,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 			// Dump more of the packet into our destination buffer
 			dest_buffer->append(packet + packet_pos, part_size);
 
-			DEBUG_CERR("    - FINAL DEST BUFFER SIZE FOR SPLIT: {}", dest_buffer->getDataSize());
+			LOG_DEBUG_INTERNAL("    - FINAL DEST BUFFER SIZE FOR SPLIT: {}", dest_buffer->getDataSize());
 
 			// If the buffer is full, push it to the destination pool
 			if (dest_buffer->getDataSize() == l4mtu)
@@ -120,7 +120,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 		// Bump packet count
 		packet_count++;
 
-		DEBUG_CERR("  - LEFT OVER FINAL DEST BUFFER SIZE: {} (packets: {})", dest_buffer->getDataSize(), packet_count);
+		LOG_DEBUG_INTERNAL("  - LEFT OVER FINAL DEST BUFFER SIZE: {} (packets: {})", dest_buffer->getDataSize(), packet_count);
 
 	} else {
 		// Grab current buffer size so we can do some magic memory meddling below
@@ -131,7 +131,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 		packet_header_option->type = PacketHeaderOptionType::COMPLETE_PACKET;
 		packet_header_option->packet_size = seth_cpu_to_be_16(size);
 
-		DEBUG_CERR("  - OPTION HEADER: max_payload_size={}, cur_buffer_size={}, header_option_size={}", _getMaxPayloadSize(size),
+		LOG_DEBUG_INTERNAL("  - OPTION HEADER: max_payload_size={}, cur_buffer_size={}, header_option_size={}", _getMaxPayloadSize(size),
 				   cur_buffer_size, sizeof(PacketHeaderOption));
 
 		// Add packet header option
@@ -148,7 +148,7 @@ void PacketEncoder::encode(const char *packet, uint16_t size) {
 		// Bump packet count
 		packet_count++;
 
-		DEBUG_CERR("  - FINAL DEST BUFFER SIZE: {} (packets: {})", dest_buffer->getDataSize(), packet_count);
+		LOG_DEBUG_INTERNAL("  - FINAL DEST BUFFER SIZE: {} (packets: {})", dest_buffer->getDataSize(), packet_count);
 	}
 
 	// If the buffer is full, push it to the destination pool
@@ -173,8 +173,8 @@ void PacketEncoder::flush() {
 	packet_header->channel = 0;
 	packet_header->sequence = seth_cpu_to_be_32(sequence++);
 	// Dump the header into the destination buffer
-	DEBUG_CERR("ADDING HEADER: opts={}", static_cast<uint8_t>(packet_header->opt_len));
-	DEBUG_CERR("DEST BUFFER SIZE: {}", dest_buffer->getDataSize());
+	LOG_DEBUG_INTERNAL("ADDING HEADER: opts={}", static_cast<uint8_t>(packet_header->opt_len));
+	LOG_DEBUG_INTERNAL("DEST BUFFER SIZE: {}", dest_buffer->getDataSize());
 
 	// Flush buffer to the destination pool
 	dest_buffer_pool->push(dest_buffer);
@@ -218,7 +218,7 @@ PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_
 PacketDecoder::~PacketDecoder() = default;
 
 void PacketDecoder::decode(const char *packet, uint16_t size) {
-	DEBUG_CERR("DECODER INCOMING PACKET SIZE: {}", size);
+	LOG_DEBUG_INTERNAL("DECODER INCOMING PACKET SIZE: {}", size);
 
 	// Make sure packet is big enough to contain our header
 	if (size < sizeof(PacketHeader)) {
@@ -233,7 +233,7 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 
 	// Check version is supported
 	if (packet_header->ver > SETH_PACKET_HEADER_VERSION_V1) {
-		DEBUG_CERR("PACKET VERSION: {:02X}", static_cast<uint8_t>(packet_header->ver));
+		LOG_DEBUG_INTERNAL("PACKET VERSION: {:02X}", static_cast<uint8_t>(packet_header->ver));
 		CERR("Packet not supported, version {:02X} vs. our version {:02X}, DROPPING!", static_cast<uint8_t>(packet_header->ver),
 			 SETH_PACKET_HEADER_VERSION_V1);
 		// Clear current state
@@ -308,13 +308,13 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 			return;
 		}
 		// For now we just output the info
-		DEBUG_CERR("  - Packet header option: header={}, type={:02X}", header_num + 1, static_cast<uint8_t>(packet_header_option->type));
+		LOG_DEBUG_INTERNAL("  - Packet header option: header={}, type={:02X}", header_num + 1, static_cast<uint8_t>(packet_header_option->type));
 
 		// If this header is a packet, we need to set packet_pos, data should immediately follow it
 		if (!packet_header_pos &&
 			static_cast<uint8_t>(packet_header_option->type) & (static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |
 																static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) {
-			DEBUG_CERR("  - Found packet @{}", cur_pos);
+			LOG_DEBUG_INTERNAL("  - Found packet @{}", cur_pos);
 
 			// Make sure our headers are in the correct positions, else something is wrong
 			if (header_num + 1 != packet_header->opt_len) {
@@ -397,7 +397,7 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 				}
 
 				// Append packet to dest buffer
-				DEBUG_CERR("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, final_packet_size,
+				LOG_DEBUG_INTERNAL("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, final_packet_size,
 						   dest_buffer->getDataSize());
 				dest_buffer->append(packet + packet_pos, final_packet_size);
 
@@ -473,19 +473,19 @@ void PacketDecoder::decode(const char *packet, uint16_t size) {
 				}
 
 				// Append packet to dest buffer
-				DEBUG_CERR("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, payload_length,
+				LOG_DEBUG_INTERNAL("Copy packet from pos {} with size {} into dest_buffer at position {}", packet_pos, payload_length,
 						   dest_buffer->getDataSize());
 				dest_buffer->append(packet + packet_pos, payload_length);
 
 				if (dest_buffer->getDataSize() == final_packet_size) {
-					DEBUG_CERR("  - Entire packet read... dumping into dest_buffer_pool")
+					LOG_DEBUG_INTERNAL("  - Entire packet read... dumping into dest_buffer_pool")
 					// Buffer ready, push to destination pool
 					dest_buffer_pool->push(dest_buffer);
 					// We're now outsie the path of direct IO (maybe), so get a new buffer here so we can be ready for when we're in
 					// the direct IO path
 					_getDestBuffer();
 				} else {
-					DEBUG_CERR("  - Packet not entirely read, we need more")
+					LOG_DEBUG_INTERNAL("  - Packet not entirely read, we need more")
 					// Bump last part and set last_final_packet_size
 					last_part = packet_header_option_partial_data->part;
 					last_final_packet_size = final_packet_size;

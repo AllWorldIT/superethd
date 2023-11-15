@@ -15,9 +15,9 @@
 
 #include "Codec.hpp"
 #include "common.hpp"
-#include "debug.hpp"
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
+#include "libaccl/Logger.hpp"
 #include "tap.hpp"
 #include "threads.hpp"
 #include "util.hpp"
@@ -46,10 +46,10 @@ void tunnel_read_tap_handler(void *arg) {
 			exit(EXIT_FAILURE);
 		}
 
-		DEBUG_CERR("AVAIL Buffer pool count: {}", tdata->available_buffer_pool->getBufferCount());
-		DEBUG_CERR("TXQUEUE Buffer pool count: {}", tdata->encoder_buffer_pool->getBufferCount());
+		LOG_DEBUG_INTERNAL("AVAIL Buffer pool count: {}", tdata->available_buffer_pool->getBufferCount());
+		LOG_DEBUG_INTERNAL("TXQUEUE Buffer pool count: {}", tdata->encoder_buffer_pool->getBufferCount());
 
-		DEBUG_CERR("Read {} bytes from TAP", bytes_read);
+		LOG_DEBUG_INTERNAL("Read {} bytes from TAP", bytes_read);
 		buffer->setDataSize(bytes_read);
 
 		// Append buffer node to queue
@@ -78,7 +78,7 @@ void tunnel_encoding_handler(void *arg) {
 		// Grab buffer
 		bool res = tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers);
 		if (!res) {
-			DEBUG_CERR("buffer wait timeout triggered!");
+			LOG_DEBUG_INTERNAL("buffer wait timeout triggered!");
 			encoder.flushBuffer();
 			buffer_wait_time = std::chrono::milliseconds{0};
 			continue;
@@ -137,7 +137,7 @@ void tunnel_write_socket_handler(void *arg) {
 				CERR("Got an error on sendto(): {}", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			DEBUG_CERR("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i + 1, buffers.size());
+			LOG_DEBUG_INTERNAL("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i + 1, buffers.size());
 			i++;
 		}
 
@@ -208,7 +208,7 @@ void tunnel_read_socket_handler(void *arg) {
 				CERR("inet_ntop failed: {}", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			DEBUG_CERR("Received {} bytes from {}:{} with flags {}", msgs[i].msg_len, ipv6_str, ntohs(controls[i].sin6_port),
+			LOG_DEBUG_INTERNAL("Received {} bytes from {}:{} with flags {}", msgs[i].msg_len, ipv6_str, ntohs(controls[i].sin6_port),
 					   msgs[i].msg_hdr.msg_flags);
 			// Compare to see if this is the remote system IP
 			if (memcmp(&tdata->remote_addr.sin6_addr, &controls[i].sin6_addr, sizeof(struct in6_addr))) {
@@ -330,7 +330,7 @@ void tunnel_write_tap_handler(void *arg) {
 				CERR("Error writing TAP device: {}", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			DEBUG_CERR("Wrote {} bytes to TAP [{}/{}]", bytes_written, i + 1, buffers.size());
+			LOG_DEBUG_INTERNAL("Wrote {} bytes to TAP [{}/{}]", bytes_written, i + 1, buffers.size());
 		}
 
 		// Push buffer back to pool

@@ -14,6 +14,7 @@
 #include "common.hpp"
 #include "config.hpp"
 #include "debug.hpp"
+#include "libaccl/Logger.hpp"
 #include "superethd.hpp"
 #include "util.hpp"
 
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
 	// Check if mandatory options src and dst are provided
 	if (!src_value || !dst_value) {
 		CERR("ERROR: Both --src (-s) and --dst (-d) options are mandatory.");
+		CERR("");
 		print_help();
 		return 1;
 	}

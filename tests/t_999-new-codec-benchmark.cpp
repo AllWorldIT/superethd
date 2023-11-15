@@ -6,6 +6,7 @@
 
 #include "debug.hpp"
 #include "libaccl/BufferPool.hpp"
+#include "libaccl/Logger.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
@@ -52,9 +53,10 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	PacketDecoder decoder(l4mtu, &avail_buffer_pool, &dec_buffer_pool);
 
-	// Disable debugging
-	seth_debug = false;
+	auto prev_level = accl::logger.getLevel();
+	accl::logger.setLevel(accl::LogLevel::ERROR);
 
+	// Disable debugging
 	BENCHMARK("Encode decode one packet") {
 		for (int i = 0; i < 10000; ++i) {
 			// Encode packet
@@ -69,8 +71,8 @@ TEST_CASE("Benchmark codec", "[codec]") {
 			avail_buffer_pool.push(enc_buffer);
 			auto dec_buffer = dec_buffer_pool.pop();
 			avail_buffer_pool.push(dec_buffer);
-
-			DEBUG_CERR("Avail pool size: {}", avail_buffer_pool.getBufferCount());
 		}
 	};
+
+	accl::logger.setLevel(prev_level);
 }

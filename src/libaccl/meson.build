@@ -6,6 +6,7 @@
 libaccl_sources = [
     'Buffer.cpp',
     'BufferPool.cpp',
+    'Logger.cpp',
     'SequenceDataGenerator.cpp',
 ]
 

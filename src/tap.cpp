@@ -7,6 +7,7 @@
 #include "tap.hpp"
 #include <string>
 
+#include "libaccl/Logger.hpp"
 #include <fcntl.h>
 #include <libnetlink.h>
 #include <linux/if_tun.h>
