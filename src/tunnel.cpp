@@ -322,7 +322,9 @@ void tunnel_write_tap_handler(void *arg) {
 		}
 
 		// Loop with buffers and decode
+#ifdef DEBUG
 		size_t i{0};
+#endif
 		for (auto &buffer : buffers) {
 			// Write data to TAP interface
 			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());

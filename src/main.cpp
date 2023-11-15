@@ -27,6 +27,8 @@ void print_help() {
 	CERR("Usage:");
 	CERR("    -v, --version                 Print version");
 	CERR("    -h, --help                    Print this help");
+	CERR("    -l, --log-level=<LOG_LEVEL>   Logging level, valid values: error, [warning],");
+	CERR("                                  notice, info, debug.")
 	CERR("    -m, --mtu=<MTU>               Specify the interface MTU of between {} and", SETH_MIN_MTU_SIZE);
 	CERR("                                  {} (default is 1500)", SETH_MAX_MTU_SIZE);
 	CERR("    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size");
@@ -39,11 +41,14 @@ void print_help() {
 	CERR("                                  (default is 58023)");
 	CERR("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ);
 	CERR("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME);
+	CERR("");
+	
 }
 
 int main(int argc, char *argv[]) {
 	int c;
 	int option_index = 0;
+	accl::LogLevel log_level = accl::LogLevel::WARNING;
 	int mtu_value = 1500;
 	int txsize_value = 1500;
 	int port_value = 58023;
@@ -55,7 +60,7 @@ int main(int argc, char *argv[]) {
 	CERR("");
 
 	while (1) {
-		c = getopt_long(argc, argv, "vhm:s:r:d:p:i:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhl:m:s:r:d:p:i:", long_options, &option_index);
 
 		// Detect end of the options
 		if (c == -1) {
@@ -70,6 +75,16 @@ int main(int argc, char *argv[]) {
 			CERR("");
 			print_help();
 			return 0;
+		case 'l': {
+			std::string log_level_opt(optarg);
+			if (accl::logLevelMap.find(log_level_opt) != accl::logLevelMap.end()) {
+				log_level = accl::logLevelMap[log_level_opt];
+			} else {
+				CERR("ERROR: Invalid log level '{}'.", log_level_opt);
+				return 1;
+			}
+			break;
+		}
 		case 'm':
 			mtu_value = atoi(optarg);
 			if (mtu_value < SETH_MIN_MTU_SIZE || mtu_value > SETH_MAX_MTU_SIZE) {
@@ -144,6 +159,10 @@ int main(int argc, char *argv[]) {
 		CERR("ERROR: Failed to convert source address '{}' to IPv6 address", dst_value);
 		exit(EXIT_FAILURE);
 	}
+
+	// Set our log level
+	accl::logger.setLogLevel(log_level);
+	LOG_INFO("Logging level set to {}", accl::logger.getLogLevelString());
 
 	CERR("Interface...: {}", ifname_value.c_str());
 	CERR("Source......: {}", src_addr_str);

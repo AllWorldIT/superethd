@@ -53,8 +53,8 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	PacketDecoder decoder(l4mtu, &avail_buffer_pool, &dec_buffer_pool);
 
-	auto prev_level = accl::logger.getLevel();
-	accl::logger.setLevel(accl::LogLevel::ERROR);
+	auto prev_level = accl::logger.getLogLevel();
+	accl::logger.setLogLevel(accl::LogLevel::ERROR);
 
 	// Disable debugging
 	BENCHMARK("Encode decode one packet") {
@@ -74,5 +74,5 @@ TEST_CASE("Benchmark codec", "[codec]") {
 		}
 	};
 
-	accl::logger.setLevel(prev_level);
+	accl::logger.setLogLevel(prev_level);
 }

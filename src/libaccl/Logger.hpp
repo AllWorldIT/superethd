@@ -7,6 +7,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <mutex>
 #include <string>
 
@@ -14,19 +15,22 @@ namespace accl {
 
 enum class LogLevel { DEBUGGING = 1, INFO = 2, NOTICE = 3, WARNING = 4, ERROR = 5 };
 
+extern std::map<std::string, LogLevel> logLevelMap;
+
 class Logger {
 
 	private:
 		LogLevel log_level;
 		std::mutex mutex_;
 
-		std::string toString(LogLevel level);
+		std::string _logLevelToString(LogLevel level) const;
 
 	public:
 		Logger();
 
-		void setLevel(LogLevel level);
-		LogLevel getLevel();
+		void setLogLevel(LogLevel level);
+		LogLevel getLogLevel();
+		std::string getLogLevelString() const;
 
 		void log(LogLevel level, const std::string &message);
 };
@@ -39,7 +43,7 @@ extern Logger logger;
 #define LOG_DEBUG_INTERNAL(fmt, ...)                                                                                               \
 	accl::logger.log(accl::LogLevel::DEBUGGING, std::format("({}:{}:{}): " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__));
 #else
-#define LOG_DEBUG(fmt, ...) ((void)0);
+#define LOG_DEBUG_INTERNAL(fmt, ...) ((void)0);
 #endif
 
 // Helper macro's for all the types of logging
@@ -58,10 +62,5 @@ extern Logger logger;
 #else
 #define UT_ASSERT(...) ((void)0)
 #endif
-
-// Normal fprintf macro
-// #define FPRINTF(fmt, ...) fprintf(stderr, "%s(): " fmt "\n", __func__, ##__VA_ARGS__)
-
-
 
 } // namespace accl
