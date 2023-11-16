@@ -21,15 +21,26 @@ class Logger {
 
 	private:
 		LogLevel log_level;
+		LogLevel log_level_default;
+
 		std::mutex mutex_;
+
+		std::string _getLogLevelString(LogLevel level) const;
 
 		std::string _logLevelToString(LogLevel level) const;
 
-	public:
-		Logger();
+
+
+			public : Logger();
 
 		void setLogLevel(LogLevel level);
+
+		bool setLogLevel(const std::string level) ;
+
 		LogLevel getLogLevel();
+
+		std::string getLogLevelDefaultString() const ;
+		
 		std::string getLogLevelString() const;
 
 		void log(LogLevel level, const std::string &message);

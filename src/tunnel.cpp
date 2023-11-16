@@ -74,17 +74,11 @@ void tunnel_encoding_handler(void *arg) {
 		if (*tdata->stop_program)
 			break;
 
-			/*
-		// Grab buffer
-		bool res = tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers);
-		if (!res) {
-			LOG_DEBUG_INTERNAL("buffer wait timeout triggered!");
-			encoder.flushBuffer();
-			buffer_wait_time = std::chrono::milliseconds{0};
+		if (!tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers)) {
+			encoder.flush();
+			buffer_wait_time = std::chrono::milliseconds(1);
 			continue;
 		}
-		*/
-		tdata->encoder_buffer_pool->wait(buffers);
 
 		// Grab buffer list size
 		int cur_queue_size = buffers.size();
@@ -95,17 +89,13 @@ void tunnel_encoding_handler(void *arg) {
 
 		// Loop with buffers and encode
 		for (auto &buffer : buffers) {
-			encoder.encode(*buffer);
+			encoder.encode(std::move(buffer));
 		}
-		encoder.flush();
+		// Clear buffer list
+		buffers.clear();
 
 		// Set sleep to 1ms
 		buffer_wait_time = std::chrono::milliseconds(1);
-
-		// Push all buffers into available list
-		tdata->available_buffer_pool->push(buffers);
-		// Clear buffer list
-		buffers.clear();
 	}
 }
 
@@ -293,7 +283,7 @@ void tunnel_decoding_handler(void *arg) {
 
 		// Loop with buffers and decode
 		for (auto &buffer : buffers) {
-			decoder.decode(*buffer);
+			decoder.decode(std::move(buffer));
 		}
 		// Push buffer back to pool
 		tdata->available_buffer_pool->push(buffers);

@@ -13,6 +13,7 @@
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/SequenceDataGenerator.hpp"
+#include "libaccl/Logger.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libsethnetkit/ICMPv4Packet.hpp"
 #include "libsethnetkit/ICMPv6Packet.hpp"
@@ -28,8 +29,6 @@
 
 #include "util.hpp"
 
-extern "C" {
-#include <stdlib.h>
-}
+
 
 #endif

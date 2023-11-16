@@ -116,6 +116,8 @@ class PacketEncoder {
 		uint32_t sequence;
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
+		// Buffers in flight, currently being utilized
+		std::vector<std::unique_ptr<accl::Buffer>> inflight_buffers;
 		// Active destination buffer header options length
 		uint16_t opt_len;
 		// Number of packets currently encoded
@@ -126,16 +128,21 @@ class PacketEncoder {
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 
+		void _flush();
+
 		void _getDestBuffer();
+
 		inline uint16_t _getMaxPayloadSize(uint16_t size);
+
+		void _flushInflight();
+		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
 
 	public:
 		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
 					  accl::BufferPool *destination_buffer_pool);
 		~PacketEncoder();
 
-		inline void encode(accl::Buffer &packetBuffer);
-		void encode(const char *packet, uint16_t size);
+		void encode(std::unique_ptr<accl::Buffer> packetBuffer);
 
 		void flush();
 };
@@ -144,21 +151,21 @@ inline uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) {
 	uint16_t max_payload_size = l4mtu - sizeof(PacketHeaderOption);
 
 	// Check if we have data in the buffer
-	if (dest_buffer->getDataSize())
+	if (dest_buffer->getDataSize()) {
 		// If we do, reduce by current buffer size
 		max_payload_size -= dest_buffer->getDataSize();
-	else
+	} else {
 		// If we don't, we will be adding a packet header too, so we need to cater for that
-		max_payload_size -= sizeof(PacketHeader) + sizeof(PacketHeaderOption);
+		max_payload_size -= sizeof(PacketHeader);
+	}
 
 	// Now we take the reference size of what we need to fit in and see if we need the parital header or not
-	if (size > max_payload_size)
+	if (size > max_payload_size) {
 		max_payload_size -= sizeof(PacketHeaderOptionPartialData);
+	}
 
 	return max_payload_size;
 }
-
-inline void PacketEncoder::encode(accl::Buffer &packetBuffer) { encode(packetBuffer.getData(), packetBuffer.getDataSize()); }
 
 /*
  * Packet decoder
@@ -176,21 +183,23 @@ class PacketDecoder {
 		uint16_t last_final_packet_size;
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
-
+		// Buffers in flight, currently being utilized
+		std::vector<std::unique_ptr<accl::Buffer>> inflight_buffers;
 		// Buffer pool to get buffers from
 		accl::BufferPool *avail_buffer_pool;
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 
 		void _clearState();
+
 		void _getDestBuffer();
+
+		void _flushInflight();
+		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
 
 	public:
 		PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
 		~PacketDecoder();
 
-		inline void decode(accl::Buffer &packetBuffer);
-		void decode(const char *packet, uint16_t size);
+		void decode(std::unique_ptr<accl::Buffer> packetBuffer);
 };
-
-inline void PacketDecoder::decode(accl::Buffer &packetBuffer) { decode(packetBuffer.getData(), packetBuffer.getDataSize()); }

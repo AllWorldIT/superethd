@@ -9,6 +9,7 @@
 #include "libaccl/Logger.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
+#include <memory>
 
 TEST_CASE("Benchmark codec", "[codec]") {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
@@ -49,6 +50,8 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	accl::BufferPool dec_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
+	std::unique_ptr<accl::Buffer> packet_buffer = std::make_unique<accl::Buffer>(l2mtu);
+	packet_buffer->append(packet_bin.data(), packet_bin.length());
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	PacketDecoder decoder(l4mtu, &avail_buffer_pool, &dec_buffer_pool);
@@ -60,12 +63,12 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	BENCHMARK("Encode decode one packet") {
 		for (int i = 0; i < 10000; ++i) {
 			// Encode packet
-			encoder.encode(reinterpret_cast<char *>(packet_bin.data()), packet_bin.length());
+			encoder.encode(std::move(packet_buffer));
 			encoder.flush();
 
 			// Grab encoded packet and try decode
 			auto enc_buffer = enc_buffer_pool.pop();
-			decoder.decode(*enc_buffer);
+			decoder.decode(std::move(enc_buffer));
 
 			// Push buffers back onto available pool
 			avail_buffer_pool.push(enc_buffer);
