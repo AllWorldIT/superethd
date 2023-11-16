@@ -53,7 +53,7 @@ void tunnel_read_tap_handler(void *arg) {
 		buffer->setDataSize(bytes_read);
 
 		// Append buffer node to queue
-		tdata->encoder_buffer_pool->push(buffer);
+		tdata->encoder_buffer_pool->push(std::move(buffer));
 	}
 }
 
@@ -76,7 +76,7 @@ void tunnel_encoding_handler(void *arg) {
 
 		if (!tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers)) {
 			encoder.flush();
-			buffer_wait_time = std::chrono::milliseconds(1);
+			buffer_wait_time = std::chrono::milliseconds(0);
 			continue;
 		}
 
@@ -130,11 +130,8 @@ void tunnel_write_socket_handler(void *arg) {
 			LOG_DEBUG_INTERNAL("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i + 1, buffers.size());
 			i++;
 		}
-
-		// Push all buffers in one go
-		tdata->available_buffer_pool->push(buffers);
 		// Clear buffers
-		buffers.clear();
+		tdata->available_buffer_pool->push(buffers);
 	}
 }
 
@@ -258,7 +255,7 @@ void tunnel_read_socket_handler(void *arg) {
 
 	// Add buffers back to available list for de-allocation
 	for (uint32_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		tdata->available_buffer_pool->push(buffers[i]);
+		tdata->available_buffer_pool->push(std::move(buffers[i]));
 	}
 	// Free the rest of the IOV stuff
 	free(msgs);
@@ -285,9 +282,9 @@ void tunnel_decoding_handler(void *arg) {
 		for (auto &buffer : buffers) {
 			decoder.decode(std::move(buffer));
 		}
-		// Push buffer back to pool
-		tdata->available_buffer_pool->push(buffers);
+		// Clear the buffer list
 		buffers.clear();
+
 	}
 }
 
@@ -327,7 +324,5 @@ void tunnel_write_tap_handler(void *arg) {
 
 		// Push buffer back to pool
 		tdata->available_buffer_pool->push(buffers);
-		// Clear buffer list
-		buffers.clear();
 	}
 }

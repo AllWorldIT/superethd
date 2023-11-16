@@ -40,8 +40,8 @@ class BufferPool {
 		std::unique_ptr<Buffer> pop();
 		std::vector<std::unique_ptr<Buffer>> pop(size_t count);
 
-		void push(Buffer &&buffer);
-		void push(std::unique_ptr<Buffer> &buffer);
+		void push(Buffer &buffer);
+		void push(std::unique_ptr<Buffer> buffer);
 		void push(std::vector<std::unique_ptr<Buffer>> &buffers);
 
 		size_t getBufferCount();

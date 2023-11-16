@@ -66,7 +66,7 @@ std::vector<std::unique_ptr<Buffer>> BufferPool::pop(size_t count) {
 	return _pop(count);
 }
 
-void BufferPool::push(std::unique_ptr<Buffer> &buffer) {
+void BufferPool::push(std::unique_ptr<Buffer> buffer) {
 	// Make sure buffer size matches
 	if (buffer->getBufferSize() != buffer_size) {
 		std::ostringstream oss;

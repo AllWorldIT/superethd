@@ -41,7 +41,7 @@ TEST_CASE("Check that we can push a buffer back into the pool", "[buffers]") {
 	// Check the buffer pool is empty
 	assert(buffer_pool.getBufferCount() == 0);
 
-	buffer_pool.push(buffer);
+	buffer_pool.push(std::move(buffer));
 
 	// Check the buffer was added back
 	assert(buffer_pool.getBufferCount() == 1);
@@ -54,7 +54,7 @@ TEST_CASE("Check that we can add our own buffer to the pool", "[buffers]") {
 
 	std::unique_ptr<accl::Buffer> buffer_ptr = std::make_unique<accl::Buffer>(std::move(buffer));
 
-	buffer_pool.push(buffer_ptr);
+	buffer_pool.push(std::move(buffer_ptr));
 
 	// Check the buffer was added back
 	assert(buffer_pool.getBufferCount() == 1);
@@ -68,7 +68,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to 
 	std::unique_ptr<accl::Buffer> buffer_ptr = std::make_unique<accl::Buffer>(std::move(buffer));
 
 	SECTION("Expect a invalid_argument is thrown if we try add a buffer of incorrect size") {
-		REQUIRE_THROWS_AS(buffer_pool.push(buffer_ptr), std::invalid_argument);
+		REQUIRE_THROWS_AS(buffer_pool.push(std::move(buffer_ptr)), std::invalid_argument);
 	}
 
 	// Check the buffer was added back

@@ -13,7 +13,6 @@
 #include <signal.h>
 #include <string.h>
 
-#include "buffers.hpp"
 #include "debug.hpp"
 #include "sockets.hpp"
 #include "tap.hpp"

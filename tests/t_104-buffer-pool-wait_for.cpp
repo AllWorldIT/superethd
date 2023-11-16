@@ -51,7 +51,7 @@ void push_worker(accl::BufferPool &buffer_pool) {
 	buffer->append(reinterpret_cast<const char *>(test_string.data()), test_string.length());
 
 	// Now add the buffer back to the pool, which should trigger the wait_worker
-	buffer_pool.push(buffer);
+	buffer_pool.push(std::move(buffer));
 }
 
 TEST_CASE("Check that pushing a buffer into the pool triggers the timed waiter", "[buffers]") {

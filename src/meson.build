@@ -30,7 +30,6 @@ link_args_debug = ['-pg']
 #
 
 libsuperethd_sources = [
-    'buffers.cpp',
     'Codec.cpp',
     'debug.cpp',
     'sockets.cpp',

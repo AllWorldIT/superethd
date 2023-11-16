@@ -196,6 +196,7 @@ class PacketDecoder {
 
 		void _flushInflight();
 		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
+		void _clearStateAndFlushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
 
 	public:
 		PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
