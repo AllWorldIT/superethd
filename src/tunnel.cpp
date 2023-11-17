@@ -79,20 +79,20 @@ void tunnel_read_tap_handler(void *arg) {
 		// NK: We enclose the read section in braces or we bypass the variable initialization
 		{
 			// Grab a new buffer for our data
-			LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: {}, taking one", buffer_pool->getBufferCount());
+			LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: ", buffer_pool->getBufferCount(), ", taking one");
 			auto buffer = buffer_pool->pop();
-			
+
 			// Read data from TAP interface
 			ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
 			if (bytes_read == -1) {
-				LOG_ERROR("Got an error read()'ing TAP device: %s", strerror(errno));
+				LOG_ERROR("Got an error read()'ing TAP device: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			} else if (bytes_read == 0) {
-				LOG_ERROR("Got EOF from TAP device: %s", strerror(errno));
+				LOG_ERROR("Got EOF from TAP device: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
-			LOG_DEBUG_INTERNAL("TAP READ: Read {} bytes from TAP", bytes_read);
+			LOG_DEBUG_INTERNAL("TAP READ: Read ", bytes_read, " bytes from TAP");
 			buffer->setDataSize(bytes_read);
 
 			// Encode packet
@@ -110,21 +110,21 @@ void tunnel_read_tap_handler(void *arg) {
 		auto buffers = encoder_pool->pop(0);
 		for (auto &b : buffers) {
 			// Write data out
-			ssize_t bytes_written = sendto(tdata->udp_socket, b->getData(), b->getDataSize(), flags,
-										   (struct sockaddr *)&tdata->remote_addr, addrlen);
+			ssize_t bytes_written =
+				sendto(tdata->udp_socket, b->getData(), b->getDataSize(), flags, (struct sockaddr *)&tdata->remote_addr, addrlen);
 			if (bytes_written == -1) {
-				LOG_ERROR("Got an error in sendto(): {}", strerror(errno));
+				LOG_ERROR("Got an error in sendto(): ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
 			i++;
-			LOG_DEBUG_INTERNAL("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i, buffers.size());
+			LOG_DEBUG_INTERNAL("Wrote ", i, " bytes to tunnel [", bytes_written, "/", buffers.size(), "]");
 		}
 
 		// Push buffers into available pool
-		LOG_DEBUG_INTERNAL("Buffer pool size: {}", buffer_pool->getBufferCount());
+		LOG_DEBUG_INTERNAL("Buffer pool size: ", buffer_pool->getBufferCount());
 		buffer_pool->push(buffers);
-		LOG_DEBUG_INTERNAL("Buffer pool size after push: {}", buffer_pool->getBufferCount());
+		LOG_DEBUG_INTERNAL("Buffer pool size after push: ", buffer_pool->getBufferCount());
 	}
 
 	close(epollFd);
@@ -155,7 +155,7 @@ void tunnel_read_socket_handler(void *arg) {
 
 	// Make sure memory allocation succeeded
 	if (msgs == NULL || iovecs == NULL || controls == NULL) {
-		LOG_ERROR("Memory allocation failed for recvmm iovecs: {}", strerror(errno));
+		LOG_ERROR("Memory allocation failed for recvmm iovecs: ", strerror(errno));
 		// Clean up previously allocated memory
 		free(msgs);
 		free(iovecs);
@@ -178,28 +178,27 @@ void tunnel_read_socket_handler(void *arg) {
 	}
 	// END - IO vector buffers
 
-
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		int num_received = recvmmsg(tdata->udp_socket, msgs, SETH_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
 		if (num_received == -1) {
-			LOG_ERROR("recvmmsg failed: {}", strerror(errno));
+			LOG_ERROR("recvmmsg failed: ", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
 		for (int i = 0; i < num_received; ++i) {
 			char ipv6_str[INET6_ADDRSTRLEN];
 			if (inet_ntop(AF_INET6, &controls[i].sin6_addr, ipv6_str, sizeof(ipv6_str)) == NULL) {
-				LOG_ERROR("inet_ntop failed: {}", strerror(errno));
+				LOG_ERROR("inet_ntop failed: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			LOG_DEBUG_INTERNAL("Received {} bytes from {}:{} with flags {}", msgs[i].msg_len, ipv6_str,
-							   ntohs(controls[i].sin6_port), msgs[i].msg_hdr.msg_flags);
+			LOG_DEBUG_INTERNAL("Received ", msgs[i].msg_len, " bytes from ", ipv6_str, ":", ntohs(controls[i].sin6_port),
+							   " with flags ", msgs[i].msg_hdr.msg_flags);
 			// Compare to see if this is the remote system IP
 			if (memcmp(&tdata->remote_addr.sin6_addr, &controls[i].sin6_addr, sizeof(struct in6_addr))) {
-				LOG_ERROR("Source address is incorrect {}!", ipv6_str);
+				LOG_ERROR("Source address is incorrect: ", ipv6_str);
 				continue;
 			}
 
@@ -208,8 +207,8 @@ void tunnel_read_socket_handler(void *arg) {
 
 			// Make sure the buffer is long enough for us to overlay the header
 			if (recvmm_buffers[i]->getDataSize() < sizeof(PacketHeader) + sizeof(PacketHeaderOption)) {
-				LOG_ERROR("Packet too small {} < {}, DROPPING!!!", recvmm_buffers[i]->getDataSize(),
-					 sizeof(PacketHeader) + sizeof(PacketHeaderOption));
+				LOG_ERROR("Packet too small ", recvmm_buffers[i]->getDataSize(), " < ",
+						  sizeof(PacketHeader) + sizeof(PacketHeaderOption), ", DROPPING!!!");
 				continue;
 			}
 
@@ -217,25 +216,25 @@ void tunnel_read_socket_handler(void *arg) {
 			pkthdr = (PacketHeader *)recvmm_buffers[i]->getData();
 			// Check version is supported
 			if (pkthdr->ver > SETH_PACKET_HEADER_VERSION_V1) {
-				LOG_ERROR("Packet not supported, version {} vs. our version {}, DROPPING!", static_cast<uint8_t>(pkthdr->ver),
-						  SETH_PACKET_HEADER_VERSION_V1);
+				LOG_ERROR("Packet not supported, version ", static_cast<uint8_t>(pkthdr->ver), " vs. our version ",
+						  SETH_PACKET_HEADER_VERSION_V1, ", DROPPING!");
 				continue;
 			}
 			if (pkthdr->reserved != 0) {
-				LOG_ERROR("Packet header should not have any reserved its set, it is {}, DROPPING!",
-						  static_cast<uint8_t>(pkthdr->reserved));
+				LOG_ERROR("Packet header should not have any reserved its set, it is ", static_cast<uint8_t>(pkthdr->reserved),
+						  ", DROPPING!");
 				continue;
 			}
 			// First thing we do is validate the header
 			int valid_format_mask =
 				static_cast<uint8_t>(PacketHeaderFormat::ENCAPSULATED) | static_cast<uint8_t>(PacketHeaderFormat::COMPRESSED);
 			if (static_cast<uint8_t>(pkthdr->format) & ~valid_format_mask) {
-				LOG_ERROR("Packet in invalid format {}, DROPPING!", static_cast<uint8_t>(pkthdr->format));
+				LOG_ERROR("Packet in invalid format ", static_cast<uint8_t>(pkthdr->format), ", DROPPING!");
 				continue;
 			}
 			// Next check the channel is set to 0
 			if (pkthdr->channel) {
-				LOG_ERROR("Packet specifies invalid channel {}, DROPPING!", pkthdr->channel);
+				LOG_ERROR("Packet specifies invalid channel ", pkthdr->channel, ", DROPPING!");
 				continue;
 			}
 
@@ -253,12 +252,12 @@ void tunnel_read_socket_handler(void *arg) {
 			// Write data to TAP interface
 			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());
 			if (bytes_written == -1) {
-				LOG_ERROR("Error writing TAP device: {}", strerror(errno));
+				LOG_ERROR("Error writing TAP device: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
 			i++;
-			LOG_DEBUG_INTERNAL("Wrote {} bytes to TAP [{}/{}]", bytes_written, i, buffers.size());
+			LOG_DEBUG_INTERNAL("Wrote ", bytes_written, " bytes to TAP [", i, "/", buffers.size(), "]");
 		}
 		// Push buffers into available pool
 		buffer_pool->push(buffers);
@@ -272,4 +271,3 @@ void tunnel_read_socket_handler(void *arg) {
 	free(msgs);
 	free(iovecs);
 }
-

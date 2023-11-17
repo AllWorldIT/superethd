@@ -14,16 +14,6 @@ configure_file(input: 'config.hpp.in', output: 'config.hpp', configuration: conf
 deps = [dependency('threads')]
 deps = [dependency('liblz4')]
 
-c_args = []
-c_args_debug = c_args
-c_args_debug += ['-pg', '-DDEBUG']
-
-cpp_args = c_args
-cpp_args_debug = c_args_debug
-
-link_args = []
-link_args_debug = ['-pg']
-
 
 #
 # Static libraries
@@ -45,12 +35,4 @@ libsuperethd = static_library('superethd', libsuperethd_sources)
 # Executables
 #
 
-executable('superethd-debug', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps,
-    c_args: c_args_debug,
-    cpp_args: cpp_args_debug,
-    link_args: link_args_debug,
-)
 executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps)
-
-
-

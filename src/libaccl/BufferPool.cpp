@@ -117,7 +117,6 @@ std::deque<std::unique_ptr<Buffer>> BufferPool::wait() {
 	return results;
 }
 
-
 bool BufferPool::wait_for(std::chrono::milliseconds duration, std::deque<std::unique_ptr<Buffer>> &results) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 
@@ -148,6 +147,5 @@ std::deque<std::unique_ptr<Buffer>> BufferPool::wait_for(std::chrono::millisecon
 	wait_for(duration, results);
 	return results;
 }
-
 
 } // namespace accl

@@ -62,7 +62,7 @@ TEST_CASE("Benchmark codec", "[codec]") {
 		std::unique_ptr<accl::Buffer> packet_buffer, encoder_buffer, decoder_buffer;
 
 		for (int i = 0; i < 100; ++i) {
-			LOG_DEBUG_INTERNAL("LOOP: {}", i);
+			LOG_DEBUG_INTERNAL("LOOP: ", i);
 			// Set up packet
 			packet_buffer = buffer_pool.pop();
 			packet_buffer->clear();

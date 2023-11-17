@@ -6,9 +6,12 @@
 
 #pragma once
 
+#include "Logger.hpp"
 #include <cstdint>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
+
 
 namespace accl {
 

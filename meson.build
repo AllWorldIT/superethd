@@ -17,13 +17,18 @@
 project('Super Ethernet Tunnel',
 	'cpp',
 	version : '0.0.1',
-	default_options: ['werror=true', 'c_std=c17', 'cpp_std=c++20'],
+	default_options: ['werror=true', 'c_std=gnu17', 'cpp_std=gnu++20', 'b_pie=true'],
 )
+
+add_global_arguments('-pedantic-errors', language: 'cpp')
 
 # Get debug flag so we can enable debugging below
 debug = get_option('debug')
 if debug
 	add_global_arguments('-DDEBUG', language: 'cpp')
+	add_global_arguments('-fno-omit-frame-pointer', language: 'cpp')
+	add_global_arguments('-g3', language: 'cpp')
+	add_global_arguments('-DBOOST_STACKTRACE_USE_ADDR2LINE', language: 'cpp')
 endif
 
 

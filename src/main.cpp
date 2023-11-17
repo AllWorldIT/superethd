@@ -19,9 +19,9 @@
 #include "util.hpp"
 
 static struct option long_options[] = {
-	{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		  {"ifname", required_argument, 0, 'i'},
-	{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'},	  {"port", required_argument, 0, 'p'},
-	{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
+		{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		  {"ifname", required_argument, 0, 'i'},
+		{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'},	  {"port", required_argument, 0, 'p'},
+		{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
 
 void print_help() {
 	CERR("Usage:");
@@ -42,7 +42,6 @@ void print_help() {
 	CERR("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ);
 	CERR("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME);
 	CERR("");
-
 }
 
 int main(int argc, char *argv[]) {
@@ -157,7 +156,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Set our log level
-	LOG_INFO("Logging level set to {}", accl::logger.getLogLevelString());
+	LOG_INFO("Logging level set to ", accl::logger.getLogLevelString());
 
 	CERR("Interface...: {}", ifname_value.c_str());
 	CERR("Source......: {}", src_addr_str);

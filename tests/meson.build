@@ -23,8 +23,6 @@ t_100_buffer = executable('t_100-buffer',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test buffer functionality', t_100_buffer)
 
@@ -33,8 +31,6 @@ t_102_buffer_pool = executable('t_102-buffer-pool',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test buffer pool functionality', t_102_buffer_pool)
 
@@ -43,8 +39,6 @@ t_103_buffer_pool_wait = executable('t_103-buffer-pool-wait',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test buffer pool wait functionality', t_103_buffer_pool_wait)
 
@@ -53,8 +47,6 @@ t_104_buffer_pool_wait_for = executable('t_104-buffer-pool-wait_for',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test buffer pool wait_for functionality', t_104_buffer_pool_wait_for)
 
@@ -68,8 +60,6 @@ t_120_sequence_generator = executable('t_120-sequence-generator',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test buffer pool functionality', t_120_sequence_generator)
 
@@ -84,8 +74,6 @@ t_200_checksums = executable('t_200-checksums',
   include_directories: inc,
   link_with: libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test checksums', t_200_checksums)
 
@@ -99,8 +87,6 @@ t_400_packet_ethernet = executable('t_400-packet-ethernet',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test handling of ethernet packets', t_400_packet_ethernet)
 
@@ -110,8 +96,6 @@ t_410_packet_ethernet_ipv4 = executable('t_410-packet-ethernet-ipv4',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test handling of ethernet IPv4 packets', t_410_packet_ethernet_ipv4)
 
@@ -120,8 +104,6 @@ t_412_packet_ethernet_ipv6 = executable('t_412-packet-ethernet-ipv6',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test handling of ethernet IPv6 packets', t_412_packet_ethernet_ipv6)
 
@@ -131,8 +113,6 @@ t_415_packet_ethernet_ipv4_udp = executable('t_415-packet-ethernet-ipv4-udp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and UDP header', t_415_packet_ethernet_ipv4_udp)
 
@@ -141,8 +121,6 @@ t_417_packet_ethernet_ipv6_udp = executable('t_417-packet-ethernet-ipv6-udp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv6 header and UDP header', t_417_packet_ethernet_ipv6_udp)
 
@@ -152,8 +130,6 @@ t_420_packet_ethernet_ipv4_icmp = executable('t_420-packet-ethernet-ipv4-icmp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and ICMP header', t_420_packet_ethernet_ipv4_icmp)
 
@@ -162,8 +138,6 @@ t_422_packet_ethernet_ipv6_icmp = executable('t_422-packet-ethernet-ipv6-icmp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv6 header and ICMP header', t_422_packet_ethernet_ipv6_icmp)
 
@@ -173,8 +147,6 @@ t_425_packet_ethernet_ipv4_tcp = executable('t_425-packet-ethernet-ipv4-tcp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv4 header and TCP header', t_425_packet_ethernet_ipv4_tcp)
 
@@ -183,8 +155,6 @@ t_427_packet_ethernet_ipv6_tcp = executable('t_427-packet-ethernet-ipv6-tcp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packet_ethernet_ipv6_tcp)
 
@@ -193,14 +163,15 @@ test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packe
 # Codec tests
 #
 
+#stacktrace_deps = [dependency('dl')] + deps
 
 t_998_new_codec = executable('t_998-new-codec',
   't_998-new-codec.cpp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
+  #dependencies: stacktrace_deps,
+  #cpp_args: stacktrace_args,
 )
 test('Test codec in development', t_998_new_codec)
 
@@ -210,7 +181,5 @@ t_999_new_codec_benchmark = executable('t_999-new-codec-benchmark',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  c_args: c_args,
-  cpp_args: cpp_args,
 )
 test('Test codec_benchmark in development', t_999_new_codec_benchmark)

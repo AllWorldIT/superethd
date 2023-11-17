@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <format>
 #include <iostream>
 
 // Print buffers in various formats

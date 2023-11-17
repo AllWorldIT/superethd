@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 #include "debug.hpp"
+#include <cstdint>
+#include <format>
 #include <iomanip>
 
 bool seth_debug{true};

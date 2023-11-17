@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include <iostream>
+#include <format>
 #include <map>
 #include <mutex>
+#include <sstream>
 #include <string>
 
 namespace accl {
@@ -27,41 +28,63 @@ class Logger {
 
 		std::string _getLogLevelString(LogLevel level) const;
 
-		std::string _logLevelToString(LogLevel level) const;
+		std::string _logLevelToString(const LogLevel level) const;
+
+		void _log(const LogLevel level, const std::string file, const std::string func, const unsigned int line,
+				  std::string logline);
 
 	public:
 		Logger();
 
-		void setLogLevel(LogLevel level);
+		inline void setLogLevel(const LogLevel level);
 
 		bool setLogLevel(const std::string level);
 
-		LogLevel getLogLevel();
+		inline LogLevel getLogLevel() const;
 
-		std::string getLogLevelDefaultString() const;
+		inline std::string getLogLevelDefaultString() const;
 
-		std::string getLogLevelString() const;
+		inline std::string getLogLevelString() const;
 
-		void log(LogLevel level, const std::string &message);
+		template <typename... Args>
+		void log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args);
 };
 
 // Global logger instance
 extern Logger logger;
 
+inline void Logger::setLogLevel(const LogLevel level) { log_level = level; };
+
+inline LogLevel Logger::getLogLevel() const { return log_level; };
+
+inline std::string Logger::getLogLevelDefaultString() const { return _getLogLevelString(log_level_default); }
+
+inline std::string Logger::getLogLevelString() const { return _getLogLevelString(log_level); }
+
+template <typename... Args>
+void Logger::log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args) {
+	if (level >= log_level) {
+		std::ostringstream stream;
+		(stream << ... << args);
+		_log(level, file, func, line, stream.str());
+	}
+}
+
+} // namespace accl
+
 // The LOG_DEBUG_INTERNAL will be factored out of the code if compiled without debugging
 #ifdef DEBUG
-#define LOG_DEBUG_INTERNAL(fmt, ...)                                                                                               \
-	accl::logger.log(accl::LogLevel::DEBUGGING, std::format("({}:{}:{}): " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__));
+#define LOG_DEBUG_INTERNAL(...) accl::logger.log(accl::LogLevel::DEBUGGING, __FILE__, __func__, __LINE__, __VA_ARGS__);
 #else
-#define LOG_DEBUG_INTERNAL(fmt, ...) ((void)0);
+#define LOG_DEBUG_INTERNAL(...) ((void)0);
 #endif
 
 // Helper macro's for all the types of logging
-#define LOG_DEBUG(fmt, ...) accl::logger.log(accl::LogLevel::DEBUGGING, std::format(fmt, ##__VA_ARGS__));
-#define LOG_INFO(fmt, ...) accl::logger.log(accl::LogLevel::INFO, std::format(fmt, ##__VA_ARGS__));
-#define LOG_NOTICE(fmt, ...) accl::logger.log(accl::LogLevel::NOTICE, std::format(fmt, ##__VA_ARGS__));
-#define LOG_WARNING(fmt, ...) accl::logger.log(accl::LogLevel::WARNING, std::format(fmt, ##__VA_ARGS__));
-#define LOG_ERROR(fmt, ...) accl::logger.log(accl::LogLevel::ERROR, std::format(fmt, ##__VA_ARGS__));
+#define LOG_DEBUG(...) accl::logger.log(accl::LogLevel::DEBUGGING, __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define LOG_INFO(...) accl::logger.log(accl::LogLevel::INFO, __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define LOG_NOTICE(...) accl::logger.log(accl::LogLevel::NOTICE, __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define LOG_WARNING(...) accl::logger.log(accl::LogLevel::WARNING, __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define LOG_ERROR(...) accl::logger.log(accl::LogLevel::ERROR, __FILE__, __func__, __LINE__, __VA_ARGS__);
 
 // Helper macro's for printing out to the standard handles
 #define CERR(fmt, ...) std::cerr << std::format(fmt, ##__VA_ARGS__) << std::endl;
@@ -72,5 +95,3 @@ extern Logger logger;
 #else
 #define UT_ASSERT(...) ((void)0)
 #endif
-
-} // namespace accl

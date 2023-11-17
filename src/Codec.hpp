@@ -132,7 +132,7 @@ class PacketEncoder {
 
 		void _getDestBuffer();
 
-		inline uint16_t _getMaxPayloadSize(uint16_t size);
+		uint16_t _getMaxPayloadSize(uint16_t size) const;
 
 		void _flushInflight();
 		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
@@ -146,26 +146,6 @@ class PacketEncoder {
 
 		void flush();
 };
-
-inline uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) {
-	uint16_t max_payload_size = l4mtu - sizeof(PacketHeaderOption);
-
-	// Check if we have data in the buffer
-	if (dest_buffer->getDataSize()) {
-		// If we do, reduce by current buffer size
-		max_payload_size -= dest_buffer->getDataSize();
-	} else {
-		// If we don't, we will be adding a packet header too, so we need to cater for that
-		max_payload_size -= sizeof(PacketHeader);
-	}
-
-	// Now we take the reference size of what we need to fit in and see if we need the parital header or not
-	if (size > max_payload_size) {
-		max_payload_size -= sizeof(PacketHeaderOptionPartialData);
-	}
-
-	return max_payload_size;
-}
 
 /*
  * Packet decoder
