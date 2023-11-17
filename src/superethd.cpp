@@ -95,13 +95,6 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.l4mtu = get_l4mtu(tdata.tx_size, &tdata.remote_addr.sin6_addr);
 	CERR("Setting maximum payload size to {}...", tdata.l4mtu);
 
-	// Allocate buffer pools
-	tdata.available_buffer_pool = new accl::BufferPool(tdata.l2mtu, SETH_BUFFER_COUNT);
-	tdata.encoder_buffer_pool = new accl::BufferPool(tdata.l2mtu);
-	tdata.decoder_buffer_pool = new accl::BufferPool(tdata.l2mtu);
-	tdata.tx_buffer_pool = new accl::BufferPool(tdata.l2mtu);
-	tdata.rx_buffer_pool = new accl::BufferPool(tdata.l2mtu);
-
 	/*
 	 * End thread data setup
 	 */
@@ -122,13 +115,9 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	CERR("Setting ethernet device MTU...");
 	set_interface_mtu(&tdata);
 
+	// Initialize threads
 	std::thread tunnel_read_tap_thread(tunnel_read_tap_handler, &tdata);
-	std::thread tunnel_encoding_thread(tunnel_encoding_handler, &tdata);
-	std::thread tunnel_write_socket_thread(tunnel_write_socket_handler, &tdata);
-
 	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
-	std::thread tunnel_decoding_thread(tunnel_decoding_handler, &tdata);
-	std::thread tunnel_write_tap_thread(tunnel_write_tap_handler, &tdata);
 
 	// Online interface
 	CERR("Enabling ethernet device '{}'...", ifname.c_str());
@@ -136,12 +125,7 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 
 	// Join all threads after the interface comes online
 	tunnel_read_tap_thread.join();
-	tunnel_encoding_thread.join();
-	tunnel_write_socket_thread.join();
-
 	tunnel_read_socket_thread.join();
-	tunnel_decoding_thread.join();
-	tunnel_write_tap_thread.join();
 
 	CERR("NORMAL EXIT.....");
 

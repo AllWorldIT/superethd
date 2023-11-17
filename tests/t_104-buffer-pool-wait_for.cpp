@@ -10,23 +10,23 @@ void wait_worker(accl::BufferPool &buffer_pool) {
 	const std::string test_string = "hello world";
 
 	// Create our buffer pool to hold the result
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
+	std::deque<std::unique_ptr<accl::Buffer>> buffers;
 
 	// Wait for buffer pool to get a buffer
 	bool res = buffer_pool.wait_for(std::chrono::seconds(1), buffers);
 	// The first call should be false (timed out)
 	assert(res == false);
-	// Make sure the vector is empty
+	// Make sure the deque is empty
 	assert(buffers.size() == 0);
 
 	// Wait for buffer pool to get a buffer
 	res = buffer_pool.wait_for(std::chrono::seconds(5), buffers);
 	// The second call should have not timed out
 	assert(res == true);
-	// The vector size should now be 1
+	// The deque size should now be 1
 	assert(buffers.size() == 1);
 
-	// Pull the buffer from the vector returned
+	// Pull the buffer from the deque returned
 	auto first_buffer = buffers.begin();
 	auto buffer = std::move(*first_buffer);
 	buffers.erase(first_buffer);

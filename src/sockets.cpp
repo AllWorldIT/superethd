@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#include "common.hpp"
 #include "threads.hpp"
 #include "util.hpp"
 
@@ -17,7 +18,7 @@ int create_udp_socket(struct ThreadData *tdata) {
 	}
 
 	// Set the send buffer size (SO_SNDBUF)
-	int buffer_size = 1024 * 1024 * 64;
+	int buffer_size = tdata->l4mtu * SETH_BUFFER_COUNT;
 	if (setsockopt(tdata->udp_socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size)) < 0) {
 		perror("Error setting send buffer size");
 		close(tdata->udp_socket);

@@ -63,8 +63,8 @@ std::string Logger::getLogLevelDefaultString() const { return _getLogLevelString
 std::string Logger::getLogLevelString() const { return _getLogLevelString(log_level); }
 
 void Logger::log(LogLevel level, const std::string &message) {
-	std::lock_guard<std::mutex> lock(mutex_);
 	if (level >= log_level) {
+		std::lock_guard<std::mutex> lock(mutex_);
 		std::cerr << "[" << _logLevelToString(level) << "] " << message << std::endl;
 	}
 }

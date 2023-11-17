@@ -44,25 +44,27 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
 
-	accl::BufferPool avail_buffer_pool(l2mtu, 4);
+	accl::BufferPool buffer_pool(l2mtu, 4);
 
-	accl::BufferPool enc_buffer_pool(l2mtu);
-	accl::BufferPool dec_buffer_pool(l2mtu);
+	accl::BufferPool encoded_pool(l2mtu);
+	accl::BufferPool decoded_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
-	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
-	PacketDecoder decoder(l4mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, &buffer_pool, &encoded_pool);
+	PacketDecoder decoder(l4mtu, &buffer_pool, &decoded_pool);
 
 	auto prev_level = accl::logger.getLogLevel();
 	accl::logger.setLogLevel(accl::LogLevel::ERROR);
 
 	// Disable debugging
 	BENCHMARK("Encode decode one packet") {
-		for (int i = 0; i < 1000; ++i) {
+		std::unique_ptr<accl::Buffer> packet_buffer, encoder_buffer, decoder_buffer;
+
+		for (int i = 0; i < 100; ++i) {
 			LOG_DEBUG_INTERNAL("LOOP: {}", i);
 			// Set up packet
-			auto packet_buffer = avail_buffer_pool.pop();
+			packet_buffer = buffer_pool.pop();
 			packet_buffer->clear();
 			packet_buffer->append(packet_bin.data(), packet_bin.length());
 
@@ -71,12 +73,12 @@ TEST_CASE("Benchmark codec", "[codec]") {
 			encoder.flush();
 
 			// Grab encoded packet and try decode
-			auto enc_buffer = enc_buffer_pool.pop();
-			decoder.decode(std::move(enc_buffer));
+			encoder_buffer = encoded_pool.pop();
+			decoder.decode(std::move(encoder_buffer));
 
 			// Push buffers back onto available pool
-			auto dec_buffer = dec_buffer_pool.pop();
-			avail_buffer_pool.push(std::move(dec_buffer));
+			decoder_buffer = decoded_pool.pop();
+			buffer_pool.push(std::move(decoder_buffer));
 		}
 	};
 

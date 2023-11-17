@@ -117,14 +117,14 @@ class PacketEncoder {
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
 		// Buffers in flight, currently being utilized
-		std::vector<std::unique_ptr<accl::Buffer>> inflight_buffers;
+		std::deque<std::unique_ptr<accl::Buffer>> inflight_buffers;
 		// Active destination buffer header options length
 		uint16_t opt_len;
 		// Number of packets currently encoded
 		uint32_t packet_count;
 
 		// Buffer pool to get buffers from
-		accl::BufferPool *avail_buffer_pool;
+		accl::BufferPool *buffer_pool;
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 
@@ -184,9 +184,9 @@ class PacketDecoder {
 		// Active destination buffer that is not yet full
 		std::unique_ptr<accl::Buffer> dest_buffer;
 		// Buffers in flight, currently being utilized
-		std::vector<std::unique_ptr<accl::Buffer>> inflight_buffers;
+		std::deque<std::unique_ptr<accl::Buffer>> inflight_buffers;
 		// Buffer pool to get buffers from
-		accl::BufferPool *avail_buffer_pool;
+		accl::BufferPool *buffer_pool;
 		// Buffer pool to push buffers to
 		accl::BufferPool *dest_buffer_pool;
 

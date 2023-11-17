@@ -29,18 +29,17 @@ class Logger {
 
 		std::string _logLevelToString(LogLevel level) const;
 
-
-
-			public : Logger();
+	public:
+		Logger();
 
 		void setLogLevel(LogLevel level);
 
-		bool setLogLevel(const std::string level) ;
+		bool setLogLevel(const std::string level);
 
 		LogLevel getLogLevel();
 
-		std::string getLogLevelDefaultString() const ;
-		
+		std::string getLogLevelDefaultString() const;
+
 		std::string getLogLevelString() const;
 
 		void log(LogLevel level, const std::string &message);

@@ -33,12 +33,6 @@ struct ThreadData {
 		// Local and remote address
 		struct sockaddr_in6 local_addr;
 		struct sockaddr_in6 remote_addr;
-		// Packet buffer pools
-		accl::BufferPool *available_buffer_pool;
-		accl::BufferPool *encoder_buffer_pool;
-		accl::BufferPool *decoder_buffer_pool;
-		accl::BufferPool *tx_buffer_pool;
-		accl::BufferPool *rx_buffer_pool;
 
 		int *stop_program;
 };

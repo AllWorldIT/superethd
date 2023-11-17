@@ -12,7 +12,7 @@
 namespace accl {
 
 // Internal method to pop many buffers from the pool WITHOUT LOCKING
-void BufferPool::_pop(std::vector<std::unique_ptr<Buffer>> &result, size_t count) {
+void BufferPool::_pop(std::deque<std::unique_ptr<Buffer>> &result, size_t count) {
 	// Grab iterator on first buffer in pool
 	auto iterator = pool.begin();
 	// We now look while count==0, or i < count, making sure we've not reached the pool end
@@ -33,8 +33,8 @@ BufferPool::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : Buffe
 }
 
 // Internal method to pop many buffers from the pool WITHOUT LOCKING
-std::vector<std::unique_ptr<Buffer>> BufferPool::_pop(size_t count) {
-	std::vector<std::unique_ptr<Buffer>> result;
+std::deque<std::unique_ptr<Buffer>> BufferPool::_pop(size_t count) {
+	std::deque<std::unique_ptr<Buffer>> result;
 	_pop(result, count);
 	return result;
 }
@@ -59,9 +59,9 @@ std::unique_ptr<Buffer> BufferPool::pop() {
  * @brief Pop buffers from the pool.
  *
  * @param count Number of buffers to pop from pool, using a count of `accl::BUFFER_POOL_POP_ALL` will pop all buffers.
- * @return std::vector<std::unique_ptr<Buffer>> Vector of popped buffers.
+ * @return std::deque<std::unique_ptr<Buffer>> Vector of popped buffers.
  */
-std::vector<std::unique_ptr<Buffer>> BufferPool::pop(size_t count) {
+std::deque<std::unique_ptr<Buffer>> BufferPool::pop(size_t count) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	return _pop(count);
 }
@@ -79,7 +79,7 @@ void BufferPool::push(std::unique_ptr<Buffer> buffer) {
 	cv.notify_one(); // Notify listener thread
 }
 
-void BufferPool::push(std::vector<std::unique_ptr<Buffer>> &buffers) {
+void BufferPool::push(std::deque<std::unique_ptr<Buffer>> &buffers) {
 	// We can check all the buffers before doing the lock to save on how long we hold the lock
 	for (auto &buffer : buffers) {
 		// Make sure buffer size matches
@@ -103,7 +103,7 @@ size_t BufferPool::getBufferCount() {
 	return pool.size();
 }
 
-void BufferPool::wait(std::vector<std::unique_ptr<Buffer>> &results) {
+void BufferPool::wait(std::deque<std::unique_ptr<Buffer>> &results) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	// We only really need to wait if the pool is empty
 	if (pool.empty())
@@ -111,14 +111,14 @@ void BufferPool::wait(std::vector<std::unique_ptr<Buffer>> &results) {
 	_pop(results, BUFFER_POOL_POP_ALL);
 }
 
-std::vector<std::unique_ptr<Buffer>> BufferPool::wait() {
-	std::vector<std::unique_ptr<Buffer>> results;
+std::deque<std::unique_ptr<Buffer>> BufferPool::wait() {
+	std::deque<std::unique_ptr<Buffer>> results;
 	wait(results);
 	return results;
 }
 
 
-bool BufferPool::wait_for(std::chrono::milliseconds duration, std::vector<std::unique_ptr<Buffer>> &results) {
+bool BufferPool::wait_for(std::chrono::milliseconds duration, std::deque<std::unique_ptr<Buffer>> &results) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 
 	// If we have items we don't have to wait
@@ -143,8 +143,8 @@ bool BufferPool::wait_for(std::chrono::milliseconds duration, std::vector<std::u
 	return false;
 }
 
-std::vector<std::unique_ptr<Buffer>> BufferPool::wait_for(std::chrono::milliseconds duration) {
-	std::vector<std::unique_ptr<Buffer>> results;
+std::deque<std::unique_ptr<Buffer>> BufferPool::wait_for(std::chrono::milliseconds duration) {
+	std::deque<std::unique_ptr<Buffer>> results;
 	wait_for(duration, results);
 	return results;
 }

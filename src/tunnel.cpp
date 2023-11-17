@@ -5,14 +5,6 @@
  */
 
 #include "tunnel.hpp"
-#include <arpa/inet.h>
-#include <chrono>
-#include <iostream>
-#include <memory>
-#include <netinet/in.h>
-#include <netinet/sctp.h>
-#include <string.h>
-
 #include "Codec.hpp"
 #include "common.hpp"
 #include "libaccl/Buffer.hpp"
@@ -21,127 +13,135 @@
 #include "tap.hpp"
 #include "threads.hpp"
 #include "util.hpp"
+#include <arpa/inet.h>
+#include <chrono>
+#include <iostream>
+#include <memory>
+#include <netinet/in.h>
+#include <netinet/sctp.h>
+#include <string.h>
+#include <sys/epoll.h>
+#include <unistd.h>
 
-extern "C" {
-#include <lz4.h>
-}
-
-// Reads data from the TAP interface and queues packets for sending over the tunnel.
 void tunnel_read_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
-	std::unique_ptr<accl::Buffer> buffer;
-
-	while (1) {
-		if (*tdata->stop_program)
-			break;
-
-		// Grab a new buffer for our data
-		buffer = tdata->available_buffer_pool->pop();
-
-		// Read data from TAP interface
-		ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
-		if (bytes_read == -1) {
-			CERR("Got an error read()'ing TAP device: %s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-
-		LOG_DEBUG_INTERNAL("AVAIL Buffer pool count: {}", tdata->available_buffer_pool->getBufferCount());
-		LOG_DEBUG_INTERNAL("TXQUEUE Buffer pool count: {}", tdata->encoder_buffer_pool->getBufferCount());
-
-		LOG_DEBUG_INTERNAL("Read {} bytes from TAP", bytes_read);
-		buffer->setDataSize(bytes_read);
-
-		// Append buffer node to queue
-		tdata->encoder_buffer_pool->push(std::move(buffer));
-	}
-}
-
-// Read data from the encoder buffer pool and write to the tx buffer pool.
-void tunnel_encoding_handler(void *arg) {
-	// Thread data
-	struct ThreadData *tdata = (struct ThreadData *)arg;
-	// Just a stat
-	ssize_t max_queue_size = 0;
-
 	// Packet encoder
-	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, tdata->available_buffer_pool, tdata->tx_buffer_pool);
+	auto buffer_pool = new accl::BufferPool(tdata->l2mtu, SETH_BUFFER_COUNT);
+	auto encoder_pool = new accl::BufferPool(tdata->l2mtu);
+	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, buffer_pool, encoder_pool);
 
-	// Main IO loop
-	std::chrono::milliseconds buffer_wait_time{0};
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
-	while (1) {
-		if (*tdata->stop_program)
-			break;
-
-		if (!tdata->encoder_buffer_pool->wait_for(buffer_wait_time, buffers)) {
-			encoder.flush();
-			buffer_wait_time = std::chrono::milliseconds(0);
-			continue;
-		}
-
-		// Grab buffer list size
-		int cur_queue_size = buffers.size();
-		if (cur_queue_size > max_queue_size) {
-			max_queue_size = cur_queue_size;
-			CERR("Max ENCODER packet queue size {}", max_queue_size);
-		}
-
-		// Loop with buffers and encode
-		for (auto &buffer : buffers) {
-			encoder.encode(std::move(buffer));
-		}
-		// Clear buffer list
-		buffers.clear();
-
-		// Set sleep to 1ms
-		buffer_wait_time = std::chrono::milliseconds(1);
+	// Grab epoll FD
+	int epollFd = epoll_create1(0);
+	if (epollFd == -1) {
+		std::cerr << "Failed to create epoll file descriptor: " << strerror(errno) << std::endl;
+		return;
 	}
-}
 
-// Write data from the encoded buffer pool to the socket.
-void tunnel_write_socket_handler(void *arg) {
-	// Thread data
-	struct ThreadData *tdata = (struct ThreadData *)arg;
+	// Setup epoll events
+	struct epoll_event ev;
+	ev.events = EPOLLIN; // Interested in input (read) events
+	ev.data.fd = tdata->tap_device.fd;
+
+	// Add TAP device FD
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, tdata->tap_device.fd, &ev) == -1) {
+		LOG_ERROR("Failed to add fd to epoll: {}", strerror(errno));
+		close(epollFd);
+		return;
+	}
+
 	// Constant used below
 	socklen_t addrlen = sizeof(struct sockaddr_in6);
-
 	// sendto() flags
 	int flags = 0;
 
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
-	while (1) {
-		if (*tdata->stop_program)
+	// Carry on looping
+	int timeout = -1;
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
 			break;
+		}
 
-		// Grab buffer
-		tdata->tx_buffer_pool->wait(buffers);
+		// Wait for something to become available
+		struct epoll_event events[1];
+		int nrEvents = epoll_wait(epollFd, events, 1, timeout);
+		if (nrEvents == 0) { // timeout
+			encoder.flush();
+			timeout = -1;
+			goto write_socket;
 
-		// Loop with buffers and send to the remote end
-		size_t i{0};
-		for (auto &buffer : buffers) {
-			// Write data out
-			ssize_t bytes_written = sendto(tdata->udp_socket, buffer->getData(), buffer->getDataSize(), flags,
-										   (struct sockaddr *)&tdata->remote_addr, addrlen);
-			if (bytes_written == -1) {
-				CERR("Got an error on sendto(): {}", strerror(errno));
+		} else if (nrEvents == -1) {
+			std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
+			break;
+		}
+
+		// NK: We enclose the read section in braces or we bypass the variable initialization
+		{
+			// Grab a new buffer for our data
+			LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: {}, taking one", buffer_pool->getBufferCount());
+			auto buffer = buffer_pool->pop();
+			
+			// Read data from TAP interface
+			ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
+			if (bytes_read == -1) {
+				LOG_ERROR("Got an error read()'ing TAP device: %s", strerror(errno));
+				exit(EXIT_FAILURE);
+			} else if (bytes_read == 0) {
+				LOG_ERROR("Got EOF from TAP device: %s", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			LOG_DEBUG_INTERNAL("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i + 1, buffers.size());
-			i++;
+
+			LOG_DEBUG_INTERNAL("TAP READ: Read {} bytes from TAP", bytes_read);
+			buffer->setDataSize(bytes_read);
+
+			// Encode packet
+			encoder.encode(std::move(buffer));
+			timeout = 1;
 		}
-		// Clear buffers
-		tdata->available_buffer_pool->push(buffers);
+
+	write_socket:
+		// Next check if there is anything that was encoded
+		if (!encoder_pool->getBufferCount()) {
+			continue;
+		}
+
+		size_t i{0};
+		auto buffers = encoder_pool->pop(0);
+		for (auto &b : buffers) {
+			// Write data out
+			ssize_t bytes_written = sendto(tdata->udp_socket, b->getData(), b->getDataSize(), flags,
+										   (struct sockaddr *)&tdata->remote_addr, addrlen);
+			if (bytes_written == -1) {
+				LOG_ERROR("Got an error in sendto(): {}", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			i++;
+			LOG_DEBUG_INTERNAL("Wrote {} bytes to tunnel [{}/{}]", bytes_written, i, buffers.size());
+		}
+
+		// Push buffers into available pool
+		LOG_DEBUG_INTERNAL("Buffer pool size: {}", buffer_pool->getBufferCount());
+		buffer_pool->push(buffers);
+		LOG_DEBUG_INTERNAL("Buffer pool size after push: {}", buffer_pool->getBufferCount());
 	}
+
+	close(epollFd);
 }
 
 // Read data from socket and queue to the decoder
 void tunnel_read_socket_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
+	// Packet decoder
+	auto buffer_pool = new accl::BufferPool(tdata->l2mtu, SETH_BUFFER_COUNT);
+	auto decoder_pool = new accl::BufferPool(tdata->l2mtu);
+	PacketDecoder decoder(tdata->l2mtu, buffer_pool, decoder_pool);
+
 	struct sockaddr_in6 *controls;
 	ssize_t sockaddr_len = sizeof(struct sockaddr_in6);
-	std::vector<std::unique_ptr<accl::Buffer>> buffers(SETH_MAX_RECVMM_MESSAGES);
+	std::vector<std::unique_ptr<accl::Buffer>> recvmm_buffers(SETH_MAX_RECVMM_MESSAGES);
 	struct mmsghdr *msgs;
 	struct iovec *iovecs;
 	PacketHeader *pkthdr;
@@ -155,7 +155,7 @@ void tunnel_read_socket_handler(void *arg) {
 
 	// Make sure memory allocation succeeded
 	if (msgs == NULL || iovecs == NULL || controls == NULL) {
-		CERR("Memory allocation failed: {}", strerror(errno));
+		LOG_ERROR("Memory allocation failed for recvmm iovecs: {}", strerror(errno));
 		// Clean up previously allocated memory
 		free(msgs);
 		free(iovecs);
@@ -165,11 +165,11 @@ void tunnel_read_socket_handler(void *arg) {
 
 	// Set up iovecs and mmsghdrs
 	for (size_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		buffers[i] = tdata->available_buffer_pool->pop();
+		recvmm_buffers[i] = buffer_pool->pop();
 
 		// Setup IO vectors
-		iovecs[i].iov_base = buffers[i]->getData();
-		iovecs[i].iov_len = buffers[i]->getBufferSize();
+		iovecs[i].iov_base = recvmm_buffers[i]->getData();
+		iovecs[i].iov_len = recvmm_buffers[i]->getBufferSize();
 		// And the associated msgs
 		msgs[i].msg_hdr.msg_iov = &iovecs[i];
 		msgs[i].msg_hdr.msg_iovlen = 1;
@@ -178,151 +178,98 @@ void tunnel_read_socket_handler(void *arg) {
 	}
 	// END - IO vector buffers
 
-	std::vector<std::unique_ptr<accl::Buffer>> decoder_queue;
+
 	while (1) {
 		if (*tdata->stop_program)
 			break;
 
 		int num_received = recvmmsg(tdata->udp_socket, msgs, SETH_MAX_RECVMM_MESSAGES, MSG_WAITFORONE, NULL);
 		if (num_received == -1) {
-			CERR("recvmmsg failed: {}", strerror(errno));
-			break;
+			LOG_ERROR("recvmmsg failed: {}", strerror(errno));
+			exit(EXIT_FAILURE);
 		}
 
 		for (int i = 0; i < num_received; ++i) {
 			char ipv6_str[INET6_ADDRSTRLEN];
 			if (inet_ntop(AF_INET6, &controls[i].sin6_addr, ipv6_str, sizeof(ipv6_str)) == NULL) {
-				CERR("inet_ntop failed: {}", strerror(errno));
+				LOG_ERROR("inet_ntop failed: {}", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			LOG_DEBUG_INTERNAL("Received {} bytes from {}:{} with flags {}", msgs[i].msg_len, ipv6_str, ntohs(controls[i].sin6_port),
-					   msgs[i].msg_hdr.msg_flags);
+			LOG_DEBUG_INTERNAL("Received {} bytes from {}:{} with flags {}", msgs[i].msg_len, ipv6_str,
+							   ntohs(controls[i].sin6_port), msgs[i].msg_hdr.msg_flags);
 			// Compare to see if this is the remote system IP
 			if (memcmp(&tdata->remote_addr.sin6_addr, &controls[i].sin6_addr, sizeof(struct in6_addr))) {
-				CERR("Source address is incorrect {}!", ipv6_str);
+				LOG_ERROR("Source address is incorrect {}!", ipv6_str);
 				continue;
 			}
 
 			// Grab this IOV's buffer node and update the actual buffer length
-			buffers[i]->setDataSize(msgs[i].msg_len);
+			recvmm_buffers[i]->setDataSize(msgs[i].msg_len);
 
 			// Make sure the buffer is long enough for us to overlay the header
-			if (buffers[i]->getDataSize() < sizeof(PacketHeader) + sizeof(PacketHeaderOption)) {
-				CERR("Packet too small {} < {}, DROPPING!!!", buffers[i]->getDataSize(),
+			if (recvmm_buffers[i]->getDataSize() < sizeof(PacketHeader) + sizeof(PacketHeaderOption)) {
+				LOG_ERROR("Packet too small {} < {}, DROPPING!!!", recvmm_buffers[i]->getDataSize(),
 					 sizeof(PacketHeader) + sizeof(PacketHeaderOption));
 				continue;
 			}
 
 			// Overlay packet header and do basic header checks
-			pkthdr = (PacketHeader *)buffers[i]->getData();
+			pkthdr = (PacketHeader *)recvmm_buffers[i]->getData();
 			// Check version is supported
 			if (pkthdr->ver > SETH_PACKET_HEADER_VERSION_V1) {
-				CERR("Packet not supported, version {} vs. our version {}, DROPPING!", static_cast<uint8_t>(pkthdr->ver),
-					 SETH_PACKET_HEADER_VERSION_V1);
+				LOG_ERROR("Packet not supported, version {} vs. our version {}, DROPPING!", static_cast<uint8_t>(pkthdr->ver),
+						  SETH_PACKET_HEADER_VERSION_V1);
 				continue;
 			}
 			if (pkthdr->reserved != 0) {
-				CERR("Packet header should not have any reserved its set, it is {}, DROPPING!",
-					 static_cast<uint8_t>(pkthdr->reserved));
+				LOG_ERROR("Packet header should not have any reserved its set, it is {}, DROPPING!",
+						  static_cast<uint8_t>(pkthdr->reserved));
 				continue;
 			}
 			// First thing we do is validate the header
 			int valid_format_mask =
 				static_cast<uint8_t>(PacketHeaderFormat::ENCAPSULATED) | static_cast<uint8_t>(PacketHeaderFormat::COMPRESSED);
 			if (static_cast<uint8_t>(pkthdr->format) & ~valid_format_mask) {
-				CERR("Packet in invalid format {}, DROPPING!", static_cast<uint8_t>(pkthdr->format));
+				LOG_ERROR("Packet in invalid format {}, DROPPING!", static_cast<uint8_t>(pkthdr->format));
 				continue;
 			}
 			// Next check the channel is set to 0
 			if (pkthdr->channel) {
-				CERR("Packet specifies invalid channel {}, DROPPING!", pkthdr->channel);
+				LOG_ERROR("Packet specifies invalid channel {}, DROPPING!", pkthdr->channel);
 				continue;
 			}
 
 			// Add buffer node to the recycle list
-			decoder_queue.push_back(std::move(buffers[i]));
+			decoder.decode(std::move(recvmm_buffers[i]));
 
 			// Replenish the buffer
-			buffers[i] = tdata->available_buffer_pool->pop();
-			msgs[i].msg_hdr.msg_iov->iov_base = buffers[i]->getData();
+			recvmm_buffers[i] = buffer_pool->pop();
+			msgs[i].msg_hdr.msg_iov->iov_base = recvmm_buffers[i]->getData();
 		}
 
-		// Recycle our buffers
-		tdata->decoder_buffer_pool->push(decoder_queue);
-		// Clear the recycle list
-		decoder_queue.clear();
+		size_t i{0};
+		auto buffers = decoder_pool->pop(0);
+		for (auto &buffer : buffers) {
+			// Write data to TAP interface
+			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());
+			if (bytes_written == -1) {
+				LOG_ERROR("Error writing TAP device: {}", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			i++;
+			LOG_DEBUG_INTERNAL("Wrote {} bytes to TAP [{}/{}]", bytes_written, i, buffers.size());
+		}
+		// Push buffers into available pool
+		buffer_pool->push(buffers);
 	}
 
 	// Add buffers back to available list for de-allocation
 	for (uint32_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		tdata->available_buffer_pool->push(std::move(buffers[i]));
+		buffer_pool->push(std::move(recvmm_buffers[i]));
 	}
 	// Free the rest of the IOV stuff
 	free(msgs);
 	free(iovecs);
 }
 
-// Decode packets arriving on the decoder buffer pool and dump them into the rx buffer pool
-void tunnel_decoding_handler(void *arg) {
-	// Thread data
-	struct ThreadData *tdata = (struct ThreadData *)arg;
-
-	// Packet decoder
-	PacketDecoder decoder(tdata->l2mtu, tdata->available_buffer_pool, tdata->rx_buffer_pool);
-
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
-	while (1) {
-		if (*tdata->stop_program)
-			break;
-
-		// Grab buffer
-		tdata->decoder_buffer_pool->wait(buffers);
-
-		// Loop with buffers and decode
-		for (auto &buffer : buffers) {
-			decoder.decode(std::move(buffer));
-		}
-		// Clear the buffer list
-		buffers.clear();
-
-	}
-}
-
-// Write data from the decoder buffer pool to the TAP device
-void tunnel_write_tap_handler(void *arg) {
-	struct ThreadData *tdata = (struct ThreadData *)arg;
-	ssize_t max_queue_size = 0;
-
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
-	while (1) {
-		if (*tdata->stop_program)
-			break;
-
-		// Grab buffer
-		tdata->rx_buffer_pool->wait(buffers);
-
-		// Grab buffer list size
-		int cur_queue_size = buffers.size();
-		if (cur_queue_size > max_queue_size) {
-			max_queue_size = cur_queue_size;
-			CERR("Max RX buffer pool size {}", max_queue_size);
-		}
-
-		// Loop with buffers and decode
-#ifdef DEBUG
-		size_t i{0};
-#endif
-		for (auto &buffer : buffers) {
-			// Write data to TAP interface
-			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());
-			if (bytes_written == -1) {
-				CERR("Error writing TAP device: {}", strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-			LOG_DEBUG_INTERNAL("Wrote {} bytes to TAP [{}/{}]", bytes_written, i + 1, buffers.size());
-		}
-
-		// Push buffer back to pool
-		tdata->available_buffer_pool->push(buffers);
-	}
-}

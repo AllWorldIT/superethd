@@ -78,7 +78,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to 
 TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to the pool", "[buffers]") {
 	accl::BufferPool buffer_pool = accl::BufferPool(1024, 1);
 
-	std::vector<std::unique_ptr<accl::Buffer>> buffers;
+	std::deque<std::unique_ptr<accl::Buffer>> buffers;
 
 	auto buffer_ptr = std::make_unique<accl::Buffer>(1000);
 	buffers.push_back(std::move(buffer_ptr));
