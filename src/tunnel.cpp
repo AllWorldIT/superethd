@@ -9,7 +9,7 @@
 #include "Encoder.hpp"
 #include "Endian.hpp"
 #include "common.hpp"
-#include "libaccl/Buffer.hpp"
+#include "PacketBuffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
 #include "tap.hpp"
@@ -30,8 +30,8 @@ void tunnel_read_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
 	// Packet encoder
-	auto buffer_pool = new accl::BufferPool(tdata->l2mtu, SETH_BUFFER_COUNT);
-	auto encoder_pool = new accl::BufferPool(tdata->l2mtu);
+	auto buffer_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu, SETH_BUFFER_COUNT);
+	auto encoder_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu);
 	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, buffer_pool, encoder_pool);
 
 	// Grab epoll FD
@@ -136,15 +136,11 @@ void tunnel_read_tap_handler(void *arg) {
 	close(epollFd);
 }
 
-class BufferContainer {
-	public:
-		uint32_t key;
-		std::unique_ptr<accl::Buffer> &buffer;
-
-		BufferContainer(uint32_t k, std::unique_ptr<accl::Buffer> &b) : key(k), buffer(b) {}
-
-		// Compare operator
-		bool operator<(const BufferContainer &other) const { return key < other.key; }
+struct _comparePacketBuffer {
+		bool operator()(const std::unique_ptr<PacketBuffer> &a, const std::unique_ptr<PacketBuffer> &b) const {
+			// Use our own comparison operator inside PacketBuffer
+			return *a < *b;
+		}
 };
 
 // Read data from socket and queue to the decoder
@@ -152,13 +148,13 @@ void tunnel_read_socket_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
 	// Packet decoder
-	auto buffer_pool = new accl::BufferPool(tdata->l2mtu, SETH_BUFFER_COUNT);
-	auto decoder_pool = new accl::BufferPool(tdata->l2mtu);
+	auto buffer_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu, SETH_BUFFER_COUNT);
+	auto decoder_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu);
 	PacketDecoder decoder(tdata->l2mtu, buffer_pool, decoder_pool);
 
 	struct sockaddr_in6 *controls;
 	ssize_t sockaddr_len = sizeof(struct sockaddr_in6);
-	std::vector<std::unique_ptr<accl::Buffer>> recvmm_buffers(SETH_MAX_RECVMM_MESSAGES);
+	std::vector<std::unique_ptr<PacketBuffer>> recvmm_buffers(SETH_MAX_RECVMM_MESSAGES);
 	struct mmsghdr *msgs;
 	struct iovec *iovecs;
 	PacketHeader *pkthdr;
@@ -196,7 +192,7 @@ void tunnel_read_socket_handler(void *arg) {
 	// END - IO vector buffers
 
 	// Received buffers
-	std::set<BufferContainer> received_buffers;
+	std::set<std::unique_ptr<PacketBuffer>, _comparePacketBuffer> received_buffers;
 
 	while (1) {
 		if (*tdata->stop_program)
@@ -260,7 +256,8 @@ void tunnel_read_socket_handler(void *arg) {
 
 			// Add buffer node to the received list
 			// sortedInsert(received_buffers, recvmm_buffers[i]);
-			received_buffers.insert(BufferContainer(seth_be_to_cpu_32(pkthdr->sequence), recvmm_buffers[i]));
+			recvmm_buffers[i]->setKey(seth_be_to_cpu_32(pkthdr->sequence));
+			received_buffers.insert(std::move(recvmm_buffers[i]));
 
 			// Replenish the buffer
 			recvmm_buffers[i] = buffer_pool->pop();
@@ -269,8 +266,7 @@ void tunnel_read_socket_handler(void *arg) {
 
 		// Sort buffers based on sequence
 		for (auto &rb : received_buffers) {
-			//decoder.decode(std::move(const_cast<std::unique_ptr<accl::Buffer> &>(rb.buffer)));
-			decoder.decode(std::move(rb.buffer));
+			decoder.decode(std::move(const_cast<std::unique_ptr<PacketBuffer> &>(rb)));
 		}
 		received_buffers.clear();
 

@@ -7,13 +7,13 @@
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check creating a buffer pool works", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 10);
+	accl::BufferPool<PacketBuffer> buffer_pool(1024, 10);
 
 	assert(buffer_pool.getBufferCount() == 10);
 }
 
 TEST_CASE("Check popping a buffer from the pool works", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 10);
+	accl::BufferPool<PacketBuffer> buffer_pool(1024, 10);
 
 	assert(buffer_pool.getBufferCount() == 10);
 
@@ -24,7 +24,7 @@ TEST_CASE("Check popping a buffer from the pool works", "[buffers]") {
 }
 
 TEST_CASE("Check that we get an exception when we pop too many buffers from the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 1);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 1);
 
 	auto buffer = buffer_pool.pop();
 
@@ -34,7 +34,7 @@ TEST_CASE("Check that we get an exception when we pop too many buffers from the 
 }
 
 TEST_CASE("Check that we can push a buffer back into the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 1);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 1);
 
 	auto buffer = buffer_pool.pop();
 
@@ -48,11 +48,11 @@ TEST_CASE("Check that we can push a buffer back into the pool", "[buffers]") {
 }
 
 TEST_CASE("Check that we can add our own buffer to the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 0);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 0);
 
-	accl::Buffer buffer(1024);
+	PacketBuffer buffer(1024);
 
-	std::unique_ptr<accl::Buffer> buffer_ptr = std::make_unique<accl::Buffer>(std::move(buffer));
+	std::unique_ptr<PacketBuffer> buffer_ptr = std::make_unique<PacketBuffer>(std::move(buffer));
 
 	buffer_pool.push(std::move(buffer_ptr));
 
@@ -61,11 +61,11 @@ TEST_CASE("Check that we can add our own buffer to the pool", "[buffers]") {
 }
 
 TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 1);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 1);
 
-	accl::Buffer buffer(100);
+	PacketBuffer buffer(100);
 
-	std::unique_ptr<accl::Buffer> buffer_ptr = std::make_unique<accl::Buffer>(std::move(buffer));
+	std::unique_ptr<PacketBuffer> buffer_ptr = std::make_unique<PacketBuffer>(std::move(buffer));
 
 	SECTION("Expect a invalid_argument is thrown if we try add a buffer of incorrect size") {
 		REQUIRE_THROWS_AS(buffer_pool.push(std::move(buffer_ptr)), std::invalid_argument);
@@ -76,11 +76,11 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to 
 }
 
 TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 1);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 1);
 
-	std::deque<std::unique_ptr<accl::Buffer>> buffers;
+	std::deque<std::unique_ptr<PacketBuffer>> buffers;
 
-	auto buffer_ptr = std::make_unique<accl::Buffer>(1000);
+	auto buffer_ptr = std::make_unique<PacketBuffer>(1000);
 	buffers.push_back(std::move(buffer_ptr));
 
 	SECTION("Expect a invalid_argument is thrown if we try add buffers of incorrect size") {
@@ -92,7 +92,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to
 }
 
 TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 5);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 5);
 
 	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 
@@ -104,7 +104,7 @@ TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
 }
 
 TEST_CASE("Check we can push multiple buffers back into the pool", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(1024, 5);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(1024, 5);
 
 	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 

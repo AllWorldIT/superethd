@@ -6,7 +6,7 @@
 
 #include "libtests/framework.hpp"
 
-void wait_worker(accl::BufferPool &buffer_pool) {
+void wait_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	const std::string test_string = "hello world";
 
 	// Wait for buffer pool to get a buffer
@@ -27,14 +27,14 @@ void wait_worker(accl::BufferPool &buffer_pool) {
 	assert(test_string == buffer_string);
 }
 
-void push_worker(accl::BufferPool &buffer_pool) {
+void push_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	const std::string test_string = "hello world";
 
 	// Wait until the wait worker has started
 	std::this_thread::sleep_for(std::chrono::seconds(2));
 
 	// Create a buffer
-	std::unique_ptr<accl::Buffer> buffer = std::make_unique<accl::Buffer>(12);
+	std::unique_ptr<PacketBuffer> buffer = std::make_unique<PacketBuffer>(12);
 
 	// Add some data into the buffer
 	buffer->append(reinterpret_cast<const char *>(test_string.data()), test_string.length());
@@ -44,7 +44,7 @@ void push_worker(accl::BufferPool &buffer_pool) {
 }
 
 TEST_CASE("Check that pushing a buffer into the pool triggers the waiter", "[buffers]") {
-	accl::BufferPool buffer_pool = accl::BufferPool(12);
+	accl::BufferPool<PacketBuffer> buffer_pool = accl::BufferPool<PacketBuffer>(12);
 
 	std::thread t1(wait_worker, std::ref(buffer_pool));
 	std::thread t2(push_worker, std::ref(buffer_pool));

@@ -38,13 +38,13 @@ void PacketDecoder::_flushInflight() {
 					   ", count=", inflight_buffers.size());
 }
 
-void PacketDecoder::_pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer) {
+void PacketDecoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Push buffer into inflight list
 	inflight_buffers.push_back(std::move(packetBuffer));
 	LOG_DEBUG_INTERNAL("  - INFLIGHT: Packet added");
 }
 
-void PacketDecoder::_clearStateAndFlushInflight(std::unique_ptr<accl::Buffer> &packetBuffer) {
+void PacketDecoder::_clearStateAndFlushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Clear current state
 	_clearState();
 	// Flush inflight buffers
@@ -52,7 +52,8 @@ void PacketDecoder::_clearStateAndFlushInflight(std::unique_ptr<accl::Buffer> &p
 	_flushInflight();
 }
 
-PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool) {
+PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
+							 accl::BufferPool<PacketBuffer> *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
 	this->l2mtu = l2mtu;
 	this->first_packet = true;
@@ -67,7 +68,7 @@ PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_
 
 PacketDecoder::~PacketDecoder() = default;
 
-void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
+void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	LOG_DEBUG_INTERNAL("DECODER INCOMING PACKET SIZE: ", packetBuffer->getDataSize());
 
 	// Make sure packet is big enough to contain our header
@@ -230,7 +231,8 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 	// If we don't have a packet header, something is wrong
 	if (!packet_header_pos) {
-		LOG_ERROR(sequence, ": No packet header found, size=", packetBuffer->getDataSize());
+		LOG_ERROR(sequence, ": No packet header found, opt_len=", static_cast<unsigned int>(packet_header->opt_len),
+				  "size=", packetBuffer->getDataSize());
 		UT_ASSERT(packet_header_pos);
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);

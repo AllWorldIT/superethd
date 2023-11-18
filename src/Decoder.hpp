@@ -23,27 +23,28 @@ class PacketDecoder {
 		uint8_t last_part;
 		uint16_t last_final_packet_size;
 		// Active destination buffer that is not yet full
-		std::unique_ptr<accl::Buffer> dest_buffer;
+		std::unique_ptr<PacketBuffer> dest_buffer;
 		// Buffers in flight, currently being utilized
-		std::deque<std::unique_ptr<accl::Buffer>> inflight_buffers;
+		std::deque<std::unique_ptr<PacketBuffer>> inflight_buffers;
 		// Buffer pool to get buffers from
-		accl::BufferPool *buffer_pool;
+		accl::BufferPool<PacketBuffer> *buffer_pool;
 		// Buffer pool to push buffers to
-		accl::BufferPool *dest_buffer_pool;
+		accl::BufferPool<PacketBuffer> *dest_buffer_pool;
 
 		void _clearState();
 
 		void _getDestBuffer();
 
 		void _flushInflight();
-		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
-		void _clearStateAndFlushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
+		void _pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
+		void _clearStateAndFlushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
 
 	public:
-		PacketDecoder(uint16_t l2mtu, accl::BufferPool *available_buffer_pool, accl::BufferPool *destination_buffer_pool);
+		PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
+					  accl::BufferPool<PacketBuffer> *destination_buffer_pool);
 		~PacketDecoder();
 
-		void decode(std::unique_ptr<accl::Buffer> packetBuffer);
+		void decode(std::unique_ptr<PacketBuffer> packetBuffer);
 
 		inline void setLastSequence(uint32_t seq);
 		inline uint32_t getLastSequence() const;

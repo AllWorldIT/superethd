@@ -96,14 +96,14 @@ void PacketEncoder::_flushInflight() {
 					   ", count=", inflight_buffers.size());
 }
 
-void PacketEncoder::_pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer) {
+void PacketEncoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Push buffer into inflight list
 	inflight_buffers.push_back(std::move(packetBuffer));
 	LOG_DEBUG_INTERNAL("  - INFLIGHT: Packet added");
 }
 
-PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
-							 accl::BufferPool *destination_buffer_pool) {
+PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
+							 accl::BufferPool<PacketBuffer> *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
 	this->l2mtu = l2mtu;
 	this->l4mtu = l4mtu;
@@ -119,7 +119,7 @@ PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *a
 
 PacketEncoder::~PacketEncoder() = default;
 
-void PacketEncoder::encode(std::unique_ptr<accl::Buffer> packetBuffer) {
+void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	LOG_DEBUG_INTERNAL("INCOMING PACKET: size=", packetBuffer->getDataSize(), " [l2mtu: ", l2mtu, ", l4mtu: ", l4mtu,
 					   "], buffer_size=", dest_buffer->getDataSize(), ", packet_count=", packet_count, ", opt_len=", opt_len);
 

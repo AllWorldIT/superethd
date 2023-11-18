@@ -46,10 +46,10 @@ TEST_CASE("Benchmark codec", "[codec]") {
 	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
 
-	accl::BufferPool buffer_pool(l2mtu, 4);
+	accl::BufferPool<PacketBuffer> buffer_pool(l2mtu, 4);
 
-	accl::BufferPool encoded_pool(l2mtu);
-	accl::BufferPool decoded_pool(l2mtu);
+	accl::BufferPool<PacketBuffer> encoded_pool(l2mtu);
+	accl::BufferPool<PacketBuffer> decoded_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
@@ -61,7 +61,7 @@ TEST_CASE("Benchmark codec", "[codec]") {
 
 	// Disable debugging
 	BENCHMARK("Encode decode one packet") {
-		std::unique_ptr<accl::Buffer> packet_buffer, encoder_buffer, decoder_buffer;
+		std::unique_ptr<PacketBuffer> packet_buffer, encoder_buffer, decoder_buffer;
 
 		for (int i = 0; i < 100; ++i) {
 			LOG_DEBUG_INTERNAL("LOOP: ", i);

@@ -49,9 +49,9 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 	// Lets fire up the encoder
 	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
-	accl::BufferPool avail_buffer_pool(l2mtu, 9);
-	accl::BufferPool enc_buffer_pool(l2mtu);
-	accl::BufferPool dec_buffer_pool(l2mtu);
+	accl::BufferPool<PacketBuffer> avail_buffer_pool(l2mtu, 9);
+	accl::BufferPool<PacketBuffer> enc_buffer_pool(l2mtu);
+	accl::BufferPool<PacketBuffer> dec_buffer_pool(l2mtu);
 
 	std::string packet_bin = packet.asBinary();
 
@@ -64,7 +64,7 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 	encoder.setSequence(UINT32_MAX - 5);
 
 	for (uint64_t i = 0; i < 10; ++i) {
-		std::unique_ptr<accl::Buffer> packet_buffer = avail_buffer_pool.pop();
+		std::unique_ptr<PacketBuffer> packet_buffer = avail_buffer_pool.pop();
 		packet_buffer->clear();
 
 		packet_buffer->append(packet_bin.data(), packet_bin.length());

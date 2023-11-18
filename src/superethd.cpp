@@ -5,20 +5,21 @@
  */
 
 #include "common.hpp"
+#include "debug.hpp"
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
-
-#include <errno.h>
-#include <signal.h>
-#include <string.h>
-
-#include "debug.hpp"
 #include "sockets.hpp"
 #include "tap.hpp"
 #include "threads.hpp"
 #include "tunnel.hpp"
 #include "util.hpp"
+#include <cstring>
+#include <errno.h>
+#include <sched.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/resource.h>
 
 int stop_program = 0;
 
@@ -118,6 +119,24 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	// Initialize threads
 	std::thread tunnel_read_tap_thread(tunnel_read_tap_handler, &tdata);
 	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
+
+	// Set process nice value
+	int niceValue = -10;
+	if (setpriority(PRIO_PROCESS, getpid(), niceValue) < 0) {
+		CERR("Could not set process nice value: ", std::strerror(errno));
+		return 1;
+	}
+
+	// Setup priority for a thread
+	int policy = SCHED_RR;
+	struct sched_param param;
+	param.sched_priority = sched_get_priority_max(SCHED_RR);
+	if (pthread_setschedparam(tunnel_read_tap_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set TAP device thread priority: ", std::strerror(errno));
+	}
+	if (pthread_setschedparam(tunnel_read_socket_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set socket thread priority: ", std::strerror(errno));
+	}
 
 	// Online interface
 	CERR("Enabling ethernet device '{}'...", ifname.c_str());

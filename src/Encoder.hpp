@@ -23,18 +23,18 @@ class PacketEncoder {
 		// Sequence counter
 		uint32_t sequence;
 		// Active destination buffer that is not yet full
-		std::unique_ptr<accl::Buffer> dest_buffer;
+		std::unique_ptr<PacketBuffer> dest_buffer;
 		// Buffers in flight, currently being utilized
-		std::deque<std::unique_ptr<accl::Buffer>> inflight_buffers;
+		std::deque<std::unique_ptr<PacketBuffer>> inflight_buffers;
 		// Active destination buffer header options length
 		uint16_t opt_len;
 		// Number of packets currently encoded
 		uint32_t packet_count;
 
 		// Buffer pool to get buffers from
-		accl::BufferPool *buffer_pool;
+		accl::BufferPool<PacketBuffer> *buffer_pool;
 		// Buffer pool to push buffers to
-		accl::BufferPool *dest_buffer_pool;
+		accl::BufferPool<PacketBuffer> *dest_buffer_pool;
 
 		void _flush();
 
@@ -43,14 +43,14 @@ class PacketEncoder {
 		uint16_t _getMaxPayloadSize(uint16_t size) const;
 
 		void _flushInflight();
-		void _pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer);
+		void _pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
 
 	public:
-		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
-					  accl::BufferPool *destination_buffer_pool);
+		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
+					  accl::BufferPool<PacketBuffer> *destination_buffer_pool);
 		~PacketEncoder();
 
-		void encode(std::unique_ptr<accl::Buffer> packetBuffer);
+		void encode(std::unique_ptr<PacketBuffer> packetBuffer);
 
 		void flush();
 

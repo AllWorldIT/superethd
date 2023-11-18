@@ -9,9 +9,9 @@
 #include <arpa/inet.h>
 
 #include <cstdint>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstring>
+#include <stdexcept>
+#include <string>
 
 int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length) {
 	*buffer = (uint8_t *)malloc(strlen(hex_dump)); // Maximum possible size
@@ -63,36 +63,6 @@ char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
 	// Null-terminate the buffer
 	buffer[length] = '\0';
 
-	return buffer;
-}
-
-char *create_sequence_data(size_t length) {
-	if (length < 2)
-		return NULL; // Ensure at least space for one character and a null terminator
-
-	char *buffer = (char *)malloc(length + 1);
-	if (!buffer)
-		return NULL; // Memory allocation failed
-
-	char letter = 'A';
-	char number = '0';
-	uint16_t index = 0;
-
-	while (index < length) { // Leave space for null terminator
-		buffer[index++] = letter;
-		for (number = '0'; number <= '9' && index < length; number++) {
-			buffer[index++] = number;
-		}
-
-		// Update for the next letter
-		if (letter == 'Z') {
-			letter = 'A';
-		} else {
-			letter++;
-		}
-	}
-
-	buffer[index] = '\0'; // Null terminate the buffer
 	return buffer;
 }
 

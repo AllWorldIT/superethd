@@ -96,19 +96,19 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		// Lets fire up the encoder
 		uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 		uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
-		accl::BufferPool avail_buffer_pool(l2mtu, 8);
-		accl::BufferPool enc_buffer_pool(l2mtu);
+		accl::BufferPool<PacketBuffer> avail_buffer_pool(l2mtu, 8);
+		accl::BufferPool<PacketBuffer> enc_buffer_pool(l2mtu);
 
 		std::string packet1_bin = packet1.asBinary();
-		std::unique_ptr<accl::Buffer> packet1_buffer = std::make_unique<accl::Buffer>(l2mtu);
+		std::unique_ptr<PacketBuffer> packet1_buffer = std::make_unique<PacketBuffer>(l2mtu);
 		packet1_buffer->append(packet1_bin.data(), packet1_bin.length());
 
 		std::string packet2_bin = packet2.asBinary();
-		std::unique_ptr<accl::Buffer> packet2_buffer = std::make_unique<accl::Buffer>(l2mtu);
+		std::unique_ptr<PacketBuffer> packet2_buffer = std::make_unique<PacketBuffer>(l2mtu);
 		packet2_buffer->append(packet2_bin.data(), packet2_bin.length());
 
 		std::string packet3_bin = packet3.asBinary();
-		std::unique_ptr<accl::Buffer> packet3_buffer = std::make_unique<accl::Buffer>(l2mtu);
+		std::unique_ptr<PacketBuffer> packet3_buffer = std::make_unique<PacketBuffer>(l2mtu);
 		packet3_buffer->append(packet3_bin.data(), packet3_bin.length());
 
 		PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
@@ -125,7 +125,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		 * Test decoding
 		 */
 
-		accl::BufferPool dec_buffer_pool(l2mtu);
+		accl::BufferPool<PacketBuffer> dec_buffer_pool(l2mtu);
 
 		// Grab single packet from the encoder buffer pool
 		auto buffers = enc_buffer_pool.pop(0);

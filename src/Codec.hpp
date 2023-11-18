@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Endian.hpp"
+#include "PacketBuffer.hpp"
 #include "common.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"

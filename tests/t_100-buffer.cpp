@@ -8,7 +8,7 @@
 #include <stdexcept>
 
 TEST_CASE("Check buffer usage", "[buffers]") {
-	accl::Buffer buffer = accl::Buffer(100);
+	PacketBuffer buffer = PacketBuffer(100);
 	const std::string test_string = "hello world";
 
 	// Make sure that the buffer is the correct size
@@ -30,7 +30,7 @@ TEST_CASE("Check buffer usage", "[buffers]") {
 }
 
 TEST_CASE("Check buffer usage when using 2 appends", "[buffers]") {
-	accl::Buffer buffer = accl::Buffer(100);
+	PacketBuffer buffer = PacketBuffer(100);
 	const std::string test_string = "hello world";
 
 	// Make sure that the buffer is the correct size
@@ -54,7 +54,7 @@ TEST_CASE("Check buffer usage when using 2 appends", "[buffers]") {
 }
 
 TEST_CASE("Check we cannot exceed buffer size with append", "[buffers]") {
-	accl::Buffer buffer = accl::Buffer(20);
+	PacketBuffer buffer = PacketBuffer(20);
 
 	const std::string test_string = "hello world";
 
@@ -67,7 +67,7 @@ TEST_CASE("Check we cannot exceed buffer size with append", "[buffers]") {
 }
 
 TEST_CASE("Check copying data into the buffer manually and setting size", "[buffers]") {
-	accl::Buffer buffer = accl::Buffer(100);
+	PacketBuffer buffer = PacketBuffer(100);
 	const std::string test_string = "hello world";
 
 	// Grab pointer to the buffer contents
@@ -84,7 +84,7 @@ TEST_CASE("Check copying data into the buffer manually and setting size", "[buff
 }
 
 TEST_CASE("Check setting data size manually exceeding the buffer size", "[buffers]") {
-	accl::Buffer buffer = accl::Buffer(5);
+	PacketBuffer buffer = PacketBuffer(5);
 
 	SECTION("Expect a out_of_range is thrown if we try exceed the buffer size using setDataSize") {
 		REQUIRE_THROWS_AS(buffer.setDataSize(6), std::out_of_range);
