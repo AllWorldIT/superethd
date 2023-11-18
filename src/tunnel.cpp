@@ -5,7 +5,9 @@
  */
 
 #include "tunnel.hpp"
-#include "Codec.hpp"
+#include "Decoder.hpp"
+#include "Encoder.hpp"
+#include "Endian.hpp"
 #include "common.hpp"
 #include "libaccl/Buffer.hpp"
 #include "libaccl/BufferPool.hpp"
@@ -19,6 +21,7 @@
 #include <memory>
 #include <netinet/in.h>
 #include <netinet/sctp.h>
+#include <set>
 #include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -106,7 +109,9 @@ void tunnel_read_tap_handler(void *arg) {
 			continue;
 		}
 
+#ifdef DEBUG
 		size_t i{0};
+#endif
 		auto buffers = encoder_pool->pop(0);
 		for (auto &b : buffers) {
 			// Write data out
@@ -116,9 +121,10 @@ void tunnel_read_tap_handler(void *arg) {
 				LOG_ERROR("Got an error in sendto(): ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-
+#ifdef DEBUG
 			i++;
-			LOG_DEBUG_INTERNAL("Wrote ", i, " bytes to tunnel [", bytes_written, "/", buffers.size(), "]");
+			LOG_DEBUG_INTERNAL("Wrote ", bytes_written, " bytes to tunnel [buffer: ", i, "/", buffers.size(), "]");
+#endif
 		}
 
 		// Push buffers into available pool
@@ -129,6 +135,17 @@ void tunnel_read_tap_handler(void *arg) {
 
 	close(epollFd);
 }
+
+class BufferContainer {
+	public:
+		uint32_t key;
+		std::unique_ptr<accl::Buffer> &buffer;
+
+		BufferContainer(uint32_t k, std::unique_ptr<accl::Buffer> &b) : key(k), buffer(b) {}
+
+		// Compare operator
+		bool operator<(const BufferContainer &other) const { return key < other.key; }
+};
 
 // Read data from socket and queue to the decoder
 void tunnel_read_socket_handler(void *arg) {
@@ -177,6 +194,9 @@ void tunnel_read_socket_handler(void *arg) {
 		msgs[i].msg_hdr.msg_namelen = sockaddr_len;
 	}
 	// END - IO vector buffers
+
+	// Received buffers
+	std::set<BufferContainer> received_buffers;
 
 	while (1) {
 		if (*tdata->stop_program)
@@ -238,15 +258,25 @@ void tunnel_read_socket_handler(void *arg) {
 				continue;
 			}
 
-			// Add buffer node to the recycle list
-			decoder.decode(std::move(recvmm_buffers[i]));
+			// Add buffer node to the received list
+			// sortedInsert(received_buffers, recvmm_buffers[i]);
+			received_buffers.insert(BufferContainer(seth_be_to_cpu_32(pkthdr->sequence), recvmm_buffers[i]));
 
 			// Replenish the buffer
 			recvmm_buffers[i] = buffer_pool->pop();
 			msgs[i].msg_hdr.msg_iov->iov_base = recvmm_buffers[i]->getData();
 		}
 
+		// Sort buffers based on sequence
+		for (auto &rb : received_buffers) {
+			//decoder.decode(std::move(const_cast<std::unique_ptr<accl::Buffer> &>(rb.buffer)));
+			decoder.decode(std::move(rb.buffer));
+		}
+		received_buffers.clear();
+
+#ifdef DEBUG
 		size_t i{0};
+#endif
 		auto buffers = decoder_pool->pop(0);
 		for (auto &buffer : buffers) {
 			// Write data to TAP interface
@@ -255,9 +285,10 @@ void tunnel_read_socket_handler(void *arg) {
 				LOG_ERROR("Error writing TAP device: ", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-
+#ifdef DEBUG
 			i++;
 			LOG_DEBUG_INTERNAL("Wrote ", bytes_written, " bytes to TAP [", i, "/", buffers.size(), "]");
+#endif
 		}
 		// Push buffers into available pool
 		buffer_pool->push(buffers);

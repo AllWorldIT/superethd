@@ -47,7 +47,7 @@ class Logger {
 		inline std::string getLogLevelString() const;
 
 		template <typename... Args>
-		void log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args);
+		void log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args...args);
 };
 
 // Global logger instance
@@ -62,7 +62,7 @@ inline std::string Logger::getLogLevelDefaultString() const { return _getLogLeve
 inline std::string Logger::getLogLevelString() const { return _getLogLevelString(log_level); }
 
 template <typename... Args>
-void Logger::log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args) {
+void Logger::log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args...args) {
 	if (level >= log_level) {
 		std::ostringstream stream;
 		(stream << ... << args);

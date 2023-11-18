@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#include "Decoder.hpp"
+#include "Encoder.hpp"
 #include "debug.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"

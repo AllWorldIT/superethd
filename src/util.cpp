@@ -188,5 +188,5 @@ uint16_t get_l2mtu_from_mtu(uint16_t mtu) {
 int is_sequence_wrapping(uint32_t cur, uint32_t prev) {
 	// Check if the current sequence number is less than the previous one
 	// while accounting for wrapping
-	return cur < prev && (prev - cur) < (UINT32_MAX / 2);
+	return cur < prev && (prev - cur) > (UINT32_MAX / 2);
 }

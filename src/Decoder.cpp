@@ -4,251 +4,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Codec.hpp"
-#include "Endian.hpp"
-#include "libaccl/BufferPool.hpp"
+#include "Decoder.hpp"
 #include "libaccl/Logger.hpp"
-#include "libsethnetkit/EthernetPacket.hpp"
-#include <catch2/internal/catch_console_colour.hpp>
-#include <cstring>
-#include <format>
-#include <iomanip>
-#include <memory>
-
-/*
- * Packet encoder
- */
-
-void PacketEncoder::_flush() {
-	// Check if we have data in the dest_buffer, other than the header we add automatically
-	if (dest_buffer->getDataSize() == sizeof(PacketHeader))
-		return;
-
-	// The last thing we're doing is writing the packet header before dumping it into the dest_buffer_pool
-	PacketHeader *packet_header = reinterpret_cast<PacketHeader *>(dest_buffer->getData());
-	packet_header->ver = SETH_PACKET_HEADER_VERSION_V1;
-	packet_header->opt_len = opt_len;
-	packet_header->reserved = 0;
-	packet_header->critical = 0;
-	packet_header->oam = 0;
-	packet_header->format = PacketHeaderFormat::ENCAPSULATED;
-	packet_header->channel = 0;
-	packet_header->sequence = seth_cpu_to_be_32(sequence++);
-	// Dump the header into the destination buffer
-	LOG_DEBUG_INTERNAL("  - FLUSH: ADDING HEADER: opts=", static_cast<uint8_t>(packet_header->opt_len));
-	LOG_DEBUG_INTERNAL("  - FLUSH: DEST BUFFER SIZE: ", dest_buffer->getDataSize());
-
-	// Flush buffer to the destination pool
-	dest_buffer_pool->push(std::move(dest_buffer));
-
-	// Grab a new buffer
-	_getDestBuffer();
-}
-
-void PacketEncoder::_getDestBuffer() {
-	// Grab a buffer to use for the resulting packet
-	dest_buffer = buffer_pool->pop();
-	dest_buffer->clear();
-	// Advanced past header...
-	dest_buffer->setDataSize(sizeof(PacketHeader));
-	// Clear opt_len
-	opt_len = 0;
-	// Reset packet count to 0
-	packet_count = 0;
-}
-
-uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) const {
-	uint16_t max_payload_size = l4mtu - sizeof(PacketHeaderOption);
-
-	// Check if we have data in the buffer
-	if (dest_buffer->getDataSize()) {
-		// If we have data, there may not be space for more
-		if (dest_buffer->getDataSize() >= max_payload_size) {
-			LOG_DEBUG_INTERNAL("MAX PAYLOAD: data_size=", dest_buffer->getDataSize(), ", max_payload_size=", max_payload_size);
-			return 0;
-		}
-		// If we do, reduce by current buffer size
-		max_payload_size -= dest_buffer->getDataSize();
-	} else {
-		// If we don't, we will be adding a packet header too, so we need to cater for that
-		max_payload_size -= sizeof(PacketHeader);
-	}
-
-	// Now we take the reference size of what we need to fit in and see if we need the parital header or not
-	if (size > max_payload_size) {
-		max_payload_size -= sizeof(PacketHeaderOptionPartialData);
-	}
-
-	return max_payload_size;
-}
-
-void PacketEncoder::_flushInflight() {
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
-					   ", count=", inflight_buffers.size());
-	// Free remaining buffers in flight
-	if (!inflight_buffers.empty()) {
-		buffer_pool->push(inflight_buffers);
-	}
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers after: pool=", buffer_pool->getBufferCount(),
-					   ", count=", inflight_buffers.size());
-}
-
-void PacketEncoder::_pushInflight(std::unique_ptr<accl::Buffer> &packetBuffer) {
-	// Push buffer into inflight list
-	inflight_buffers.push_back(std::move(packetBuffer));
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Packet added");
-}
-
-PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool *available_buffer_pool,
-							 accl::BufferPool *destination_buffer_pool) {
-	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
-	this->l2mtu = l2mtu;
-	this->l4mtu = l4mtu;
-	this->sequence = 1;
-
-	// Setup buffer pools
-	this->buffer_pool = available_buffer_pool;
-	this->dest_buffer_pool = destination_buffer_pool;
-
-	// Initialize the destination buffer for first use
-	_getDestBuffer();
-}
-
-PacketEncoder::~PacketEncoder() = default;
-
-void PacketEncoder::encode(std::unique_ptr<accl::Buffer> packetBuffer) {
-	LOG_DEBUG_INTERNAL("INCOMING PACKET: size=", packetBuffer->getDataSize(), " [l2mtu: ", l2mtu, ", l4mtu: ", l4mtu,
-					   "], buffer_size=", dest_buffer->getDataSize());
-
-	// Make sure we cannot receive a packet that is greater than our MTU size
-	if (packetBuffer->getDataSize() > l2mtu) {
-		LOG_ERROR("Packet size ", packetBuffer->getDataSize(), " exceeds L2MTU size ", l2mtu, "?");
-		// Free buffer to available pool
-		buffer_pool->push(std::move(packetBuffer));
-		return;
-	}
-
-	// Handle packets that are larger than the MSS
-	if (packetBuffer->getDataSize() > _getMaxPayloadSize(packetBuffer->getDataSize())) {
-		// Start off at packet part 1 and position 0...
-		uint8_t part = 1;
-		uint16_t packet_pos = 0; // Position in the packet we're stuffing into the encap packet
-
-		LOG_DEBUG_INTERNAL(" - ENCODE PARTIAL PACKET - ");
-
-		// Loop while we still have bits of the packet to stuff into the encap packets
-		while (packet_pos < packetBuffer->getDataSize()) {
-			// Amount of data left in the packet still to encode
-			uint16_t packet_left = packetBuffer->getDataSize() - packet_pos;
-			// Maximum payload size for the current encap packet
-			uint16_t max_payload_size = _getMaxPayloadSize(packet_left);
-			// Work out how much of this packet we're going to stuff into the encap packet
-			uint16_t part_size = (packet_left > max_payload_size) ? max_payload_size : packet_left;
-
-			LOG_DEBUG_INTERNAL("  - PARTIAL PACKET: max_payload_size=", max_payload_size, ", part=", part,
-							   ", packet_pos=", packet_pos, ", part_size=", part_size);
-
-			// Grab current buffer size so we can do some magic memory meddling below
-			size_t cur_buffer_size = dest_buffer->getDataSize();
-
-			PacketHeaderOption *packet_header_option =
-					reinterpret_cast<PacketHeaderOption *>(dest_buffer->getData() + cur_buffer_size);
-			packet_header_option->reserved = 0;
-			packet_header_option->type = PacketHeaderOptionType::PARTIAL_PACKET;
-			packet_header_option->packet_size = seth_cpu_to_be_16(packetBuffer->getDataSize());
-
-			// Add packet header option
-			cur_buffer_size += sizeof(PacketHeaderOption);
-			// Only bump option len if this is not a subsequent packet header
-			if (!packet_count)
-				opt_len++;
-
-			PacketHeaderOptionPartialData *packet_header_option_partial =
-					reinterpret_cast<PacketHeaderOptionPartialData *>(dest_buffer->getData() + cur_buffer_size);
-			packet_header_option_partial->payload_length = seth_cpu_to_be_16(part_size);
-			packet_header_option_partial->part = part;
-			packet_header_option_partial->reserved = 0;
-
-			// Add packet header option for partial packets
-			cur_buffer_size += sizeof(PacketHeaderOptionPartialData);
-
-			// Once we're done messing with the buffer, set its size
-			dest_buffer->setDataSize(cur_buffer_size);
-
-			// Dump more of the packet into our destination buffer
-			dest_buffer->append(packetBuffer->getData() + packet_pos, part_size);
-
-			LOG_DEBUG_INTERNAL("    - Current dest buffer size: ", dest_buffer->getDataSize());
-
-			// If the buffer is full, push it to the destination pool
-			if (dest_buffer->getDataSize() == l4mtu) {
-				LOG_DEBUG_INTERNAL("    - Buffer full, flushing");
-				_flush();
-			}
-
-			// Adjust packet position
-			packet_pos += part_size;
-			part++;
-		}
-
-		// Push buffer into inflight list
-		_pushInflight(packetBuffer);
-		_flushInflight();
-
-		// Bump packet count
-		packet_count++;
-
-		LOG_DEBUG_INTERNAL("  - Final dest buffer size is ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
-
-	} else {
-		// Grab current buffer size so we can do some magic memory meddling below
-		size_t cur_buffer_size = dest_buffer->getDataSize();
-
-		LOG_DEBUG_INTERNAL(" - ENCODE COMPLETE PACKET - ");
-
-		PacketHeaderOption *packet_header_option = reinterpret_cast<PacketHeaderOption *>(dest_buffer->getData() + cur_buffer_size);
-		packet_header_option->reserved = 0;
-		packet_header_option->type = PacketHeaderOptionType::COMPLETE_PACKET;
-		packet_header_option->packet_size = seth_cpu_to_be_16(packetBuffer->getDataSize());
-
-		LOG_DEBUG_INTERNAL("  - OPTION HEADER: packet_bufer_size=", packetBuffer->getDataSize(),
-						   ", max_payload_size=", _getMaxPayloadSize(packetBuffer->getDataSize()),
-						   ", header_option_size=", sizeof(PacketHeaderOption), ", dest_buffer_size=", cur_buffer_size);
-
-		// Add packet header option
-		cur_buffer_size += sizeof(PacketHeaderOption);
-		// Only bump option len if this is not a subsequent packet header
-		if (!packet_count)
-			opt_len++;
-
-		// Once we're done messing with the buffer, set its size
-		dest_buffer->setDataSize(cur_buffer_size);
-
-		dest_buffer->append(packetBuffer->getData(), packetBuffer->getDataSize());
-		// Set packet buffer to being inflight
-		_pushInflight(packetBuffer);
-
-		// Bump packet count
-		packet_count++;
-
-		LOG_DEBUG_INTERNAL("  - FINAL DEST BUFFER SIZE: ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
-	}
-
-	// If the buffer is full, push it to the destination pool
-	// NK: We need to make provision for a header
-	LOG_DEBUG_INTERNAL("   - Flush check: ", _getMaxPayloadSize(SETH_PACKET_MAX_SIZE));
-	if (_getMaxPayloadSize(SETH_PACKET_MAX_SIZE) < sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10)) {
-		// Packet is as full as it will get
-		_flush();
-		_flushInflight();
-	}
-}
-
-void PacketEncoder::flush() {
-	// When we get a flush, it means we probably can't fill the buffer anymore, so we can just dump it and the inflight buffers too
-	_flush();
-	_flushInflight();
-}
+#include "util.hpp"
+#include <cassert>
 
 /*
  * Packet decoder
@@ -313,7 +72,7 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 	// Make sure packet is big enough to contain our header
 	if (packetBuffer->getDataSize() < sizeof(PacketHeader)) {
-		LOG_ERROR("Packet too small, should be > {}", sizeof(PacketHeader));
+		LOG_ERROR("Packet too small, should be > ", sizeof(PacketHeader));
 		buffer_pool->push(std::move(packetBuffer));
 		dest_buffer->clear();
 		return;
@@ -325,7 +84,7 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 	// Check version is supported
 	if (packet_header->ver > SETH_PACKET_HEADER_VERSION_V1) {
-		LOG_ERROR("Packet not supported, version ", std::format("{:02X}", static_cast<uint8_t>(packet_header->ver)),
+		LOG_ERROR("Packet not supported, version ", std::format("{:02X}", static_cast<unsigned int>(packet_header->ver)),
 				  " vs.our version ", std::format("{:02X}", SETH_PACKET_HEADER_VERSION_V1), ", DROPPING !");
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);
@@ -333,7 +92,7 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 	}
 	if (packet_header->reserved != 0) {
 		LOG_ERROR("Packet header should not have any reserved its set, it is ",
-				  std::format("{:02X}", static_cast<uint8_t>(packet_header->reserved)), ", DROPPING!");
+				  std::format("{:02X}", static_cast<unsigned int>(packet_header->reserved)), ", DROPPING!");
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);
 		return;
@@ -341,14 +100,15 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 	// First thing we do is validate the header
 	if (static_cast<uint8_t>(packet_header->format) &
 		~(static_cast<uint8_t>(PacketHeaderFormat::ENCAPSULATED) | static_cast<uint8_t>(PacketHeaderFormat::COMPRESSED))) {
-		LOG_ERROR("Packet in invalid format ", std::format("{:02X}", static_cast<uint8_t>(packet_header->format)), ", DROPPING!");
+		LOG_ERROR("Packet in invalid format ", std::format("{:02X}", static_cast<unsigned int>(packet_header->format)),
+				  ", DROPPING!");
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);
 		return;
 	}
 	// Next check the channel is set to 0
 	if (packet_header->channel) {
-		LOG_ERROR("Packet specifies invalid channel ", std::format("{:02X}", static_cast<uint8_t>(packet_header->channel)),
+		LOG_ERROR("Packet specifies invalid channel ", std::format("{:02X}", static_cast<unsigned int>(packet_header->channel)),
 				  ", DROPPING!");
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);
@@ -361,22 +121,28 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 	// If this is not the first packet...
 	if (first_packet) {
 		first_packet = false;
-		last_sequence = 0;
+		last_sequence = sequence - 1;
 	}
 
 	// Check if we've lost packets
 	if (sequence > last_sequence + 1) {
-		LOG_NOTICE(sequence, ": PACKET LOST: last=", last_sequence, ", seq=", sequence, ", total_lost=", sequence - last_sequence);
+		LOG_INFO(sequence, ": Packet lost, last=", last_sequence, ", seq=", sequence, ", total_lost=", sequence - last_sequence);
 		// Clear current state and flush inflight buffers
 		_clearState();
 		_flushInflight();
 	}
 	// If we we have an out of order one
 	if (sequence < last_sequence + 1) {
-		LOG_WARNING(sequence, ": PACKET OOO : last=", last_sequence, ", seq=", sequence);
-		// Clear current state and flush inflight buffers
-		_clearState();
-		_flushInflight();
+		// Check that sequence hasn't wrapped
+		if (is_sequence_wrapping(sequence, last_sequence)) {
+			LOG_INFO(sequence, ": Sequence number probably wrapped: now=", sequence, ", prev=", last_sequence);
+			last_sequence = 0;
+		} else {
+			LOG_NOTICE(sequence, ": PACKET OOO : last=", last_sequence, ", seq=", sequence);
+			// Clear current state and flush inflight buffers
+			_clearState();
+			_flushInflight();
+		}
 	}
 	// Set last sequence
 	last_sequence = sequence;
@@ -401,25 +167,27 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 		PacketHeaderOption *packet_header_option = (PacketHeaderOption *)(packetBuffer->getData() + cur_pos);
 		// Check for invalid header, where the reserved bits are set
 		if (packet_header_option->reserved) {
-			LOG_ERROR(sequence, ": Packet header option number ", header_num + 1, " is invalid, reserved bits set");
+			LOG_ERROR(sequence, ": Packet header option number ", static_cast<unsigned int>(header_num + 1),
+					  " is invalid, reserved bits set");
 			// Clear current state and flush inflight buffers
 			_clearStateAndFlushInflight(packetBuffer);
 			return;
 		}
 		// For now we just output the info
-		LOG_DEBUG_INTERNAL(sequence, ":   - Packet header option: header=", header_num + 1,
-						   ", type=", std::format("{:02X}", static_cast<uint8_t>(packet_header_option->type)));
+		LOG_DEBUG_INTERNAL(sequence, ":   - Packet header option: header=", static_cast<unsigned int>(header_num + 1),
+						   ", type=", std::format("{:02X}", static_cast<unsigned int>(packet_header_option->type)));
 
 		// If this header is a packet, we need to set packet_pos, data should immediately follow it
 		if (!packet_header_pos &&
 			static_cast<uint8_t>(packet_header_option->type) & (static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |
 																static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) {
-			LOG_DEBUG_INTERNAL(sequence, ":   - Found packet @", sequence, cur_pos);
+			LOG_DEBUG_INTERNAL(sequence, ":   - Found packet @", cur_pos);
 
 			// Make sure our headers are in the correct positions, else something is wrong
 			if (header_num + 1 != packet_header->opt_len) {
-				LOG_ERROR(sequence, ": Packet header should be the last header, current=", sequence, ", opt_len=", header_num + 1,
-						  static_cast<uint8_t>(packet_header->opt_len));
+				LOG_ERROR(sequence,
+						  ": Packet header should be the last header, current=", static_cast<unsigned int>(header_num + 1),
+						  ", opt_len=", static_cast<unsigned int>(packet_header->opt_len));
 				// Clear current state and flush inflight buffers
 				_clearStateAndFlushInflight(packetBuffer);
 				return;
@@ -462,7 +230,8 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 	// If we don't have a packet header, something is wrong
 	if (!packet_header_pos) {
-		LOG_ERROR(sequence, ": No packet payload found", sequence);
+		LOG_ERROR(sequence, ": No packet header found, size=", packetBuffer->getDataSize());
+		UT_ASSERT(packet_header_pos);
 		// Clear current state and flush inflight buffers
 		_clearStateAndFlushInflight(packetBuffer);
 		return;
@@ -539,13 +308,14 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 			// Packet header option partial data
 			PacketHeaderOptionPartialData *packet_header_option_partial_data =
-					(PacketHeaderOptionPartialData *)(packetBuffer->getData() + packet_header_pos + sizeof(PacketHeaderOption));
+				(PacketHeaderOptionPartialData *)(packetBuffer->getData() + packet_header_pos + sizeof(PacketHeaderOption));
 
 			// If our part is 0, it means we probably lost something if we had a last_part, we can clear the buffer and reset
 			// last_part
 			if (packet_header_option_partial_data->part == 1 && last_part) {
-				LOG_NOTICE(sequence, ": Something got lost, header_part=", packet_header_option_partial_data->part,
-						   ", last_part=", last_part);
+				LOG_NOTICE(sequence,
+						   ": Something got lost, header_part=", static_cast<unsigned int>(packet_header_option_partial_data->part),
+						   ", last_part=", static_cast<unsigned int>(last_part));
 				// Clear current state and flush inflight
 				_clearState();
 				_flushInflight();
@@ -553,8 +323,8 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 				// Verify part number
 			} else if (packet_header_option_partial_data->part != last_part + 1) {
-				LOG_NOTICE(sequence, ": Partial payload part ", packet_header_option_partial_data->part,
-						   " does not match last_part=", last_part, " + 1, SKIPPING!");
+				LOG_NOTICE(sequence, ": Partial payload part ", static_cast<unsigned int>(packet_header_option_partial_data->part),
+						   " does not match last_part=", static_cast<unsigned int>(last_part), " + 1, SKIPPING!");
 				// Clear current state and flush inflight
 				_clearState();
 				_flushInflight();
@@ -577,7 +347,7 @@ void PacketDecoder::decode(std::unique_ptr<accl::Buffer> packetBuffer) {
 
 			// If we're not skipping the packet, lets throw it into the dest_buffer
 			if (skip_packet) {
-				LOG_ERROR(sequence, ": SKIPPING PACKET");
+				LOG_DEBUG(sequence, ": Skipping unusable partial packet");
 				goto bump_header_pos;
 			}
 

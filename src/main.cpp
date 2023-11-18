@@ -156,7 +156,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Set our log level
-	LOG_INFO("Logging level set to ", accl::logger.getLogLevelString());
+	CERR("Logging level set to ", accl::logger.getLogLevelString());
+	CERR("");
 
 	CERR("Interface...: {}", ifname_value.c_str());
 	CERR("Source......: {}", src_addr_str);

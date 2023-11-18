@@ -20,7 +20,8 @@ deps = [dependency('liblz4')]
 #
 
 libsuperethd_sources = [
-    'Codec.cpp',
+    'Decoder.cpp',
+    'Encoder.cpp',
     'debug.cpp',
     'sockets.cpp',
     'superethd.cpp',

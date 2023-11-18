@@ -163,23 +163,39 @@ test('Create an ethernet packet with an IPv6 header and TCP header', t_427_packe
 # Codec tests
 #
 
-#stacktrace_deps = [dependency('dl')] + deps
 
 t_998_new_codec = executable('t_998-new-codec',
   't_998-new-codec.cpp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
-  #dependencies: stacktrace_deps,
-  #cpp_args: stacktrace_args,
 )
 test('Test codec in development', t_998_new_codec)
 
 
-t_999_new_codec_benchmark = executable('t_999-new-codec-benchmark',
+t_998_new_codec_sweep = executable('t_998-new-codec-sweep',
+  't_998-new-codec-sweep.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+)
+test('Test codec-sweep in development', t_998_new_codec_sweep)
+
+
+t_998_new_codec_seq = executable('t_998-new-codec-seq',
+  't_998-new-codec-seq.cpp',
+  include_directories: inc,
+  link_with:libs,
+  dependencies: deps,
+)
+test('Test codec-seq in development', t_998_new_codec_seq)
+
+
+#t_999_new_codec_benchmark = executable('t_999-new-codec-benchmark',
+executable('t_999-new-codec-benchmark',
   't_999-new-codec-benchmark.cpp',
   include_directories: inc,
   link_with:libs,
   dependencies: deps,
 )
-test('Test codec_benchmark in development', t_999_new_codec_benchmark)
+#test('Test codec_benchmark in development', t_999_new_codec_benchmark)
