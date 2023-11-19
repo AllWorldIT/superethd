@@ -8,8 +8,8 @@
 #include "Decoder.hpp"
 #include "Encoder.hpp"
 #include "Endian.hpp"
-#include "common.hpp"
 #include "PacketBuffer.hpp"
+#include "common.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
 #include "tap.hpp"
@@ -26,6 +26,11 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+/**
+ * @brief Thread responsible for reading from the TAP interface.
+ *
+ * @param arg Thread data.
+ */
 void tunnel_read_tap_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
@@ -136,14 +141,22 @@ void tunnel_read_tap_handler(void *arg) {
 	close(epollFd);
 }
 
+/**
+ * @brief Internal function to compare a packet
+ *
+ */
 struct _comparePacketBuffer {
 		bool operator()(const std::unique_ptr<PacketBuffer> &a, const std::unique_ptr<PacketBuffer> &b) const {
 			// Use our own comparison operator inside PacketBuffer
-			return *a < *b;
+			return a->getKey() < b->getKey();
 		}
 };
 
-// Read data from socket and queue to the decoder
+/**
+ * @brief Thread responsible for reading data from the socket.
+ *
+ * @param arg Thread data.
+ */
 void tunnel_read_socket_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 

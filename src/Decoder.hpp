@@ -50,9 +50,19 @@ class PacketDecoder {
 		inline uint32_t getLastSequence() const;
 };
 
+/**
+ * @brief Set last packet sequence.
+ *
+ * @param seq Sequence to set.
+ */
 inline void PacketDecoder::setLastSequence(uint32_t seq) {
 	LOG_DEBUG_INTERNAL("Setting decoder last sequence to ", seq);
 	last_sequence = seq;
 }
 
+/**
+ * @brief Get last packet sequence.
+ *
+ * @return uint32_t Last packet sequence.
+ */
 inline uint32_t PacketDecoder::getLastSequence() const { return last_sequence; }

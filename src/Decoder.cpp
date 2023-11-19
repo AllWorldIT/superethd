@@ -13,6 +13,10 @@
  * Packet decoder
  */
 
+/**
+ * @brief Internal method to clear the current decoder state.
+ *
+ */
 void PacketDecoder::_clearState() {
 	// Clear destination buffer
 	dest_buffer->clear();
@@ -21,12 +25,20 @@ void PacketDecoder::_clearState() {
 	last_final_packet_size = 0;
 }
 
+/**
+ * @brief Internal method to grab another destination buffer from the buffer pool.
+ *
+ */
 void PacketDecoder::_getDestBuffer() {
 	// Grab a buffer to use for the resulting packet
 	dest_buffer = buffer_pool->pop();
 	_clearState();
 }
 
+/**
+ * @brief Internal method to flush inflight buffers to the buffer pool.
+ *
+ */
 void PacketDecoder::_flushInflight() {
 	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
 					   ", count=", inflight_buffers.size());
@@ -38,6 +50,11 @@ void PacketDecoder::_flushInflight() {
 					   ", count=", inflight_buffers.size());
 }
 
+/**
+ * @brief Push a buffer into the inflight buffer list.
+ *
+ * @param packetBuffer
+ */
 void PacketDecoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Push buffer into inflight list
 	inflight_buffers.push_back(std::move(packetBuffer));
@@ -52,6 +69,13 @@ void PacketDecoder::_clearStateAndFlushInflight(std::unique_ptr<PacketBuffer> &p
 	_flushInflight();
 }
 
+/**
+ * @brief Construct a new Packet Decoder:: Packet Decoder object
+ *
+ * @param l2mtu Layer 2 MTU size.
+ * @param available_buffer_pool Available buffer pool.
+ * @param destination_buffer_pool Destination buffer pool.
+ */
 PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
 							 accl::BufferPool<PacketBuffer> *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
@@ -66,8 +90,17 @@ PacketDecoder::PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *ava
 	_getDestBuffer();
 }
 
+/**
+ * @brief Destroy the Packet Decoder:: Packet Decoder object
+ *
+ */
 PacketDecoder::~PacketDecoder() = default;
 
+/**
+ * @brief Decode buffer.
+ *
+ * @param packetBuffer Packet buffer.
+ */
 void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	LOG_DEBUG_INTERNAL("DECODER INCOMING PACKET SIZE: ", packetBuffer->getDataSize());
 

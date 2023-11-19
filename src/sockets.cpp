@@ -8,6 +8,12 @@
 #include "threads.hpp"
 #include "util.hpp"
 
+/**
+ * @brief Create a udp socket.
+ *
+ * @param tdata Thread data.
+ * @return int -1 on failure, 0 on success.
+ */
 int create_udp_socket(struct ThreadData *tdata) {
 	socklen_t addrlen = sizeof(struct sockaddr_in6);
 
@@ -40,4 +46,9 @@ int create_udp_socket(struct ThreadData *tdata) {
 	return 0;
 }
 
+/**
+ * @brief Destroy a UDP socket.
+ *
+ * @param tdata Thread data.
+ */
 void destroy_udp_socket(struct ThreadData *tdata) { close(tdata->udp_socket); }

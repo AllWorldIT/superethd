@@ -7,11 +7,7 @@
 #pragma once
 
 #include "Logger.hpp"
-#include <cstdint>
-#include <iostream>
-#include <stdexcept>
 #include <vector>
-
 
 namespace accl {
 
@@ -41,7 +37,12 @@ class Buffer {
 		inline void clear();
 };
 
-// Add data to buffer
+/**
+ * @brief Append data to buffer.
+ *
+ * @param data Pointer to data.
+ * @param size Size of data to.
+ */
 inline void Buffer::append(const char *data, std::size_t size) {
 	if (size > content.size() - dataSize) {
 		// Make sure we cannot overflow the buffer
@@ -51,16 +52,32 @@ inline void Buffer::append(const char *data, std::size_t size) {
 	dataSize += size;
 }
 
-// Return pointer to the data
+/**
+ * @brief Get pointer to buffer data.
+ *
+ * @return char* Pointer to buffer data.
+ */
 inline char *Buffer::getData() { return content.data(); }
 
-// Get buffer size
+/**
+ * @brief Get buffer size.
+ *
+ * @return std::size_t Buffer size.
+ */
 inline std::size_t Buffer::getBufferSize() const { return content.size(); };
 
-// Return current data size within the buffer
+/**
+ * @brief Get size of data in buffer.
+ *
+ * @return std::size_t Size of data in buffer.
+ */
 inline std::size_t Buffer::getDataSize() const { return dataSize; }
 
-// Set amount of data that is in the buffer
+/**
+ * @brief Set size of data in buffer.
+ *
+ * @param size Size of data.
+ */
 inline void Buffer::setDataSize(size_t size) {
 	// We cannot set the data size bigger than the buffer itself
 	if (size > content.size()) {
@@ -69,7 +86,10 @@ inline void Buffer::setDataSize(size_t size) {
 	dataSize = size;
 }
 
-// Clear buffer data
+/**
+ * @brief Clear data in buffer by setting the size to 0.
+ *
+ */
 inline void Buffer::clear() { dataSize = 0; }
 
 } // namespace accl

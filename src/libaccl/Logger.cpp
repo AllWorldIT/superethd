@@ -5,13 +5,17 @@
  */
 
 #include "Logger.hpp"
-#include <algorithm>
 #include <chrono>
-#include <ctime>
 #include <iostream>
 
 namespace accl {
 
+/**
+ * @brief Get the string representation of a log level in lowercase.
+ *
+ * @param level Log level.
+ * @return std::string String representation of the log level in lowercase.
+ */
 std::string Logger::_getLogLevelString(const LogLevel level) const {
 	std::string level_lc(_logLevelToString(level));
 	std::transform(level_lc.begin(), level_lc.end(), level_lc.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -19,6 +23,12 @@ std::string Logger::_getLogLevelString(const LogLevel level) const {
 	return level_lc;
 }
 
+/**
+ * @brief Get the log level string representation, this is in capital letters.
+ *
+ * @param level Log level.
+ * @return std::string String representation of the log level in capital letters.
+ */
 std::string Logger::_logLevelToString(const LogLevel level) const {
 	switch (level) {
 	case LogLevel::DEBUGGING:
@@ -33,6 +43,37 @@ std::string Logger::_logLevelToString(const LogLevel level) const {
 		return "ERROR";
 	default:
 		return "UNKNOWN";
+	}
+}
+
+/**
+ * @brief Internal method that does most of the logging.
+ *
+ * @param level Log level.
+ * @param file File name that the log method is called from.
+ * @param func Function or method that the log method is called from.
+ * @param line Line number from where the log method is called.
+ * @param logline The line to log.
+ */
+void Logger::_log(const LogLevel level, const std::string file, const std::string func, const unsigned int line,
+				  std::string logline) {
+	if (level >= log_level) {
+		std::ostringstream stream;
+
+		// Grab current time
+		auto now_utc = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		std::tm *utc_tm = std::gmtime(&now_utc);
+
+		// Output time and log level
+		stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S") << " [" << _logLevelToString(level) << "] ";
+		// If we're debugging output the func, file and line
+		if (log_level == LogLevel::DEBUGGING) {
+			stream << "(" << func << ":" << file << ":" << line << ") ";
+		}
+		stream << logline;
+		// Log mutex
+		std::lock_guard<std::mutex> lock(mutex_);
+		std::cerr << stream.str() << std::endl;
 	}
 }
 
@@ -62,28 +103,6 @@ bool Logger::setLogLevel(const std::string level) {
 	}
 
 	return false;
-}
-
-void Logger::_log(const LogLevel level, const std::string file, const std::string func, const unsigned int line,
-				  std::string logline) {
-	if (level >= log_level) {
-		std::ostringstream stream;
-
-		// Grab current time
-		auto now_utc = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		std::tm *utc_tm = std::gmtime(&now_utc);
-
-		// Output time and log level
-		stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S") << " [" << _logLevelToString(level) << "] ";
-		// If we're debugging output the func, file and line
-		if (log_level == LogLevel::DEBUGGING) {
-			stream << "(" << func << ":" << file << ":" << line << ") ";
-		}
-		stream << logline;
-		// Log mutex
-		std::lock_guard<std::mutex> lock(mutex_);
-		std::cerr << stream.str() << std::endl;
-	}
 }
 
 std::map<std::string, LogLevel> logLevelMap = {{"debug", LogLevel::DEBUGGING},

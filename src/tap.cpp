@@ -5,17 +5,21 @@
  */
 
 #include "tap.hpp"
-#include <string>
-
+#include "debug.hpp"
 #include "libaccl/Logger.hpp"
+#include "threads.hpp"
 #include <fcntl.h>
 #include <libnetlink.h>
 #include <linux/if_tun.h>
+#include <string>
 #include <sys/ioctl.h>
 
-#include "debug.hpp"
-#include "threads.hpp"
-
+/**
+ * @brief Create a tap interface.
+ *
+ * @param ifname Interface name.
+ * @param tdata Thread data.
+ */
 void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 	struct ifreq ifr;
 	int fd, err;
@@ -51,11 +55,22 @@ void create_tap_interface(const std::string ifname, struct ThreadData *tdata) {
 	tdata->tap_device.fd = fd;
 }
 
+/**
+ * @brief Destroy the TAP interface.
+ *
+ * @param tdata Thread data.
+ */
 void destroy_tap_interface(struct ThreadData *tdata) {
 	if (tdata->tap_device.fd)
 		close(tdata->tap_device.fd);
 }
 
+/**
+ * @brief Initialize the TAP interface.
+ *
+ * @param tdata Thread data.
+ * @return int 0 on success.
+ */
 int start_tap_interface(struct ThreadData *tdata) {
 	int sockfd;
 	struct ifreq ifr;

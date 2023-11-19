@@ -7,6 +7,7 @@
 #pragma once
 
 #include <format>
+#include <iostream>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -47,22 +48,52 @@ class Logger {
 		inline std::string getLogLevelString() const;
 
 		template <typename... Args>
-		void log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args...args);
+		void log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args);
 };
 
 // Global logger instance
 extern Logger logger;
 
+/**
+ * @brief Set log level.
+ *
+ * @param level Log level.
+ */
 inline void Logger::setLogLevel(const LogLevel level) { log_level = level; };
 
+/**
+ * @brief Get current log level.
+ *
+ * @return LogLevel Log level that we're set to.
+ */
 inline LogLevel Logger::getLogLevel() const { return log_level; };
 
+/**
+ * @brief Get log level default as a string in lowercase.
+ *
+ * @return std::string Log level as a string in lowercase.
+ */
 inline std::string Logger::getLogLevelDefaultString() const { return _getLogLevelString(log_level_default); }
 
+/**
+ * @brief Get log level as a string in lowercase.
+ *
+ * @return std::string Log level as a string in lowercase.
+ */
 inline std::string Logger::getLogLevelString() const { return _getLogLevelString(log_level); }
 
+/**
+ * @brief Log something.
+ *
+ * @tparam Args Variable number of arguments.
+ * @param level Log level.
+ * @param file File name that the log method is called from.
+ * @param func Function or method that the log method is called from.
+ * @param line Line number from where the log method is called.
+ * @param args Arguments comprising of items to be concatenated to log.
+ */
 template <typename... Args>
-void Logger::log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args...args) {
+void Logger::log(const LogLevel level, const std::string file, const std::string func, const unsigned int line, Args... args) {
 	if (level >= log_level) {
 		std::ostringstream stream;
 		(stream << ... << args);

@@ -8,8 +8,18 @@
 
 namespace accl {
 
+/**
+ * @brief Construct a new Sequence Data Generator:: Sequence Data Generator object
+ *
+ * @param len Length of sequence data.
+ */
 SequenceDataGenerator::SequenceDataGenerator(int len) { generate(len); }
 
+/**
+ * @brief Generate sequence data of a specified length.
+ *
+ * @param len Length of sequence data to generate.
+ */
 void SequenceDataGenerator::generate(int len) {
 	std::stringstream ss;
 	char letter = 'A';
@@ -34,8 +44,18 @@ void SequenceDataGenerator::generate(int len) {
 	data = ss.str();
 }
 
+/**
+ * @brief Return data as a string.
+ *
+ * @return std::string String representation of the data.
+ */
 std::string SequenceDataGenerator::asString() const { return data; }
 
+/**
+ * @brief Return data as bytes.
+ *
+ * @return std::vector<uint8_t> Bytes representation of the data.
+ */
 std::vector<uint8_t> SequenceDataGenerator::asBytes() const {
 	std::vector<uint8_t> byteSequence(data.begin(), data.end());
 	return byteSequence;

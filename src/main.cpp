@@ -10,7 +10,6 @@
 #include <getopt.h>
 #include <net/if.h>
 #include <string.h>
-
 #include "common.hpp"
 #include "config.hpp"
 #include "debug.hpp"

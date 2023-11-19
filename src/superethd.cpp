@@ -18,11 +18,15 @@
 #include <errno.h>
 #include <sched.h>
 #include <signal.h>
-#include <string.h>
 #include <sys/resource.h>
 
 int stop_program = 0;
 
+/**
+ * @brief Handler for SIGUSR1.
+ *
+ * @param signum Signal number.
+ */
 void handleSIGUSR1(int signum) {
 	// Handle SIGUSR1
 	CERR("Received SIGUSR1. Exiting...");

@@ -6,7 +6,4 @@
 
 #include "Buffer.hpp"
 
-namespace accl {
-
-
-} // namespace accl
+namespace accl {} // namespace accl

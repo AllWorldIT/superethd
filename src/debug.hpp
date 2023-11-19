@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <iostream>
+#include <string>
 
 // Print buffers in various formats
 std::string hex_dump(const std::string buffer);

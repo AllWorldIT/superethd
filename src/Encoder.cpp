@@ -11,6 +11,10 @@
  * Packet encoder
  */
 
+/**
+ * @brief Internal method to flush the current buffer.
+ *
+ */
 void PacketEncoder::_flush() {
 	// Check if we have data in the dest_buffer, other than the header we add automatically
 	if (dest_buffer->getDataSize() == sizeof(PacketHeader))
@@ -42,6 +46,10 @@ void PacketEncoder::_flush() {
 	_getDestBuffer();
 }
 
+/**
+ * @brief Get another buffer and prepare it for encoded data.
+ *
+ */
 void PacketEncoder::_getDestBuffer() {
 	// Grab a buffer to use for the resulting packet
 	dest_buffer = buffer_pool->pop();
@@ -54,6 +62,12 @@ void PacketEncoder::_getDestBuffer() {
 	packet_count = 0;
 }
 
+/**
+ * @brief Get maximum payload size depending on the size of the buffer that should be encoded.
+ *
+ * @param size Size of the packet to be encoded or SETH_PACKET_MAX_SIZE if unknown.
+ * @return uint16_t Maximum payload size.
+ */
 uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) const {
 	int32_t max_payload_size = l4mtu;
 
@@ -85,6 +99,10 @@ uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) const {
 	return static_cast<uint16_t>(max_payload_size);
 }
 
+/**
+ * @brief Flush inflight buffers to the buffer pool.
+ *
+ */
 void PacketEncoder::_flushInflight() {
 	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
 					   ", count=", inflight_buffers.size());
@@ -96,12 +114,25 @@ void PacketEncoder::_flushInflight() {
 					   ", count=", inflight_buffers.size());
 }
 
+/**
+ * @brief Add a buffer to the inflight buffer pool.
+ *
+ * @param packetBuffer Buffer to add to the inflight buffer pool.
+ */
 void PacketEncoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Push buffer into inflight list
 	inflight_buffers.push_back(std::move(packetBuffer));
 	LOG_DEBUG_INTERNAL("  - INFLIGHT: Packet added");
 }
 
+/**
+ * @brief Construct a new Packet Encoder:: Packet Encoder object
+ *
+ * @param l2mtu Layer 2 MTU.
+ * @param l4mtu Layer 4 MTU.
+ * @param available_buffer_pool Available buffer pool.
+ * @param destination_buffer_pool Destination buffer pool.
+ */
 PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
 							 accl::BufferPool<PacketBuffer> *destination_buffer_pool) {
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
@@ -117,8 +148,17 @@ PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<Pa
 	_getDestBuffer();
 }
 
+/**
+ * @brief Destroy the Packet Encoder:: Packet Encoder object
+ *
+ */
 PacketEncoder::~PacketEncoder() = default;
 
+/**
+ * @brief Encode a packet buffer.
+ *
+ * @param packetBuffer Packet buffer to encode.
+ */
 void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	LOG_DEBUG_INTERNAL("INCOMING PACKET: size=", packetBuffer->getDataSize(), " [l2mtu: ", l2mtu, ", l4mtu: ", l4mtu,
 					   "], buffer_size=", dest_buffer->getDataSize(), ", packet_count=", packet_count, ", opt_len=", opt_len);
@@ -247,6 +287,10 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	}
 }
 
+/**
+ * @brief Public method to flush the current buffer.
+ *
+ */
 void PacketEncoder::flush() {
 	// When we get a flush, it means we probably can't fill the buffer anymore, so we can just dump it and the inflight buffers too
 	_flush();

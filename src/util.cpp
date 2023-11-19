@@ -48,6 +48,13 @@ int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *le
 	return 0; // Success
 }
 
+/**
+ * @brief Convert a uint8_t array into a char buffer.
+ *
+ * @param array uint8_t array to convert.
+ * @param length Length of array.
+ * @return char* char buffer.
+ */
 char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
 	// Allocate memory for the buffer (+1 for the null terminator)
 	char *buffer = (char *)malloc(length + 1);

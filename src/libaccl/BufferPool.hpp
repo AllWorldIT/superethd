@@ -7,23 +7,16 @@
 #pragma once
 
 #include "Buffer.hpp"
-#include <chrono>
 #include <condition_variable>
-#include <iostream>
-#include <list>
 #include <deque>
-#include <memory>
-#include <new>
 #include <shared_mutex>
-#include <thread>
 
 namespace accl {
 
 // Inline constant to pass to pop() to allow popping all buffers
 inline constexpr size_t BUFFER_POOL_POP_ALL{0};
 
-template <typename T>
-class BufferPool {
+template <typename T> class BufferPool {
 	private:
 		std::deque<std::unique_ptr<T>> pool;
 		std::size_t buffer_size;
@@ -55,10 +48,17 @@ class BufferPool {
 		std::deque<std::unique_ptr<T>> wait_for(std::chrono::milliseconds duration);
 };
 
-// Internal method to pop many buffers from the pool WITHOUT LOCKING
+/**
+ * @brief Internal method to pop a number of buffers or all buffers without locking.
+ *
+ * @tparam T Buffer class.
+ * @param result Result to place buffers in which are popped.
+ * @param count Number of buffers to pop or BUFFER_POOL_POP_ALL for all of them.
+ */
 template <typename T> void BufferPool<T>::_pop(std::deque<std::unique_ptr<T>> &result, size_t count) {
 	// Grab iterator on first buffer in pool
 	auto iterator = pool.begin();
+
 	// We now look while count==0, or i < count, making sure we've not reached the pool end
 	for (size_t i = 0; (!count || i < count) && iterator != pool.end(); ++i, ++iterator) {
 		result.push_back(std::move(*iterator));
@@ -68,19 +68,32 @@ template <typename T> void BufferPool<T>::_pop(std::deque<std::unique_ptr<T>> &r
 	pool.erase(pool.begin(), iterator);
 }
 
+/**
+ * @brief Internal method to pop a number of buffers without locking.
+ *
+ * @tparam T Buffer class.
+ * @param count Number of buffers to pop.
+ * @return std::deque<std::unique_ptr<T>> Buffers that were popped.
+ */
+template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::_pop(size_t count) {
+	std::deque<std::unique_ptr<T>> result;
+	_pop(result, count);
+	return result;
+}
+
+/**
+ * @brief Construct a new Buffer Pool< T>:: Buffer Pool object
+ *
+ * @tparam T Buffer class.
+ * @param buffer_size Size of the buffers we'll be using.
+ * @param num_buffers Number of buffers to place in the pool apon construction.
+ */
 template <typename T> BufferPool<T>::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : BufferPool(buffer_size) {
 	// Allocate the number of buffers specified
 	for (std::size_t i = 0; i < num_buffers; ++i) {
 		auto buffer = std::make_unique<T>(buffer_size);
 		pool.push_back(std::move(buffer));
 	}
-}
-
-// Internal method to pop many buffers from the pool WITHOUT LOCKING
-template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::_pop(size_t count) {
-	std::deque<std::unique_ptr<T>> result;
-	_pop(result, count);
-	return result;
 }
 
 /**
@@ -110,6 +123,12 @@ template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::pop(size_t c
 	return _pop(count);
 }
 
+/**
+ * @brief Push a buffer into the pool
+ *
+ * @tparam T Buffer class.
+ * @param buffer Buffer to push into the pool.
+ */
 template <typename T> void BufferPool<T>::push(std::unique_ptr<T> buffer) {
 	// Make sure buffer size matches
 	if (buffer->getBufferSize() != buffer_size) {
@@ -123,6 +142,12 @@ template <typename T> void BufferPool<T>::push(std::unique_ptr<T> buffer) {
 	cv.notify_one(); // Notify listener thread
 }
 
+/**
+ * @brief Push a number of buffers into the pool.
+ *
+ * @tparam T Buffer class.
+ * @param buffers Buffers to push into the pool.
+ */
 template <typename T> void BufferPool<T>::push(std::deque<std::unique_ptr<T>> &buffers) {
 	// We can check all the buffers before doing the lock to save on how long we hold the lock
 	for (auto &buffer : buffers) {
@@ -142,11 +167,23 @@ template <typename T> void BufferPool<T>::push(std::deque<std::unique_ptr<T>> &b
 	cv.notify_one(); // Notify listener threa
 }
 
+/**
+ * @brief Get the number of buffers in the pool.
+ *
+ * @tparam T Buffer class.
+ * @return size_t Number of buffers in the pool.
+ */
 template <typename T> size_t BufferPool<T>::getBufferCount() {
 	std::shared_lock<std::shared_mutex> lock(mtx);
 	return pool.size();
 }
 
+/**
+ * @brief Wait for the pool to get buffers and push them into a results list.
+ *
+ * @tparam T Buffer class.
+ * @param results Resuts list to push buffers into.
+ */
 template <typename T> void BufferPool<T>::wait(std::deque<std::unique_ptr<T>> &results) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	// We only really need to wait if the pool is empty
@@ -155,12 +192,27 @@ template <typename T> void BufferPool<T>::wait(std::deque<std::unique_ptr<T>> &r
 	_pop(results, BUFFER_POOL_POP_ALL);
 }
 
+/**
+ * @brief Wait for a single buffer to be available in the pool.
+ *
+ * @tparam T Buffer class.
+ * @return std::deque<std::unique_ptr<T>>
+ */
 template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::wait() {
 	std::deque<std::unique_ptr<T>> results;
 	wait(results);
 	return results;
 }
 
+/**
+ * @brief Wait for a duration and push the buffers into a results list.
+ *
+ * @tparam T Buffer class.
+ * @param duration Duration in milliseconds to wait.
+ * @param results Results list.
+ * @return true If we got buffers.
+ * @return false If we timed out.
+ */
 template <typename T> bool BufferPool<T>::wait_for(std::chrono::milliseconds duration, std::deque<std::unique_ptr<T>> &results) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 
@@ -186,6 +238,13 @@ template <typename T> bool BufferPool<T>::wait_for(std::chrono::milliseconds dur
 	return false;
 }
 
+/**
+ * @brief Wait for a duration and return the buffers we got.
+ *
+ * @tparam T Buffer class.
+ * @param duration Duration to wait in milliseconds.
+ * @return std::deque<std::unique_ptr<T>> List of buffers returned.
+ */
 template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::wait_for(std::chrono::milliseconds duration) {
 	std::deque<std::unique_ptr<T>> results;
 	wait_for(duration, results);

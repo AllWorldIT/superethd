@@ -58,9 +58,19 @@ class PacketEncoder {
 		inline uint32_t getSequence() const;
 };
 
+/**
+ * @brief Set packet sequence.
+ *
+ * @param seq Packet sequence to set.
+ */
 inline void PacketEncoder::setSequence(uint32_t seq) {
 	LOG_DEBUG_INTERNAL("Setting encoder sequence to ", seq);
 	sequence = seq;
 }
 
+/**
+ * @brief Get current packet sequence.
+ *
+ * @return uint32_t Packet sequence.
+ */
 inline uint32_t PacketEncoder::getSequence() const { return sequence; }

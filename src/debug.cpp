@@ -10,6 +10,12 @@
 
 bool seth_debug{true};
 
+/**
+ * @brief Dump a string as hex.
+ *
+ * @param buffer String to dump.
+ * @return std::string Hex representation of the string.
+ */
 std::string hex_dump(const std::string buffer) {
 
 	std::ostringstream oss;

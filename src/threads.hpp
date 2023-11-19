@@ -7,11 +7,10 @@
 #pragma once
 
 #include "libaccl/BufferPool.hpp"
-#include <thread>
-
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <thread>
 
 struct TAPInterface {
 		int fd;
