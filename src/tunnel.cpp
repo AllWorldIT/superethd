@@ -17,6 +17,7 @@
 #include "util.hpp"
 #include <arpa/inet.h>
 #include <chrono>
+#include <deque>
 #include <iostream>
 #include <memory>
 #include <netinet/in.h>
@@ -31,97 +32,116 @@
  *
  * @param arg Thread data.
  */
-void tunnel_read_tap_handler(void *arg) {
+void tunnel_tap_read_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
 
-	// Packet encoder
-	auto buffer_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu, SETH_BUFFER_COUNT);
-	auto encoder_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu);
-	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, buffer_pool, encoder_pool);
+	LOG_DEBUG_INTERNAL("TAP READ: Starting TAP read thread");
 
-	// Grab epoll FD
-	int epollFd = epoll_create1(0);
-	if (epollFd == -1) {
-		std::cerr << "Failed to create epoll file descriptor: " << strerror(errno) << std::endl;
-		return;
-	}
-
-	// Setup epoll events
-	struct epoll_event ev;
-	ev.events = EPOLLIN; // Interested in input (read) events
-	ev.data.fd = tdata->tap_device.fd;
-
-	// Add TAP device FD
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, tdata->tap_device.fd, &ev) == -1) {
-		LOG_ERROR("Failed to add fd to epoll: {}", strerror(errno));
-		close(epollFd);
-		return;
-	}
-
-	// Constant used below
-	socklen_t addrlen = sizeof(struct sockaddr_in6);
-	// sendto() flags
-	int flags = 0;
-
-	// Carry on looping
-	int timeout = -1;
+	// Loop and read data from TAP device
 	while (true) {
 		// Check for program stop
 		if (*tdata->stop_program) {
 			break;
 		}
 
-		// Wait for something to become available
-		struct epoll_event events[1];
-		int nrEvents = epoll_wait(epollFd, events, 1, timeout);
-		if (nrEvents == 0) { // timeout
-			encoder.flush();
-			timeout = -1;
-			goto write_socket;
+		// Grab a new buffer for our data
+		LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: ", tdata->rx_buffer_pool->getBufferCount(), ", taking one");
+		auto buffer = tdata->rx_buffer_pool->pop();
 
-		} else if (nrEvents == -1) {
-			std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
+		// Read data from TAP interface
+		ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
+		if (bytes_read == -1) {
+			LOG_ERROR("Got an error read()'ing TAP device: ", strerror(errno));
+			exit(EXIT_FAILURE);
+		} else if (bytes_read == 0) {
+			LOG_ERROR("Got EOF from TAP device: ", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		LOG_DEBUG_INTERNAL("TAP READ: Read ", bytes_read, " bytes from TAP");
+		buffer->setDataSize(bytes_read);
+
+		// Queue packet to encode
+		tdata->encoder_pool->push(std::move(buffer));
+	}
+}
+
+/**
+ * @brief Thread responsible for encoding packets.
+ *
+ * @param arg Thread data.
+ */
+void tunnel_encoder_handler(void *arg) {
+	struct ThreadData *tdata = (struct ThreadData *)arg;
+
+	LOG_DEBUG_INTERNAL("ENCODER: Starting encoder thread");
+
+	// Packet encoder
+	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, tdata->rx_buffer_pool, tdata->socket_write_pool);
+
+	// Loop pulling buffers off the encoder pool
+	std::chrono::milliseconds timeout = std::chrono::milliseconds(1);
+	std::deque<std::unique_ptr<PacketBuffer>> buffers;
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
 			break;
 		}
 
-		// NK: We enclose the read section in braces or we bypass the variable initialization
-		{
-			// Grab a new buffer for our data
-			LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: ", buffer_pool->getBufferCount(), ", taking one");
-			auto buffer = buffer_pool->pop();
-
-			// Read data from TAP interface
-			ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
-			if (bytes_read == -1) {
-				LOG_ERROR("Got an error read()'ing TAP device: ", strerror(errno));
-				exit(EXIT_FAILURE);
-			} else if (bytes_read == 0) {
-				LOG_ERROR("Got EOF from TAP device: ", strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-
-			LOG_DEBUG_INTERNAL("TAP READ: Read ", bytes_read, " bytes from TAP");
-			buffer->setDataSize(bytes_read);
-
-			// Encode packet
-			encoder.encode(std::move(buffer));
-			timeout = 1;
-		}
-
-	write_socket:
-		// Next check if there is anything that was encoded
-		if (!encoder_pool->getBufferCount()) {
+		// Check if we timed out
+		if (!tdata->encoder_pool->wait_for(timeout, buffers)) {
+			// If we did, flush the encoder and zero the wait so we wait indefinitely
+			encoder.flush();
+			timeout = std::chrono::milliseconds::zero();
 			continue;
 		}
 
+		// Loop with the buffers we got
+		for (auto &buffer : buffers) {
+			encoder.encode(std::move(buffer));
+		}
+		// Clear buffers
+		buffers.clear();
+
+		// Set timeout to 1ms
+		timeout = std::chrono::milliseconds(1);
+	}
+}
+
+/**
+ * @brief Thread responsible for writing encoded packets to the socket.
+ *
+ * @param arg Thread data.
+ */
+void tunnel_socket_write_handler(void *arg) {
+	struct ThreadData *tdata = (struct ThreadData *)arg;
+
+	LOG_DEBUG_INTERNAL("SOCKET WRITE: Starting socket write thread");
+
+	// Constant used below
+	socklen_t addrlen = sizeof(struct sockaddr_in6);
+	// sendto() flags
+	int flags = 0;
+
+	// Loop pulling buffers off the socket write pool
+	std::deque<std::unique_ptr<PacketBuffer>> buffers;
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
+			break;
+		}
+
+		// Wait for buffers
+		tdata->socket_write_pool->wait(buffers);
+
+		// Loop with the buffers we got
 #ifdef DEBUG
 		size_t i{0};
 #endif
-		auto buffers = encoder_pool->pop(0);
-		for (auto &b : buffers) {
+		for (auto &buffer : buffers) {
 			// Write data out
-			ssize_t bytes_written =
-				sendto(tdata->udp_socket, b->getData(), b->getDataSize(), flags, (struct sockaddr *)&tdata->remote_addr, addrlen);
+			ssize_t bytes_written = sendto(tdata->udp_socket, buffer->getData(), buffer->getDataSize(), flags,
+										   (struct sockaddr *)&tdata->remote_addr, addrlen);
 			if (bytes_written == -1) {
 				LOG_ERROR("Got an error in sendto(): ", strerror(errno));
 				exit(EXIT_FAILURE);
@@ -133,12 +153,8 @@ void tunnel_read_tap_handler(void *arg) {
 		}
 
 		// Push buffers into available pool
-		LOG_DEBUG_INTERNAL("Buffer pool size: ", buffer_pool->getBufferCount());
-		buffer_pool->push(buffers);
-		LOG_DEBUG_INTERNAL("Buffer pool size after push: ", buffer_pool->getBufferCount());
+		tdata->rx_buffer_pool->push(buffers);
 	}
-
-	close(epollFd);
 }
 
 /**

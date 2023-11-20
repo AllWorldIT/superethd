@@ -100,6 +100,15 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.l4mtu = get_l4mtu(tdata.tx_size, &tdata.remote_addr.sin6_addr);
 	CERR("Setting maximum payload size to {}...", tdata.l4mtu);
 
+	// Set up pools
+	tdata.rx_buffer_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu, SETH_BUFFER_COUNT);
+	tdata.encoder_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+	tdata.socket_write_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+
+	tdata.tx_buffer_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu, SETH_BUFFER_COUNT);
+	tdata.decoder_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+	tdata.tap_write_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+
 	/*
 	 * End thread data setup
 	 */
@@ -121,7 +130,10 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	set_interface_mtu(&tdata);
 
 	// Initialize threads
-	std::thread tunnel_read_tap_thread(tunnel_read_tap_handler, &tdata);
+	std::thread tunnel_tap_read_thread(tunnel_tap_read_handler, &tdata);
+	std::thread tunnel_encoder_thread(tunnel_encoder_handler, &tdata);
+	std::thread tunnel_socket_write_thread(tunnel_socket_write_handler, &tdata);
+
 	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
 
 	// Set process nice value
@@ -135,9 +147,16 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	int policy = SCHED_RR;
 	struct sched_param param;
 	param.sched_priority = sched_get_priority_max(SCHED_RR);
-	if (pthread_setschedparam(tunnel_read_tap_thread.native_handle(), policy, &param)) {
+	if (pthread_setschedparam(tunnel_tap_read_thread.native_handle(), policy, &param)) {
 		LOG_NOTICE("Could not set TAP device thread priority: ", std::strerror(errno));
 	}
+	if (pthread_setschedparam(tunnel_encoder_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set encoder thread priority: ", std::strerror(errno));
+	}
+	if (pthread_setschedparam(tunnel_socket_write_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set socket thread priority: ", std::strerror(errno));
+	}
+
 	if (pthread_setschedparam(tunnel_read_socket_thread.native_handle(), policy, &param)) {
 		LOG_NOTICE("Could not set socket thread priority: ", std::strerror(errno));
 	}
@@ -147,7 +166,10 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	start_tap_interface(&tdata);
 
 	// Join all threads after the interface comes online
-	tunnel_read_tap_thread.join();
+	tunnel_tap_read_thread.join();
+	tunnel_encoder_thread.join();
+	tunnel_socket_write_thread.join();
+
 	tunnel_read_socket_thread.join();
 
 	CERR("NORMAL EXIT.....");

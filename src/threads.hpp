@@ -7,6 +7,7 @@
 #pragma once
 
 #include "libaccl/BufferPool.hpp"
+#include "PacketBuffer.hpp"
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -32,6 +33,14 @@ struct ThreadData {
 		// Local and remote address
 		struct sockaddr_in6 local_addr;
 		struct sockaddr_in6 remote_addr;
+
+		accl::BufferPool<PacketBuffer> *rx_buffer_pool;
+		accl::BufferPool<PacketBuffer> *encoder_pool;
+		accl::BufferPool<PacketBuffer> *socket_write_pool;
+
+		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
+		accl::BufferPool<PacketBuffer> *decoder_pool;
+		accl::BufferPool<PacketBuffer> *tap_write_pool;
 
 		int *stop_program;
 };
