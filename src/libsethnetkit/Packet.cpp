@@ -78,7 +78,7 @@ std::string Packet::asText() const {
 	std::ostringstream oss;
 
 	oss << "==> Packet" << std::endl;
-	//	oss << "Size           : " << getSize() << std::endl;
+	oss << "Size           : " << asBinary().size() << std::endl;
 
 	return oss.str();
 }

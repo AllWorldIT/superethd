@@ -5,6 +5,7 @@
  */
 
 #include "Encoder.hpp"
+#include "libaccl/Logger.hpp"
 #include <cstdint>
 
 /*
@@ -25,6 +26,7 @@ void PacketEncoder::_flush() {
 		sequence = 1;
 	}
 
+
 	// The last thing we're doing is writing the packet header before dumping it into the dest_buffer_pool
 	PacketHeader *packet_header = reinterpret_cast<PacketHeader *>(dest_buffer->getData());
 	packet_header->ver = SETH_PACKET_HEADER_VERSION_V1;
@@ -35,9 +37,10 @@ void PacketEncoder::_flush() {
 	packet_header->format = PacketHeaderFormat::ENCAPSULATED;
 	packet_header->channel = 0;
 	packet_header->sequence = seth_cpu_to_be_32(sequence++);
+
 	// Dump the header into the destination buffer
-	LOG_DEBUG_INTERNAL("  - FLUSH: ADDING HEADER: opts=", static_cast<unsigned int>(packet_header->opt_len));
-	LOG_DEBUG_INTERNAL("  - FLUSH: DEST BUFFER SIZE: ", dest_buffer->getDataSize());
+	LOG_DEBUG_INTERNAL("{seq=", sequence - 1, "}:  - FLUSH: ADDING HEADER: opts=", opt_len);
+	LOG_DEBUG_INTERNAL("{seq=", sequence - 1, "}:  - FLUSH: DEST BUFFER SIZE: ", dest_buffer->getDataSize());
 
 	// Flush buffer to the destination pool
 	dest_buffer_pool->push(std::move(dest_buffer));
@@ -104,13 +107,13 @@ uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) const {
  *
  */
 void PacketEncoder::_flushInflight() {
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
 					   ", count=", inflight_buffers.size());
 	// Free remaining buffers in flight
 	if (!inflight_buffers.empty()) {
 		buffer_pool->push(inflight_buffers);
 	}
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Flusing inflight buffers after: pool=", buffer_pool->getBufferCount(),
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Flusing inflight buffers after: pool=", buffer_pool->getBufferCount(),
 					   ", count=", inflight_buffers.size());
 }
 
@@ -122,7 +125,7 @@ void PacketEncoder::_flushInflight() {
 void PacketEncoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
 	// Push buffer into inflight list
 	inflight_buffers.push_back(std::move(packetBuffer));
-	LOG_DEBUG_INTERNAL("  - INFLIGHT: Packet added");
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Packet added");
 }
 
 /**
@@ -160,7 +163,8 @@ PacketEncoder::~PacketEncoder() = default;
  * @param packetBuffer Packet buffer to encode.
  */
 void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
-	LOG_DEBUG_INTERNAL("INCOMING PACKET: size=", packetBuffer->getDataSize(), " [l2mtu: ", l2mtu, ", l4mtu: ", l4mtu,
+	LOG_DEBUG_INTERNAL("====================");
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}: INCOMING PACKET: size=", packetBuffer->getDataSize(), " [l2mtu: ", l2mtu, ", l4mtu: ", l4mtu,
 					   "], buffer_size=", dest_buffer->getDataSize(), ", packet_count=", packet_count, ", opt_len=", opt_len);
 
 	// Make sure we cannot receive a packet that is greater than our MTU size
@@ -177,7 +181,7 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 		uint8_t part = 1;
 		uint16_t packet_pos = 0; // Position in the packet we're stuffing into the encap packet
 
-		LOG_DEBUG_INTERNAL(" - ENCODE PARTIAL PACKET - ");
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}: - ENCODE PARTIAL PACKET - ");
 
 		// Loop while we still have bits of the packet to stuff into the encap packets
 		while (packet_pos < packetBuffer->getDataSize()) {
@@ -188,7 +192,7 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			// Work out how much of this packet we're going to stuff into the encap packet
 			uint16_t part_size = (packet_left > max_payload_size) ? max_payload_size : packet_left;
 
-			LOG_DEBUG_INTERNAL("  - PARTIAL PACKET: max_payload_size=", max_payload_size,
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - PARTIAL packet loop: max_payload_size=", max_payload_size,
 							   ", part=", static_cast<unsigned int>(part), ", packet_pos=", packet_pos, ", part_size=", part_size);
 
 			// Grab current buffer size so we can do some magic memory meddling below
@@ -202,9 +206,12 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 
 			// Add packet header option
 			cur_buffer_size += sizeof(PacketHeaderOption);
-			// Only bump option len if this is not a subsequent packet header
-			if (!packet_count)
+			// Only bump option len if this is the first packet at the beginning of the encap packet
+			if (!packet_count) {
 				opt_len++;
+			}
+			// Bump packet count
+			packet_count++;
 
 			PacketHeaderOptionPartialData *packet_header_option_partial =
 				reinterpret_cast<PacketHeaderOptionPartialData *>(dest_buffer->getData() + cur_buffer_size);
@@ -221,11 +228,11 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			// Dump more of the packet into our destination buffer
 			dest_buffer->append(packetBuffer->getData() + packet_pos, part_size);
 
-			LOG_DEBUG_INTERNAL("    - Current dest buffer size: ", dest_buffer->getDataSize());
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:    - After partial add: dest_buffer_size=", dest_buffer->getDataSize());
 
 			// If the buffer is full, push it to the destination pool
 			if (dest_buffer->getDataSize() == l4mtu) {
-				LOG_DEBUG_INTERNAL("    - Buffer full, flushing");
+				LOG_DEBUG_INTERNAL("{seq=", sequence, "}:    - Buffer full, flushing");
 				_flush();
 			}
 
@@ -238,31 +245,31 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 		_pushInflight(packetBuffer);
 		_flushInflight();
 
-		// Bump packet count
-		packet_count++;
-
-		LOG_DEBUG_INTERNAL("  - Final dest buffer size is ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - PARTIAL END: buffer size is ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
 
 	} else {
 		// Grab current buffer size so we can do some magic memory meddling below
 		size_t cur_buffer_size = dest_buffer->getDataSize();
 
-		LOG_DEBUG_INTERNAL(" - ENCODE COMPLETE PACKET - ");
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}: - ENCODE COMPLETE PACKET - ");
 
 		PacketHeaderOption *packet_header_option = reinterpret_cast<PacketHeaderOption *>(dest_buffer->getData() + cur_buffer_size);
 		packet_header_option->reserved = 0;
 		packet_header_option->type = PacketHeaderOptionType::COMPLETE_PACKET;
 		packet_header_option->packet_size = seth_cpu_to_be_16(packetBuffer->getDataSize());
 
-		LOG_DEBUG_INTERNAL("  - OPTION HEADER: packet_bufer_size=", packetBuffer->getDataSize(),
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - OPTION HEADER: packet_bufer_size=", packetBuffer->getDataSize(),
 						   ", max_payload_size=", _getMaxPayloadSize(packetBuffer->getDataSize()),
 						   ", header_option_size=", sizeof(PacketHeaderOption), ", dest_buffer_size=", cur_buffer_size);
 
 		// Add packet header option
 		cur_buffer_size += sizeof(PacketHeaderOption);
-		// Only bump option len if this is not a subsequent packet header
-		if (!packet_count)
+		// Only bump option len if this is the first packet at the beginning of the encap packet
+		if (!packet_count) {
 			opt_len++;
+		}
+		// Bump packet count
+		packet_count++;
 
 		// Once we're done messing with the buffer, set its size
 		dest_buffer->setDataSize(cur_buffer_size);
@@ -271,15 +278,13 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> packetBuffer) {
 		// Set packet buffer to being inflight
 		_pushInflight(packetBuffer);
 
-		// Bump packet count
-		packet_count++;
-
-		LOG_DEBUG_INTERNAL("  - FINAL DEST BUFFER SIZE: ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - FINAL DEST BUFFER SIZE: ", dest_buffer->getDataSize(), " (packets: ", packet_count, ")");
 	}
 
 	// If the buffer is full, push it to the destination pool
 	// NK: We need to make provision for a header
-	LOG_DEBUG_INTERNAL("   - Flush check: ", _getMaxPayloadSize(SETH_PACKET_MAX_SIZE));
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:   - Flush check: ", _getMaxPayloadSize(SETH_PACKET_MAX_SIZE), " < ",
+					   sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10));
 	if (_getMaxPayloadSize(SETH_PACKET_MAX_SIZE) < sizeof(PacketHeader) + (sizeof(PacketHeaderOption) * 10)) {
 		// Packet is as full as it will get
 		_flush();

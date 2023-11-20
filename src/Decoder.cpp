@@ -178,8 +178,10 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			_flushInflight();
 		}
 	}
-	// Set last sequence
+
+	// Save last sequence
 	last_sequence = sequence;
+
 
 	/*
 	 * Process header options
@@ -208,14 +210,14 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			return;
 		}
 		// For now we just output the info
-		LOG_DEBUG_INTERNAL(sequence, ":   - Packet header option: header=", static_cast<unsigned int>(header_num + 1),
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:   - Packet header option: header=", static_cast<unsigned int>(header_num + 1),
 						   ", type=", std::format("{:02X}", static_cast<unsigned int>(packet_header_option->type)));
 
 		// If this header is a packet, we need to set packet_pos, data should immediately follow it
 		if (!packet_header_pos &&
 			static_cast<uint8_t>(packet_header_option->type) & (static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |
 																static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) {
-			LOG_DEBUG_INTERNAL(sequence, ":   - Found packet @", cur_pos);
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:   - Found packet @", cur_pos);
 
 			// Make sure our headers are in the correct positions, else something is wrong
 			if (header_num + 1 != packet_header->opt_len) {
@@ -295,7 +297,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 		if (packet_header_option->type == PacketHeaderOptionType::COMPLETE_PACKET) {
 			uint16_t packet_pos = packet_header_pos + sizeof(PacketHeaderOption);
 
-			LOG_DEBUG_INTERNAL(sequence, ":  - DECODE IS COMPLETE PACKET -");
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - DECODE IS COMPLETE PACKET -");
 
 			// Flush inflight if this is a complete packet
 			flush_inflight = true;
@@ -318,7 +320,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			}
 
 			// Append packet to dest buffer
-			LOG_DEBUG_INTERNAL(sequence, ": Copy packet from pos ", packet_pos, " with size ", final_packet_size,
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}: Copy packet from pos ", packet_pos, " with size ", final_packet_size,
 							   " into dest_buffer at position ", dest_buffer->getDataSize());
 			dest_buffer->append(packetBuffer->getData() + packet_pos, final_packet_size);
 
@@ -334,7 +336,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 
 			// when a packet is split between encap packets
 		} else if (packet_header_option->type == PacketHeaderOptionType::PARTIAL_PACKET) {
-			LOG_DEBUG_INTERNAL(sequence, ":  - DECODE IS PARIAL PACKET -");
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - DECODE IS PARIAL PACKET -");
 
 			// Do not flush inflight if this is a partial packet
 			flush_inflight = false;
@@ -414,12 +416,12 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 			}
 
 			// Append packet to dest buffer
-			LOG_DEBUG_INTERNAL(sequence, " Copy packet from pos ", packet_pos, " with size ", payload_length,
+			LOG_DEBUG_INTERNAL("{seq=", sequence, "}: Copy packet from pos ", packet_pos, " with size ", payload_length,
 							   " into dest_buffer at position ", dest_buffer->getDataSize());
 			dest_buffer->append(packetBuffer->getData() + packet_pos, payload_length);
 
 			if (dest_buffer->getDataSize() == final_packet_size) {
-				LOG_DEBUG_INTERNAL(sequence, ":   - Entire packet read... dumping into dest_buffer_pool & flushing inflight");
+				LOG_DEBUG_INTERNAL("{seq=", sequence, "}:   - Entire packet read... dumping into dest_buffer_pool & flushing inflight");
 				// Buffer ready, push to destination pool
 				dest_buffer_pool->push(std::move(dest_buffer));
 				// We're now outsie the path of direct IO (maybe), so get a new buffer here so we can be ready for when we're in
@@ -428,7 +430,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 				// We always flush inflight buffers when we have assembled a partial packet
 				_flushInflight();
 			} else {
-				LOG_DEBUG_INTERNAL(sequence, ":   - Packet not entirely read, we need more");
+				LOG_DEBUG_INTERNAL("{seq=", sequence, "}:   - Packet not entirely read, we need more");
 				// Bump last part and set last_final_packet_size
 				last_part = packet_header_option_partial_data->part;
 				last_final_packet_size = final_packet_size;

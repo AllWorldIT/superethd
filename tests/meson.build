@@ -61,7 +61,7 @@ t_120_sequence_generator = executable('t_120-sequence-generator',
   link_with: libs,
   dependencies: deps,
 )
-test('Test buffer pool functionality', t_120_sequence_generator)
+test('Test sequence generator', t_120_sequence_generator)
 
 
 

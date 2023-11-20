@@ -46,7 +46,8 @@ class Buffer {
 inline void Buffer::append(const char *data, std::size_t size) {
 	if (size > content.size() - dataSize) {
 		// Make sure we cannot overflow the buffer
-		throw std::out_of_range("Buffer size would be exceeded with append");
+		throw std::out_of_range(std::format("Buffer size {} would be exceeded with append of {} ontop of current size {}",
+											content.size(), size, dataSize));
 	}
 	std::copy(data, data + size, content.begin() + dataSize);
 	dataSize += size;
