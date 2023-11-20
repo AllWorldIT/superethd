@@ -13,7 +13,7 @@ void wait_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	auto buffers = buffer_pool.wait();
 
 	// We should have one buffer returned from the wait
-	assert(buffers.size() == 1);
+	REQUIRE(buffers.size() == 1);
 
 	// Pull the buffer from the vector returned
 	auto first_buffer = buffers.begin();
@@ -24,7 +24,7 @@ void wait_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	std::string buffer_string(reinterpret_cast<const char *>(buffer->getData()), buffer->getDataSize());
 
 	// Lets compare it to make sure its correct
-	assert(test_string == buffer_string);
+	REQUIRE(test_string == buffer_string);
 }
 
 void push_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {

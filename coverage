@@ -2,9 +2,9 @@
 
 set -eux
 
-if [ ! -d build ]; then
-	meson build -Db_coverage=true -Db_werror=true -Dunit_testing=true --debug
-fi
+rm -rf build
+
+meson build -Db_coverage=true -Db_werror=true -Dunit_testing=true --debug
 
 ninja -C build --verbose
 

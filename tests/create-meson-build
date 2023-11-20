@@ -1,0 +1,38 @@
+#!/bin/bash
+
+(
+	cat <<EOF
+# Build our helper library
+subdir('libtests')
+
+
+# Dependencies
+
+deps = [dependency('catch2-with-main')]
+
+
+# Build options
+
+inc = ['../src']
+libs = [libsuperethd, libsethnetkit, libsuperethdtest]
+
+
+# Tests
+EOF
+
+	# Generate test cases
+	find  . -maxdepth 1 -name "t_*.cpp" -type f | sed -e 's,^\./,,' | sort | while read -r i; do
+		exe_name=$(basename "$i" .cpp)
+		cat <<EOF
+test('${i#t_}',
+	executable('$exe_name',
+		'$i',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+EOF
+	done
+
+)

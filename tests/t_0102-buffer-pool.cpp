@@ -9,18 +9,18 @@
 TEST_CASE("Check creating a buffer pool works", "[buffers]") {
 	accl::BufferPool<PacketBuffer> buffer_pool(1024, 10);
 
-	assert(buffer_pool.getBufferCount() == 10);
+	REQUIRE(buffer_pool.getBufferCount() == 10);
 }
 
 TEST_CASE("Check popping a buffer from the pool works", "[buffers]") {
 	accl::BufferPool<PacketBuffer> buffer_pool(1024, 10);
 
-	assert(buffer_pool.getBufferCount() == 10);
+	REQUIRE(buffer_pool.getBufferCount() == 10);
 
 	auto buffer = buffer_pool.pop();
 
-	assert(buffer->getBufferSize() == 1024);
-	assert(buffer->getDataSize() == 0);
+	REQUIRE(buffer->getBufferSize() == 1024);
+	REQUIRE(buffer->getDataSize() == 0);
 }
 
 TEST_CASE("Check that we get an exception when we pop too many buffers from the pool", "[buffers]") {
@@ -39,12 +39,12 @@ TEST_CASE("Check that we can push a buffer back into the pool", "[buffers]") {
 	auto buffer = buffer_pool.pop();
 
 	// Check the buffer pool is empty
-	assert(buffer_pool.getBufferCount() == 0);
+	REQUIRE(buffer_pool.getBufferCount() == 0);
 
 	buffer_pool.push(std::move(buffer));
 
 	// Check the buffer was added back
-	assert(buffer_pool.getBufferCount() == 1);
+	REQUIRE(buffer_pool.getBufferCount() == 1);
 }
 
 TEST_CASE("Check that we can add our own buffer to the pool", "[buffers]") {
@@ -57,7 +57,7 @@ TEST_CASE("Check that we can add our own buffer to the pool", "[buffers]") {
 	buffer_pool.push(std::move(buffer_ptr));
 
 	// Check the buffer was added back
-	assert(buffer_pool.getBufferCount() == 1);
+	REQUIRE(buffer_pool.getBufferCount() == 1);
 }
 
 TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to the pool", "[buffers]") {
@@ -72,7 +72,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffer to 
 	}
 
 	// Check the buffer was added back
-	assert(buffer_pool.getBufferCount() == 1);
+	REQUIRE(buffer_pool.getBufferCount() == 1);
 }
 
 TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to the pool", "[buffers]") {
@@ -88,7 +88,7 @@ TEST_CASE("Check that we get an exception adding an incorrectly sized buffers to
 	}
 
 	// Check the buffer was added back
-	assert(buffer_pool.getBufferCount() == 1);
+	REQUIRE(buffer_pool.getBufferCount() == 1);
 }
 
 TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
@@ -97,10 +97,10 @@ TEST_CASE("Check we get all the buffers when we popAll()", "[buffers]") {
 	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 
 	// Check we got 5 buffers
-	assert(buffers.size() == 5);
+	REQUIRE(buffers.size() == 5);
 
 	// Also check that buffer_pool is now empty
-	assert(buffer_pool.getBufferCount() == 0);
+	REQUIRE(buffer_pool.getBufferCount() == 0);
 }
 
 TEST_CASE("Check we can push multiple buffers back into the pool", "[buffers]") {
@@ -109,14 +109,14 @@ TEST_CASE("Check we can push multiple buffers back into the pool", "[buffers]") 
 	auto buffers = buffer_pool.pop(accl::BUFFER_POOL_POP_ALL);
 
 	// Check we got 5 buffers
-	assert(buffers.size() == 5);
+	REQUIRE(buffers.size() == 5);
 
 	// Add buffers back
 	buffer_pool.push(buffers);
 
 	// Check buffers is empty
-	assert(buffers.size() == 0);
+	REQUIRE(buffers.size() == 0);
 
 	// Check the buffers were added back
-	assert(buffer_pool.getBufferCount() == 5);
+	REQUIRE(buffer_pool.getBufferCount() == 5);
 }

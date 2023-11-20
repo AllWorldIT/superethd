@@ -74,7 +74,7 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 		encoder.flush();
 
 		// Make sure we now have a packet in the enc_buffer_pool
-		assert(enc_buffer_pool.getBufferCount() == 1);
+		REQUIRE(enc_buffer_pool.getBufferCount() == 1);
 
 		/*
 		 * Test decoding
@@ -86,9 +86,9 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 		decoder.decode(std::move(enc_buffer));
 
 		// Our decoded buffer pool should now have 1 packet in it
-		assert(dec_buffer_pool.getBufferCount() == 1);
+		REQUIRE(dec_buffer_pool.getBufferCount() == 1);
 		// Our encoder buffer pool should have 0 packets in it
-		assert(enc_buffer_pool.getBufferCount() == 0);
+		REQUIRE(enc_buffer_pool.getBufferCount() == 0);
 
 		// Grab buffer from dec_buffer_pool
 		auto dec_buffer = dec_buffer_pool.pop();
@@ -97,14 +97,14 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 		std::string buffer_string(reinterpret_cast<const char *>(dec_buffer->getData()), dec_buffer->getDataSize());
 
 		// Next we compare them...
-		assert(buffer_string == packet_bin);
+		REQUIRE(buffer_string == packet_bin);
 
 		avail_buffer_pool.push(std::move(dec_buffer));
 	}
 
 	// Check final sequences
-	assert(encoder.getSequence() == 6);
-	assert(decoder.getLastSequence() == 5);
+	REQUIRE(encoder.getSequence() == 6);
+	REQUIRE(decoder.getLastSequence() == 5);
 
 	accl::logger.setLogLevel(accl::LogLevel::DEBUGGING);
 }

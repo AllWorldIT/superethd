@@ -136,9 +136,9 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		}
 
 		// Our decoded buffer pool should now have 2 packets in it
-		assert(dec_buffer_pool.getBufferCount() == 3);
+		REQUIRE(dec_buffer_pool.getBufferCount() == 3);
 		// Our encoder buffer pool should have 0 packets in it
-		assert(enc_buffer_pool.getBufferCount() == 0);
+		REQUIRE(enc_buffer_pool.getBufferCount() == 0);
 
 		// Grab buffer from dec_buffer_pool
 		auto dec_buffer1 = dec_buffer_pool.pop();
@@ -150,8 +150,8 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		std::string buffer2_string(reinterpret_cast<const char *>(dec_buffer2->getData()), dec_buffer2->getDataSize());
 		std::string buffer3_string(reinterpret_cast<const char *>(dec_buffer3->getData()), dec_buffer3->getDataSize());
 		// Next we compare them...
-		assert(buffer1_string == packet1_bin);
-		assert(buffer2_string == packet2_bin);
-		assert(buffer3_string == packet3_bin);
+		REQUIRE(buffer1_string == packet1_bin);
+		REQUIRE(buffer2_string == packet2_bin);
+		REQUIRE(buffer3_string == packet3_bin);
 	}
 }

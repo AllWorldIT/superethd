@@ -20,5 +20,5 @@ TEST_CASE("Check buffer usage", "[buffers]") {
 	std::cout << "EXPECTED DATA: " << std::endl << expected_result << std::endl;
 
 	// Make sure the result is as expected
-	assert(seqdata.asString() == expected_result);
+	REQUIRE(seqdata.asString() == expected_result);
 }

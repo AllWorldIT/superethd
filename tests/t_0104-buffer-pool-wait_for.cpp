@@ -15,16 +15,16 @@ void wait_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	// Wait for buffer pool to get a buffer
 	bool res = buffer_pool.wait_for(std::chrono::seconds(1), buffers);
 	// The first call should be false (timed out)
-	assert(res == false);
+	REQUIRE(res == false);
 	// Make sure the deque is empty
-	assert(buffers.size() == 0);
+	REQUIRE(buffers.size() == 0);
 
 	// Wait for buffer pool to get a buffer
 	res = buffer_pool.wait_for(std::chrono::seconds(5), buffers);
 	// The second call should have not timed out
-	assert(res == true);
+	REQUIRE(res == true);
 	// The deque size should now be 1
-	assert(buffers.size() == 1);
+	REQUIRE(buffers.size() == 1);
 
 	// Pull the buffer from the deque returned
 	auto first_buffer = buffers.begin();
@@ -35,7 +35,7 @@ void wait_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
 	std::string buffer_string(reinterpret_cast<const char *>(buffer->getData()), buffer->getDataSize());
 
 	// Lets compare it to make sure its correct
-	assert(test_string == buffer_string);
+	REQUIRE(test_string == buffer_string);
 }
 
 void push_worker(accl::BufferPool<PacketBuffer> &buffer_pool) {
