@@ -134,7 +134,9 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	std::thread tunnel_encoder_thread(tunnel_encoder_handler, &tdata);
 	std::thread tunnel_socket_write_thread(tunnel_socket_write_handler, &tdata);
 
-	std::thread tunnel_read_socket_thread(tunnel_read_socket_handler, &tdata);
+	std::thread tunnel_socket_read_thread(tunnel_socket_read_handler, &tdata);
+	std::thread tunnel_decoder_thread(tunnel_decoder_handler, &tdata);
+	std::thread tunnel_tap_write_thread(tunnel_tap_write_handler, &tdata);
 
 	// Set process nice value
 	int niceValue = -10;
@@ -154,11 +156,17 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 		LOG_NOTICE("Could not set encoder thread priority: ", std::strerror(errno));
 	}
 	if (pthread_setschedparam(tunnel_socket_write_thread.native_handle(), policy, &param)) {
-		LOG_NOTICE("Could not set socket thread priority: ", std::strerror(errno));
+		LOG_NOTICE("Could not set socket write thread priority: ", std::strerror(errno));
 	}
 
-	if (pthread_setschedparam(tunnel_read_socket_thread.native_handle(), policy, &param)) {
-		LOG_NOTICE("Could not set socket thread priority: ", std::strerror(errno));
+	if (pthread_setschedparam(tunnel_socket_read_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set socket read thread priority: ", std::strerror(errno));
+	}
+	if (pthread_setschedparam(tunnel_decoder_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set decoder thread priority: ", std::strerror(errno));
+	}
+	if (pthread_setschedparam(tunnel_tap_write_thread.native_handle(), policy, &param)) {
+		LOG_NOTICE("Could not set TAP write thread priority: ", std::strerror(errno));
 	}
 
 	// Online interface
@@ -170,7 +178,9 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tunnel_encoder_thread.join();
 	tunnel_socket_write_thread.join();
 
-	tunnel_read_socket_thread.join();
+	tunnel_socket_read_thread.join();
+	tunnel_decoder_thread.join();
+	tunnel_tap_write_thread.join();
 
 	CERR("NORMAL EXIT.....");
 

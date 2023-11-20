@@ -19,7 +19,7 @@ constexpr char SETH_DEFAULT_TUNNEL_NAME[]{"seth0"};
 inline constexpr size_t SETH_BUFFER_COUNT{5000};
 
 // Number of messages to get at maximum from recvmm
-inline constexpr uint32_t SETH_MAX_RECVMM_MESSAGES{2000};
+inline constexpr uint32_t SETH_MAX_RECVMM_MESSAGES{256};
 
 // Minimum transmission packet size
 inline constexpr uint16_t SETH_MIN_TXSIZE{1200};

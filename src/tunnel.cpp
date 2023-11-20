@@ -173,13 +173,8 @@ struct _comparePacketBuffer {
  *
  * @param arg Thread data.
  */
-void tunnel_read_socket_handler(void *arg) {
+void tunnel_socket_read_handler(void *arg) {
 	struct ThreadData *tdata = (struct ThreadData *)arg;
-
-	// Packet decoder
-	auto buffer_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu, SETH_BUFFER_COUNT);
-	auto decoder_pool = new accl::BufferPool<PacketBuffer>(tdata->l2mtu);
-	PacketDecoder decoder(tdata->l2mtu, buffer_pool, decoder_pool);
 
 	struct sockaddr_in6 *controls;
 	ssize_t sockaddr_len = sizeof(struct sockaddr_in6);
@@ -207,7 +202,7 @@ void tunnel_read_socket_handler(void *arg) {
 
 	// Set up iovecs and mmsghdrs
 	for (size_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		recvmm_buffers[i] = buffer_pool->pop();
+		recvmm_buffers[i] = tdata->tx_buffer_pool->pop();
 
 		// Setup IO vectors
 		iovecs[i].iov_base = recvmm_buffers[i]->getData();
@@ -221,8 +216,8 @@ void tunnel_read_socket_handler(void *arg) {
 	// END - IO vector buffers
 
 	// Received buffers
-	std::set<std::unique_ptr<PacketBuffer>, _comparePacketBuffer> received_buffers;
-
+	// std::set<std::unique_ptr<PacketBuffer>, _comparePacketBuffer> received_buffers;
+	std::deque<std::unique_ptr<PacketBuffer>> received_buffers;
 	while (1) {
 		if (*tdata->stop_program)
 			break;
@@ -284,26 +279,79 @@ void tunnel_read_socket_handler(void *arg) {
 			}
 
 			// Add buffer node to the received list
-			// sortedInsert(received_buffers, recvmm_buffers[i]);
 			recvmm_buffers[i]->setKey(seth_be_to_cpu_32(pkthdr->sequence));
-			received_buffers.insert(std::move(recvmm_buffers[i]));
+			// received_buffers.insert(std::move(recvmm_buffers[i]));
+			received_buffers.push_back(std::move(recvmm_buffers[i]));
 
 			// Replenish the buffer
-			recvmm_buffers[i] = buffer_pool->pop();
+			recvmm_buffers[i] = tdata->tx_buffer_pool->pop();
 			msgs[i].msg_hdr.msg_iov->iov_base = recvmm_buffers[i]->getData();
 		}
-
-		// Sort buffers based on sequence
-		for (auto &rb : received_buffers) {
-			decoder.decode(std::move(const_cast<std::unique_ptr<PacketBuffer> &>(rb)));
-		}
+		// Push all the buffers we got
+		tdata->decoder_pool->push(received_buffers);
 		received_buffers.clear();
+	}
+	// Free the rest of the IOV stuff
+	free(msgs);
+	free(iovecs);
+}
 
+/**
+ * @brief Thread responsible for decoding packets.
+ *
+ * @param arg Thread data.
+ */
+void tunnel_decoder_handler(void *arg) {
+	struct ThreadData *tdata = (struct ThreadData *)arg;
+
+	LOG_DEBUG_INTERNAL("DECODER: Starting decoder thread");
+
+	PacketDecoder decoder(tdata->l2mtu, tdata->tx_buffer_pool, tdata->tap_write_pool);
+
+	// Loop pulling buffers off the socket write pool
+	std::deque<std::unique_ptr<PacketBuffer>> buffers;
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
+			break;
+		}
+
+		// Wait for buffers
+		tdata->decoder_pool->wait(buffers);
+
+		// Loop with buffers
+		for (auto &buffer : buffers) {
+			decoder.decode(std::move(buffer));
+		}
+		buffers.clear();
+	}
+}
+
+/**
+ * @brief Thread responsible for writing to the TAP device.
+ *
+ * @param arg Thread data.
+ */
+void tunnel_tap_write_handler(void *arg) {
+	struct ThreadData *tdata = (struct ThreadData *)arg;
+
+	// Loop pulling buffers off the socket write pool
+	std::deque<std::unique_ptr<PacketBuffer>> buffers;
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
+			break;
+		}
+
+		// Wait for buffers
+		tdata->tap_write_pool->wait(buffers);
+
+		// Loop with buffers
 #ifdef DEBUG
 		size_t i{0};
 #endif
-		auto buffers = decoder_pool->pop(0);
 		for (auto &buffer : buffers) {
+
 			// Write data to TAP interface
 			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());
 			if (bytes_written == -1) {
@@ -316,14 +364,7 @@ void tunnel_read_socket_handler(void *arg) {
 #endif
 		}
 		// Push buffers into available pool
-		buffer_pool->push(buffers);
+		tdata->tx_buffer_pool->push(buffers);
+		buffers.clear();
 	}
-
-	// Add buffers back to available list for de-allocation
-	for (uint32_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		buffer_pool->push(std::move(recvmm_buffers[i]));
-	}
-	// Free the rest of the IOV stuff
-	free(msgs);
-	free(iovecs);
 }
