@@ -138,7 +138,7 @@ TEST_CASE("TEST: Check encoding 4 packets, 1 complete, 1 partial, 2 complete", "
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 2);
 	// We should have 9 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 9);
+	REQUIRE(avail_buffer_pool.getBufferCount() == 8);
 
 	/*
 	 * Test decoding

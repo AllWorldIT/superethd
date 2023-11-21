@@ -62,7 +62,7 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 2);
 	// We should have 8 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 8);
+	REQUIRE(avail_buffer_pool.getBufferCount() == 7);
 
 	/*
 	 * Test decoding

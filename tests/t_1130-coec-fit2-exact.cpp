@@ -21,7 +21,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_ip = {192, 168, 10, 1};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_ip = {172, 16, 101, 102};
-	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(686);
+	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(682);
 
 	std::string payloadString = payloadSeq.asString();
 	std::vector<uint8_t> payloadBytes = payloadSeq.asBytes();
@@ -89,7 +89,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 1);
 	// We should have 8 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 8);
+	REQUIRE(avail_buffer_pool.getBufferCount() == 7);
 
 	/*
 	 * Test decoding

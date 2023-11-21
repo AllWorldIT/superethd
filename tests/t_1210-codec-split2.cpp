@@ -88,7 +88,7 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 2);
 	// We should have 9 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 7);
+	REQUIRE(avail_buffer_pool.getBufferCount() == 6);
 
 	/*
 	 * Test decoding

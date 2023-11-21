@@ -7,6 +7,9 @@
 #pragma once
 
 #include "Codec.hpp"
+#include "libaccl/StreamCompressor.hpp"
+#include "libaccl/StreamCompressorBlosc2.hpp"
+#include "libaccl/StreamCompressorLZ4.hpp"
 
 /*
  * Packet decoder
@@ -21,19 +24,24 @@ class PacketDecoder {
 		bool first_packet;
 		uint32_t last_sequence;
 		uint8_t last_part;
-		uint16_t last_final_packet_size;
-		// Active destination buffer that is not yet full
-		std::unique_ptr<PacketBuffer> dest_buffer;
+		uint16_t last_orig_packet_size;
+		// Active TX buffer that is not yet full
+		std::unique_ptr<PacketBuffer> tx_buffer;
 		// Buffers in flight, currently being utilized
 		std::deque<std::unique_ptr<PacketBuffer>> inflight_buffers;
+
+		// Compressor
+		accl::StreamCompressorLZ4 *compressorLZ4;
+		accl::StreamCompressorBlosc2 *compressorBlosc2;
+
 		// Buffer pool to get buffers from
 		accl::BufferPool<PacketBuffer> *buffer_pool;
 		// Buffer pool to push buffers to
-		accl::BufferPool<PacketBuffer> *dest_buffer_pool;
+		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
 
 		void _clearState();
 
-		void _getDestBuffer();
+		void _getTxBuffer();
 
 		void _flushInflight();
 		void _pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
@@ -41,7 +49,7 @@ class PacketDecoder {
 
 	public:
 		PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
-					  accl::BufferPool<PacketBuffer> *destination_buffer_pool);
+					  accl::BufferPool<PacketBuffer> *tx_buffer_pool);
 		~PacketDecoder();
 
 		void decode(std::unique_ptr<PacketBuffer> packetBuffer);

@@ -7,7 +7,9 @@
 #pragma once
 
 #include "Codec.hpp"
+#include "PacketBuffer.hpp"
 #include "libaccl/Logger.hpp"
+#include "libaccl/StreamCompressor.hpp"
 
 /*
  * Packet encoder
@@ -22,23 +24,29 @@ class PacketEncoder {
 
 		// Sequence counter
 		uint32_t sequence;
-		// Active destination buffer that is not yet full
-		std::unique_ptr<PacketBuffer> dest_buffer;
+		// Active tx buffer that is not yet full
+		std::unique_ptr<PacketBuffer> tx_buffer;
 		// Buffers in flight, currently being utilized
 		std::deque<std::unique_ptr<PacketBuffer>> inflight_buffers;
-		// Active destination buffer header options length
+
+		// Compressor
+		PacketHeaderOptionFormatType packet_format;
+		accl::StreamCompressor *compressor;
+		std::unique_ptr<PacketBuffer> comp_buffer;
+
+		// Active tx buffer header options length
 		uint16_t opt_len;
 		// Number of packets currently encoded
 		uint32_t packet_count;
 
 		// Buffer pool to get buffers from
 		accl::BufferPool<PacketBuffer> *buffer_pool;
-		// Buffer pool to push buffers to
-		accl::BufferPool<PacketBuffer> *dest_buffer_pool;
+		// TX buffer pool queued to send via socket
+		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
 
 		void _flush();
 
-		void _getDestBuffer();
+		void _getTxBuffer();
 
 		uint16_t _getMaxPayloadSize(uint16_t size) const;
 
@@ -47,7 +55,7 @@ class PacketEncoder {
 
 	public:
 		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
-					  accl::BufferPool<PacketBuffer> *destination_buffer_pool);
+					  accl::BufferPool<PacketBuffer> *tx_buffer_pool);
 		~PacketEncoder();
 
 		void encode(std::unique_ptr<PacketBuffer> packetBuffer);
@@ -56,6 +64,9 @@ class PacketEncoder {
 
 		inline void setSequence(uint32_t seq);
 		inline uint32_t getSequence() const;
+
+		void setPacketFormat(PacketHeaderOptionFormatType format);
+		inline PacketHeaderOptionFormatType getPacketFormat() const;
 };
 
 /**
@@ -74,3 +85,11 @@ inline void PacketEncoder::setSequence(uint32_t seq) {
  * @return uint32_t Packet sequence.
  */
 inline uint32_t PacketEncoder::getSequence() const { return sequence; }
+
+
+/**
+ * @brief Get current packet format.
+ *
+ * @return PacketHeaderOptionFormatType Packet format.
+ */
+inline PacketHeaderOptionFormatType PacketEncoder::getPacketFormat() const { return packet_format; }

@@ -46,7 +46,7 @@ void tunnel_tap_read_handler(void *arg) {
 
 		// Grab a new buffer for our data
 		LOG_DEBUG_INTERNAL("AVAIL POOL: Buffer pool count: ", tdata->rx_buffer_pool->getBufferCount(), ", taking one");
-		auto buffer = tdata->rx_buffer_pool->pop();
+		auto buffer = tdata->rx_buffer_pool->pop_wait();
 
 		// Read data from TAP interface
 		ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
@@ -202,7 +202,7 @@ void tunnel_socket_read_handler(void *arg) {
 
 	// Set up iovecs and mmsghdrs
 	for (size_t i = 0; i < SETH_MAX_RECVMM_MESSAGES; ++i) {
-		recvmm_buffers[i] = tdata->tx_buffer_pool->pop();
+		recvmm_buffers[i] = tdata->tx_buffer_pool->pop_wait();
 
 		// Setup IO vectors
 		iovecs[i].iov_base = recvmm_buffers[i]->getData();
@@ -265,13 +265,12 @@ void tunnel_socket_read_handler(void *arg) {
 						  ", DROPPING!");
 				continue;
 			}
-			// First thing we do is validate the header
-			int valid_format_mask =
-				static_cast<uint8_t>(PacketHeaderFormat::ENCAPSULATED) | static_cast<uint8_t>(PacketHeaderFormat::COMPRESSED);
-			if (static_cast<uint8_t>(pkthdr->format) & ~valid_format_mask) {
-				LOG_ERROR("Packet in invalid format ", static_cast<uint8_t>(pkthdr->format), ", DROPPING!");
+			// First thing we do is validate the format
+			if (pkthdr->format != PacketHeaderFormat::ENCAPSULATED) {
+				LOG_ERROR("Packet format not supported, format ", static_cast<uint8_t>(pkthdr->format), ", DROPPING!");
 				continue;
 			}
+
 			// Next check the channel is set to 0
 			if (pkthdr->channel) {
 				LOG_ERROR("Packet specifies invalid channel ", pkthdr->channel, ", DROPPING!");
@@ -284,7 +283,7 @@ void tunnel_socket_read_handler(void *arg) {
 			received_buffers.push_back(std::move(recvmm_buffers[i]));
 
 			// Replenish the buffer
-			recvmm_buffers[i] = tdata->tx_buffer_pool->pop();
+			recvmm_buffers[i] = tdata->tx_buffer_pool->pop_wait();
 			msgs[i].msg_hdr.msg_iov->iov_base = recvmm_buffers[i]->getData();
 		}
 		// Push all the buffers we got

@@ -21,8 +21,8 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_ip = {192, 168, 10, 1};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_ip = {172, 16, 101, 102};
-	accl::SequenceDataGenerator payloadSeq1 = accl::SequenceDataGenerator(1360);
-	accl::SequenceDataGenerator payloadSeq2 = accl::SequenceDataGenerator(1464);
+	accl::SequenceDataGenerator payloadSeq1 = accl::SequenceDataGenerator(1318);
+	accl::SequenceDataGenerator payloadSeq2 = accl::SequenceDataGenerator(1472);
 
 	std::string payloadString1 = payloadSeq1.asString();
 	std::string payloadString2 = payloadSeq2.asString();
@@ -92,7 +92,7 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 2);
 	// We should have 9 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 7);
+	REQUIRE(avail_buffer_pool.getBufferCount() == 6);
 
 	/*
 	 * Test decoding

@@ -41,7 +41,6 @@ inline constexpr uint8_t SETH_PACKET_HEADER_VERSION_V1{0x1};
 
 enum class PacketHeaderFormat : uint8_t {
 	ENCAPSULATED = 0x1,
-	COMPRESSED = 0x2,
 };
 
 struct PacketHeader {
@@ -71,13 +70,9 @@ struct PacketHeader {
  * Packet Payload Header:
  *    |               |               |               |               |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *	  |     Type      |           Packet Size         |      RSVD     |
+ *	  |     Type      |           Packet Size         |     Format    |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- *                  HEADER OPTION - PARTIAL - DATA SECTION
- *    |               |               |               |               |
- *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *	  |         Payload Length        |     PART      |      RSVD     |
+ *    |        Payload Length         |     Part      |      RSVD     |
  *	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
  */
@@ -87,16 +82,25 @@ enum class PacketHeaderOptionType : uint8_t {
 	COMPLETE_PACKET = 0x2,
 };
 
-inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_SIZE{4};
-inline constexpr uint16_t SETH_PACKET_PAYLOAD_HEADER_PARTIAL_SIZE{4};
+#define SETH_PACKET_HEADER_OPTION_TYPE_IS_VALID(packet_header_option)                                                              \
+	((static_cast<uint8_t>(packet_header_option->type) & !(static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |         \
+														   static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) == 0)
+
+enum class PacketHeaderOptionFormatType : uint8_t {
+	NONE = 0x0,
+	COMPRESSED_LZ4 = 0x1,
+	COMPRESSED_BLOSC2 = 0x2,
+};
+
+#define SETH_PACKET_HEADER_OPTION_FORMAT_IS_VALID(packet_header_option)                                                            \
+	((static_cast<uint8_t>(packet_header_option->format) &                                                                         \
+	  ~(static_cast<uint8_t>(PacketHeaderOptionFormatType::COMPRESSED_LZ4) |                                                       \
+		static_cast<uint8_t>(PacketHeaderOptionFormatType::COMPRESSED_BLOSC2))) == 0)
 
 struct PacketHeaderOption {
 		PacketHeaderOptionType type;
 		seth_be16_t packet_size;
-		uint8_t reserved;
-} SETH_PACKED_ATTRIBUTES;
-
-struct PacketHeaderOptionPartialData {
+		PacketHeaderOptionFormatType format;
 		seth_be16_t payload_length;
 		uint8_t part;
 		uint8_t reserved;

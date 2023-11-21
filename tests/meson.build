@@ -5,7 +5,8 @@ subdir('libtests')
 # Dependencies
 
 deps = [dependency('catch2-with-main')]
-
+deps += [dependency('blosc2')]
+deps += [dependency('liblz4')]
 
 # Build options
 

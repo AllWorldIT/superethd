@@ -100,14 +100,17 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.l4mtu = get_l4mtu(tdata.tx_size, &tdata.remote_addr.sin6_addr);
 	CERR("Setting maximum payload size to {}...", tdata.l4mtu);
 
-	// Set up pools
-	tdata.rx_buffer_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu, SETH_BUFFER_COUNT);
-	tdata.encoder_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
-	tdata.socket_write_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+	// Add on 10% of the buffer size to cater for compression overhead
+	int bufferSize = tdata.l2mtu + (tdata.l2mtu / 10);
 
-	tdata.tx_buffer_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu, SETH_BUFFER_COUNT);
-	tdata.decoder_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
-	tdata.tap_write_pool = new accl::BufferPool<PacketBuffer>(tdata.l2mtu);
+	// Set up pools
+	tdata.rx_buffer_pool = new accl::BufferPool<PacketBuffer>(bufferSize, SETH_BUFFER_COUNT);
+	tdata.encoder_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
+	tdata.socket_write_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
+
+	tdata.tx_buffer_pool = new accl::BufferPool<PacketBuffer>(bufferSize, SETH_BUFFER_COUNT);
+	tdata.decoder_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
+	tdata.tap_write_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
 
 	/*
 	 * End thread data setup

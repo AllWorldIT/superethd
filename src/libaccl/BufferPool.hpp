@@ -34,6 +34,7 @@ template <typename T> class BufferPool {
 
 		std::unique_ptr<T> pop();
 		std::deque<std::unique_ptr<T>> pop(size_t count);
+		std::unique_ptr<T> pop_wait();
 
 		void push(T &buffer);
 		void push(std::unique_ptr<T> buffer);
@@ -121,6 +122,22 @@ template <typename T> std::unique_ptr<T> BufferPool<T>::pop() {
 template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::pop(size_t count) {
 	std::unique_lock<std::shared_mutex> lock(mtx);
 	return _pop(count);
+}
+
+/**
+ * @brief Pop a single buffer from the pool, waiting if there are none available.
+ *
+ * @return std::unique_ptr<T> Buffer popped from the pool.
+ * @exception std::bad_alloc No buffers were available to pop.
+ */
+template <typename T> std::unique_ptr<T> BufferPool<T>::pop_wait() {
+	std::unique_lock<std::shared_mutex> lock(mtx);
+	// We only need to wait if the pool is empty
+	if (pool.empty())
+		cv.wait(lock);
+	auto buffer = std::move(pool.front());
+	pool.pop_front();
+	return buffer;
 }
 
 /**
@@ -252,4 +269,3 @@ template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::wait_for(std
 }
 
 } // namespace accl
-
