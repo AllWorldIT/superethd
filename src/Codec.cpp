@@ -12,8 +12,8 @@ std::string PacketHeaderOptionFormatTypeToString(PacketHeaderOptionFormatType ty
 			return "none";
 		case PacketHeaderOptionFormatType::COMPRESSED_LZ4:
 			return "lz4";
-		case PacketHeaderOptionFormatType::COMPRESSED_BLOSC2:
-			return "blosc2";
+		case PacketHeaderOptionFormatType::COMPRESSED_ZSTD:
+			return "zstd";
 		default:
 			return "unknown";
 	}

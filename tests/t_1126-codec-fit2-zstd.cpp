@@ -12,16 +12,16 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
-TEST_CASE("Check encoding of two packets into a single encapsulated packet exactly", "[codec]") {
+TEST_CASE("Check encoding of two packets into a single encapsulated packet with ZSTD compression", "[codec]") {
 	CERR("");
 	CERR("");
-	CERR("TEST: Check encoding of two packets into a single encapsulated packet exactly");
+	CERR("TEST: Check encoding of two packets into a single encapsulated packet");
 
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_ip = {192, 168, 10, 1};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_ip = {172, 16, 101, 102};
-	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(682);
+	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(100);
 
 	std::string payloadString = payloadSeq.asString();
 	std::vector<uint8_t> payloadBytes = payloadSeq.asBytes();
@@ -82,10 +82,10 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	packet2_buffer->append(packet2_bin.data(), packet2_bin.length());
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_ZSTD);
 	encoder.encode(std::move(packet1_buffer));
 	encoder.encode(std::move(packet2_buffer));
-	// NK: we should get flushed automatically here
-	//encoder.flush();
+	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 1);
@@ -100,8 +100,6 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
-
-	REQUIRE(enc_buffer->getDataSize() == 1472);
 
 	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(std::move(enc_buffer));

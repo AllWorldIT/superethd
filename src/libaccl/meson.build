@@ -9,8 +9,8 @@ libaccl_sources = [
     'Logger.cpp',
     'SequenceDataGenerator.cpp',
     'StreamCompressor.cpp',
-    'StreamCompressorBlosc2.cpp',
     'StreamCompressorLZ4.cpp',
+    'StreamCompressorZSTD.cpp',
 ]
 
 libaccl = static_library('accl', libaccl_sources)

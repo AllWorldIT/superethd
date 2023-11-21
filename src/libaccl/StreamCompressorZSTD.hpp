@@ -9,21 +9,19 @@
 #include "StreamCompressor.hpp"
 
 extern "C" {
-#include <blosc2.h>
+#include <zstd.h>
 }
 
 namespace accl {
 
-class StreamCompressorBlosc2 : public StreamCompressor {
-
-	private:
-		blosc2_context_s *cctx;
-		blosc2_context_s *dctx;
+class StreamCompressorZSTD : public StreamCompressor {
+		ZSTD_CCtx *cctx;
+		ZSTD_DCtx *dctx;
 
 	public:
-		StreamCompressorBlosc2();
+		StreamCompressorZSTD();
 
-		~StreamCompressorBlosc2() override;
+		~StreamCompressorZSTD() override;
 
 		void resetCompressionStream() override;
 		void resetDecompressionStream() override;
@@ -31,6 +29,8 @@ class StreamCompressorBlosc2 : public StreamCompressor {
 		int compress(const char *input, size_t input_size, char *output, size_t max_output_size) override;
 
 		int decompress(const char *input, size_t input_size, char *output, size_t max_output_size) override;
+
+		const std::string strerror(int err) override;
 };
 
 }

@@ -82,22 +82,33 @@ enum class PacketHeaderOptionType : uint8_t {
 	COMPLETE_PACKET = 0x2,
 };
 
+// Check if the packet header option type is valid
 #define SETH_PACKET_HEADER_OPTION_TYPE_IS_VALID(packet_header_option)                                                              \
-	((static_cast<uint8_t>(packet_header_option->type) & !(static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |         \
+	((static_cast<uint8_t>(packet_header_option->type) & ~(static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET) |         \
 														   static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))) == 0)
+
+// Check if the packet header option type indicates a partial packet
+#define SETH_PACKET_HEADER_OPTION_TYPE_IS_PARTIAL(packet_header_option)                                                            \
+	((static_cast<uint8_t>(packet_header_option->type) & static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET)) ==          \
+	 static_cast<uint8_t>(PacketHeaderOptionType::PARTIAL_PACKET))
+
+// Check if the packet header option type indicates a complete packet
+#define SETH_PACKET_HEADER_OPTION_TYPE_IS_COMPLETE(packet_header_option)                                                           \
+	((static_cast<uint8_t>(packet_header_option->type) & static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET)) ==         \
+	 static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET))
 
 enum class PacketHeaderOptionFormatType : uint8_t {
 	NONE = 0x0,
 	COMPRESSED_LZ4 = 0x1,
-	COMPRESSED_BLOSC2 = 0x2,
+	COMPRESSED_ZSTD = 0x2,
 };
 
-#define SETH_DEFAULT_PACKET_FORMAT PacketHeaderOptionFormatType::COMPRESSED_LZ4
+// Set default packet header option format
+inline constexpr PacketHeaderOptionFormatType SETH_DEFAULT_PACKET_FORMAT{PacketHeaderOptionFormatType::COMPRESSED_LZ4};
 
-#define SETH_PACKET_HEADER_OPTION_FORMAT_IS_VALID(packet_header_option)                                                            \
-	((static_cast<uint8_t>(packet_header_option->format) &                                                                         \
-	  ~(static_cast<uint8_t>(PacketHeaderOptionFormatType::COMPRESSED_LZ4) |                                                       \
-		static_cast<uint8_t>(PacketHeaderOptionFormatType::COMPRESSED_BLOSC2))) == 0)
+#define SETH_PACKET_HEADER_OPTION_FORMAT_IS_COMPRESSED(packet_header_option)                                                       \
+	(packet_header_option->format == PacketHeaderOptionFormatType::COMPRESSED_LZ4 ||                                               \
+	 packet_header_option->format == PacketHeaderOptionFormatType::COMPRESSED_ZSTD)
 
 struct PacketHeaderOption {
 		PacketHeaderOptionType type;

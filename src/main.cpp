@@ -42,7 +42,7 @@ void print_help() {
 	CERR("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ);
 	CERR("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME);
 	CERR("    -c, --compression=<COMPR>     Specify compression algorithm to use, valid");
-	CERR("                                  values: none, lz4, blosc2 (default: {})",
+	CERR("                                  values: none, lz4, zstd (default: {})",
 		 PacketHeaderOptionFormatTypeToString(SETH_DEFAULT_PACKET_FORMAT));
 	CERR("");
 }
@@ -125,8 +125,8 @@ int main(int argc, char *argv[]) {
 			} else if (strcmp(optarg, "lz4") == 0) {
 				packet_format = PacketHeaderOptionFormatType::COMPRESSED_LZ4;
 				break;
-			} else if (strcmp(optarg, "blosc2") == 0) {
-				packet_format = PacketHeaderOptionFormatType::COMPRESSED_BLOSC2;
+			} else if (strcmp(optarg, "zstd") == 0) {
+				packet_format = PacketHeaderOptionFormatType::COMPRESSED_ZSTD;
 				break;
 			} else {
 				CERR("ERROR: Invalid compression algorithm '{}'.", optarg);

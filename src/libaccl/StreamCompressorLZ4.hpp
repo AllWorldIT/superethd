@@ -29,6 +29,8 @@ class StreamCompressorLZ4 : public StreamCompressor {
 		int compress(const char *input, size_t input_size, char *output, size_t max_output_size) override;
 
 		int decompress(const char *input, size_t input_size, char *output, size_t max_output_size) override;
+
+		const std::string strerror(int err) override;
 };
 
 }

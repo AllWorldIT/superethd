@@ -12,8 +12,8 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
-
-TEST_CASE("Check encoding of two packets into a single encapsulated packet with a sweeping third packet", "[codec]") {
+TEST_CASE("Check encoding of two packets into a single encapsulated packet with a sweeping third packet with LZ4 compression",
+		  "[codec]") {
 	CERR("");
 	CERR("");
 	CERR("Check encoding of two packets into a single encapsulated packet with a sweeping third packet");
@@ -113,6 +113,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		packet3_buffer->append(packet3_bin.data(), packet3_bin.length());
 
 		PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+		encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_LZ4);
 		CERR("ENCODE 1");
 		encoder.encode(std::move(packet1_buffer));
 		CERR("ENCODE 2");

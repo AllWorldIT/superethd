@@ -5,8 +5,9 @@ subdir('libtests')
 # Dependencies
 
 deps = [dependency('catch2-with-main')]
-deps += [dependency('blosc2')]
 deps += [dependency('liblz4')]
+deps += [dependency('libzstd')]
+
 
 # Build options
 
@@ -143,9 +144,41 @@ test('1100-codec-fit.cpp',
 		dependencies: deps,
 	)
 )
+test('1105-codec-fit-lz4.cpp',
+	executable('t_1105-codec-fit-lz4',
+		't_1105-codec-fit-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1106-codec-fit-zstd.cpp',
+	executable('t_1106-codec-fit-zstd',
+		't_1106-codec-fit-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('1110-codec-fit-exact.cpp',
 	executable('t_1110-codec-fit-exact',
 		't_1110-codec-fit-exact.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1115-codec-fit-exact-lz4.cpp',
+	executable('t_1115-codec-fit-exact-lz4',
+		't_1115-codec-fit-exact-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1116-codec-fit-exact-zstd.cpp',
+	executable('t_1116-codec-fit-exact-zstd',
+		't_1116-codec-fit-exact-zstd.cpp',
 		include_directories: inc,
 		link_with: libs,
 		dependencies: deps,
@@ -159,9 +192,41 @@ test('1120-codec-fit2.cpp',
 		dependencies: deps,
 	)
 )
+test('1125-codec-fit2-lz4.cpp',
+	executable('t_1125-codec-fit2-lz4',
+		't_1125-codec-fit2-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1126-codec-fit2-zstd.cpp',
+	executable('t_1126-codec-fit2-zstd',
+		't_1126-codec-fit2-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('1130-coec-fit2-exact.cpp',
 	executable('t_1130-coec-fit2-exact',
 		't_1130-coec-fit2-exact.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1135-coec-fit2-exact-lz4.cpp',
+	executable('t_1135-coec-fit2-exact-lz4',
+		't_1135-coec-fit2-exact-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1136-coec-fit2-exact-zstd.cpp',
+	executable('t_1136-coec-fit2-exact-zstd',
+		't_1136-coec-fit2-exact-zstd.cpp',
 		include_directories: inc,
 		link_with: libs,
 		dependencies: deps,
@@ -175,9 +240,41 @@ test('1200-codec-split.cpp',
 		dependencies: deps,
 	)
 )
+test('1205-codec-split-lz4.cpp',
+	executable('t_1205-codec-split-lz4',
+		't_1205-codec-split-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1206-codec-split-zstd.cpp',
+	executable('t_1206-codec-split-zstd',
+		't_1206-codec-split-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('1210-codec-split2.cpp',
 	executable('t_1210-codec-split2',
 		't_1210-codec-split2.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1215-codec-split2-lz4.cpp',
+	executable('t_1215-codec-split2-lz4',
+		't_1215-codec-split2-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1216-codec-split2-zstd.cpp',
+	executable('t_1216-codec-split2-zstd',
+		't_1216-codec-split2-zstd.cpp',
 		include_directories: inc,
 		link_with: libs,
 		dependencies: deps,
@@ -191,9 +288,41 @@ test('1220-codec-split2-exact.cpp',
 		dependencies: deps,
 	)
 )
+test('1225-codec-split2-exact-lz4.cpp',
+	executable('t_1225-codec-split2-exact-lz4',
+		't_1225-codec-split2-exact-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1226-codec-split2-exact-zstd.cpp',
+	executable('t_1226-codec-split2-exact-zstd',
+		't_1226-codec-split2-exact-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('1600-codec-4-1c1p2c.cpp',
 	executable('t_1600-codec-4-1c1p2c',
 		't_1600-codec-4-1c1p2c.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1605-codec-4-1c1p2c-lz4.cpp',
+	executable('t_1605-codec-4-1c1p2c-lz4',
+		't_1605-codec-4-1c1p2c-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1606-codec-4-1c1p2c-zstd.cpp',
+	executable('t_1606-codec-4-1c1p2c-zstd',
+		't_1606-codec-4-1c1p2c-zstd.cpp',
 		include_directories: inc,
 		link_with: libs,
 		dependencies: deps,
@@ -207,9 +336,41 @@ test('1900-codec-seq-wrap.cpp',
 		dependencies: deps,
 	)
 )
+test('1905-codec-seq-wrap-lz4.cpp',
+	executable('t_1905-codec-seq-wrap-lz4',
+		't_1905-codec-seq-wrap-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1905-codec-seq-wrap-zstd.cpp',
+	executable('t_1905-codec-seq-wrap-zstd',
+		't_1905-codec-seq-wrap-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('1910-codec-sweep.cpp',
 	executable('t_1910-codec-sweep',
 		't_1910-codec-sweep.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1915-codec-sweep-lz4.cpp',
+	executable('t_1915-codec-sweep-lz4',
+		't_1915-codec-sweep-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('1916-codec-sweep-zstd.cpp',
+	executable('t_1916-codec-sweep-zstd',
+		't_1916-codec-sweep-zstd.cpp',
 		include_directories: inc,
 		link_with: libs,
 		dependencies: deps,

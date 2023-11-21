@@ -9,8 +9,8 @@
 #include "Endian.hpp"
 #include "PacketBuffer.hpp"
 #include "libaccl/Logger.hpp"
-#include "libaccl/StreamCompressorBlosc2.hpp"
 #include "libaccl/StreamCompressorLZ4.hpp"
+#include "libaccl/StreamCompressorZSTD.hpp"
 #include "libsethnetkit/Packet.hpp"
 #include <cstdint>
 
@@ -107,21 +107,28 @@ uint16_t PacketEncoder::_getMaxPayloadSize(uint16_t size) const {
  *
  */
 void PacketEncoder::_flushInflight() {
-	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Flusing inflight buffers: pool=", buffer_pool->getBufferCount(),
-					   ", count=", inflight_buffers.size());
+
 	// Free remaining buffers in flight
-	if (!inflight_buffers.empty()) {
-		buffer_pool->push(inflight_buffers);
+	if (inflight_buffers.empty()) {
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: No buffers in flight to flush");
+		return;
 	}
+
+	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Flusing inflight buffers: avail pool=", buffer_pool->getBufferCount(),
+					   ", inflight count=", inflight_buffers.size());
+
+	// Flush inflight buffers to the buffer pool
+	buffer_pool->push(inflight_buffers);
 
 	// Reset compressor if we have one
 	if (compressor) {
 		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Resetting compressor");
 		compressor->resetCompressionStream();
 	}
-	
-	LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - INFLIGHT: Flusing inflight buffers after: pool=", buffer_pool->getBufferCount(),
-					   ", count=", inflight_buffers.size());
+
+	LOG_DEBUG_INTERNAL("{seq=", sequence,
+					   "}:  - INFLIGHT: Flusing inflight buffers after: avail pool=", buffer_pool->getBufferCount(),
+					   ", inflight count=", inflight_buffers.size());
 }
 
 /**
@@ -221,9 +228,10 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> rawPacketBuffer) {
 			// algorithms require all buffers to be available.
 			_pushInflight(rawPacketBuffer);
 		} else {
-			LOG_ERROR("{seq=", sequence, "}: Failed to compress packet");
-			// Free buffer to available pool
-			// buffer_pool->push(std::move(*compressed_packet_buffer));
+			LOG_ERROR("{seq=", sequence, "}: Failed to compress packet with error ", compressed_size, ": ",
+					  compressor->strerror(compressed_size));
+			// Set packet header to uncompressed
+			packet_header_option_format = static_cast<uint8_t>(PacketHeaderOptionFormatType::NONE);
 			// Set the packet buffer we're working with
 			packetBuffer = std::move(rawPacketBuffer);
 		}
@@ -279,6 +287,14 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> rawPacketBuffer) {
 			tx_buffer->append(packetBuffer->getData() + packet_pos, part_size);
 
 			LOG_DEBUG_INTERNAL("{seq=", sequence, "}:    - After partial add: tx_buffer_size=", tx_buffer->getDataSize());
+
+			// Check if we have finished the packet, if we have, mark this one complete
+			if (!(packet_left - part_size)) {
+				LOG_DEBUG_INTERNAL("{seq=", sequence, "}:    - Buffer not full, setting complete");
+				// Set packet header to complete
+				packet_header_option->type = PacketHeaderOptionType(static_cast<uint8_t>(packet_header_option->type) |
+																	static_cast<uint8_t>(PacketHeaderOptionType::COMPLETE_PACKET));
+			}
 
 			// If the buffer is full, flush it
 			if (tx_buffer->getDataSize() == l4mtu) {
@@ -378,9 +394,9 @@ void PacketEncoder::setPacketFormat(PacketHeaderOptionFormatType format) {
 	if (packet_format == PacketHeaderOptionFormatType::COMPRESSED_LZ4) {
 		// Initialize our compressor
 		compressor = new accl::StreamCompressorLZ4();
-	} else if (packet_format == PacketHeaderOptionFormatType::COMPRESSED_BLOSC2) {
+	} else if (packet_format == PacketHeaderOptionFormatType::COMPRESSED_ZSTD) {
 		// Initialize our compressor
-		compressor = new accl::StreamCompressorBlosc2();
+		compressor = new accl::StreamCompressorZSTD();
 	} else {
 		LOG_ERROR("Unknown packet format ", static_cast<unsigned int>(format));
 		throw std::runtime_error("Unknown packet format");

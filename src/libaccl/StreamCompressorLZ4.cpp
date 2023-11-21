@@ -44,4 +44,18 @@ int StreamCompressorLZ4::decompress(const char *input, size_t input_size, char *
 										static_cast<int>(max_output_size));
 }
 
+const std::string StreamCompressorLZ4::strerror(int err) {
+	switch (err) {
+	case 0:
+		return "No error";
+	case -1:
+		return "Generic error";
+	case -2:
+		return "Max output size reached";
+	// Add more cases as needed
+	default:
+		return "Unknown error";
+	}
 }
+
+} // namespace accl

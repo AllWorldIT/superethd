@@ -11,8 +11,8 @@ configure_file(input: 'config.hpp.in', output: 'config.hpp', configuration: conf
 # Depdendencies
 #
 
-deps = [dependency('blosc2')]
-deps += [dependency('liblz4')]
+deps = [dependency('liblz4')]
+deps += [dependency('libzstd')]
 
 
 #

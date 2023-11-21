@@ -12,7 +12,7 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
-TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
+TEST_CASE("Check encoding of a packet that does not fit into MSS with ZSTD compression", "[codec]") {
 	CERR("");
 	CERR("");
 	CERR("TEST: Check encoding of a packet that does not fit into MSS");
@@ -21,10 +21,15 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> dst_ip = {192, 168, 10, 1};
 	std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN> src_ip = {172, 16, 101, 102};
-	accl::SequenceDataGenerator payloadSeq = accl::SequenceDataGenerator(1472);
 
-	std::string payloadString = payloadSeq.asString();
-	std::vector<uint8_t> payloadBytes = payloadSeq.asBytes();
+	std::vector<uint8_t> payloadBytes;
+	const unsigned int seed = 12345;			   // Fixed seed for reproducibility
+	std::mt19937 eng(seed);						   // Seed the generator with a fixed value
+	std::uniform_int_distribution<> distr(0, 255); // Define the range
+	for (int n = 0; n < 1472; ++n) {
+		payloadBytes.push_back(static_cast<uint8_t>(distr(eng))); // Generate a random byte and add to the vector
+	}
+	std::string payloadString(payloadBytes.begin(), payloadBytes.end());
 
 	UDPv4Packet packet;
 
@@ -57,6 +62,7 @@ TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
 	packet_buffer->append(packet_bin.data(), packet_bin.length());
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_ZSTD);
 	encoder.encode(std::move(packet_buffer));
 	encoder.flush();
 

@@ -8,7 +8,7 @@
 
 #include "Codec.hpp"
 #include "libaccl/StreamCompressor.hpp"
-#include "libaccl/StreamCompressorBlosc2.hpp"
+#include "libaccl/StreamCompressorZSTD.hpp"
 #include "libaccl/StreamCompressorLZ4.hpp"
 
 /*
@@ -24,6 +24,7 @@ class PacketDecoder {
 		bool first_packet;
 		uint32_t last_sequence;
 		uint8_t last_part;
+		PacketHeaderOptionFormatType last_format;
 		uint16_t last_orig_packet_size;
 		// Active TX buffer that is not yet full
 		std::unique_ptr<PacketBuffer> tx_buffer;
@@ -32,7 +33,8 @@ class PacketDecoder {
 
 		// Compressor
 		accl::StreamCompressorLZ4 *compressorLZ4;
-		accl::StreamCompressorBlosc2 *compressorBlosc2;
+		accl::StreamCompressorZSTD *compressorZSTD;
+		std::unique_ptr<PacketBuffer> dcomp_buffer;
 
 		// Buffer pool to get buffers from
 		accl::BufferPool<PacketBuffer> *buffer_pool;

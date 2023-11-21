@@ -13,7 +13,7 @@
 #include "libtests/framework.hpp"
 #include <cstdint>
 
-TEST_CASE("Check sequence wrapping", "[codec]") {
+TEST_CASE("Check sequence wrapping with LZ4 compression", "[codec]") {
 	CERR("");
 	CERR("");
 	CERR("TEST: Check sequence wrapping");
@@ -59,6 +59,8 @@ TEST_CASE("Check sequence wrapping", "[codec]") {
 	accl::logger.setLogLevel(accl::LogLevel::DEBUGGING);
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_LZ4);
+	
 	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 
 	// Set encoder sequence close to the end

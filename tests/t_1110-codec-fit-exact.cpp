@@ -49,11 +49,12 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	// Lets fire up the encoder
 	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
-	accl::BufferPool<PacketBuffer> avail_buffer_pool(l2mtu, 9);
-	accl::BufferPool<PacketBuffer> enc_buffer_pool(l2mtu);
+	uint16_t buffer_size = l2mtu + (l2mtu / 10);
+	accl::BufferPool<PacketBuffer> avail_buffer_pool(buffer_size, 9);
+	accl::BufferPool<PacketBuffer> enc_buffer_pool(buffer_size);
 
 	std::string packet_bin = packet.asBinary();
-	std::unique_ptr<PacketBuffer> packet_buffer = std::make_unique<PacketBuffer>(l2mtu);
+	std::unique_ptr<PacketBuffer> packet_buffer = std::make_unique<PacketBuffer>(buffer_size);
 	packet_buffer->append(packet_bin.data(), packet_bin.length());
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
@@ -70,7 +71,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	 * Test decoding
 	 */
 
-	accl::BufferPool<PacketBuffer> dec_buffer_pool(l2mtu);
+	accl::BufferPool<PacketBuffer> dec_buffer_pool(buffer_size);
 
 	// Grab single packet from the encoder buffer pool
 	auto enc_buffer = enc_buffer_pool.pop();
