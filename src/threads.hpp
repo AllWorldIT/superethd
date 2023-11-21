@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Codec.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "PacketBuffer.hpp"
 #include <net/ethernet.h>
@@ -33,6 +34,8 @@ struct ThreadData {
 		// Local and remote address
 		struct sockaddr_in6 local_addr;
 		struct sockaddr_in6 remote_addr;
+		// Packet format
+		PacketHeaderOptionFormatType packet_format;
 
 		accl::BufferPool<PacketBuffer> *rx_buffer_pool;
 		accl::BufferPool<PacketBuffer> *encoder_pool;

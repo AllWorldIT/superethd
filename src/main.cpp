@@ -6,21 +6,22 @@
 
 #include <string>
 
-#include <arpa/inet.h>
-#include <getopt.h>
-#include <net/if.h>
-#include <string.h>
+#include "Codec.hpp"
 #include "common.hpp"
 #include "config.hpp"
 #include "debug.hpp"
 #include "libaccl/Logger.hpp"
 #include "superethd.hpp"
 #include "util.hpp"
+#include <arpa/inet.h>
+#include <getopt.h>
+#include <net/if.h>
+#include <string.h>
 
 static struct option long_options[] = {
-		{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		  {"ifname", required_argument, 0, 'i'},
-		{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'},	  {"port", required_argument, 0, 'p'},
-		{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
+	{"version", no_argument, 0, 'v'},	{"help", no_argument, 0, 'h'},		  {"ifname", required_argument, 0, 'i'},
+	{"src", required_argument, 0, 's'}, {"dst", required_argument, 0, 'd'},	  {"port", required_argument, 0, 'p'},
+	{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
 
 void print_help() {
 	CERR("Usage:");
@@ -40,6 +41,9 @@ void print_help() {
 	CERR("                                  (default is 58023)");
 	CERR("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ);
 	CERR("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME);
+	CERR("    -c, --compression=<COMPR>     Specify compression algorithm to use, valid");
+	CERR("                                  values: none, lz4, blosc2 (default: {})",
+		 PacketHeaderOptionFormatTypeToString(SETH_DEFAULT_PACKET_FORMAT));
 	CERR("");
 }
 
@@ -52,12 +56,13 @@ int main(int argc, char *argv[]) {
 	char *src_value = NULL;
 	char *dst_value = NULL;
 	std::string ifname_value = SETH_DEFAULT_TUNNEL_NAME;
+	PacketHeaderOptionFormatType packet_format = PacketHeaderOptionFormatType::COMPRESSED_LZ4;
 
 	CERR("Super Ethernet Tunnel v{} - Copyright (c) 2023, AllWorldIT.", VERSION);
 	CERR("");
 
 	while (1) {
-		c = getopt_long(argc, argv, "vhl:m:t:s:r:d:p:i:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vhl:m:t:s:r:d:p:i:c:", long_options, &option_index);
 
 		// Detect end of the options
 		if (c == -1) {
@@ -113,6 +118,20 @@ int main(int argc, char *argv[]) {
 			}
 			ifname_value.assign(optarg);
 			break;
+		case 'c': // Handling the compression option
+			if (strcmp(optarg, "none") == 0) {
+				packet_format = PacketHeaderOptionFormatType::NONE;
+				break;
+			} else if (strcmp(optarg, "lz4") == 0) {
+				packet_format = PacketHeaderOptionFormatType::COMPRESSED_LZ4;
+				break;
+			} else if (strcmp(optarg, "blosc2") == 0) {
+				packet_format = PacketHeaderOptionFormatType::COMPRESSED_BLOSC2;
+				break;
+			} else {
+				CERR("ERROR: Invalid compression algorithm '{}'.", optarg);
+				return 1;
+			}
 		case '?':
 			return 1;
 		default:
@@ -166,7 +185,7 @@ int main(int argc, char *argv[]) {
 	CERR("TX Size.....: {}", txsize_value);
 	CERR("");
 
-	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, txsize_value);
+	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, txsize_value, packet_format);
 
 	return 0;
 }

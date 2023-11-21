@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#include "Codec.hpp"
 #include "common.hpp"
 #include "debug.hpp"
 #include "libaccl/Buffer.hpp"
@@ -43,9 +44,11 @@ void handleSIGUSR1(int signum) {
  * @param port Port to use for communication.
  * @param mtu SET ethernet device MTU.
  * @param tx_size Maximum transmission packet size.
+ * @param packet_format Packet format.
  * @return int
  */
-int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int tx_size) {
+int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int tx_size,
+			  PacketHeaderOptionFormatType packet_format) {
 	// Register the signal handler for SIGUSR1
 	if (signal(SIGUSR1, handleSIGUSR1) == SIG_ERR) {
 		CERR("ERROR: Failed to register signal handler: {}", strerror(errno));
@@ -112,9 +115,13 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	tdata.decoder_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
 	tdata.tap_write_pool = new accl::BufferPool<PacketBuffer>(bufferSize);
 
+	// Set up packet format
+	tdata.packet_format = packet_format;
+
 	/*
 	 * End thread data setup
 	 */
+	CERR("Setting packet format to {}...", PacketHeaderOptionFormatTypeToString(tdata.packet_format));
 
 	// Allocate actual interface
 	create_tap_interface(ifname, &tdata);

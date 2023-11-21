@@ -79,6 +79,9 @@ void tunnel_encoder_handler(void *arg) {
 	// Packet encoder
 	PacketEncoder encoder(tdata->l2mtu, tdata->l4mtu, tdata->rx_buffer_pool, tdata->socket_write_pool);
 
+	// Set packet format
+	encoder.setPacketFormat(tdata->packet_format);
+
 	// Loop pulling buffers off the encoder pool
 	std::chrono::milliseconds timeout = std::chrono::milliseconds(1);
 	std::deque<std::unique_ptr<PacketBuffer>> buffers;

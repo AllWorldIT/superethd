@@ -340,7 +340,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 				// First we handle plain packets
 				tx_buffer->append(packetBuffer->getData() + packet_pos, payload_length);
 
-				// Next we're going to look for LZ4 compressed packets
+				// Next we're going to look for compressed packets
 			} else if (SETH_PACKET_HEADER_OPTION_FORMAT_IS_VALID(packet_header_option)) {
 
 				// Try decompress buffer
@@ -484,14 +484,22 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 
 				// Next we're going to look for LZ4 compressed packets
 			} else if (SETH_PACKET_HEADER_OPTION_FORMAT_IS_VALID(packet_header_option)) {
+				LOG_DEBUG_INTERNAL("{seq=", sequence, "}: Decompressing format ",
+								   static_cast<unsigned int>(packet_header_option->format), " packet part ",
+								   packet_header_option->part, "from pos ", packet_pos, " with size ", orig_packet_size,
+								   " into tx_buffer at position ", tx_buffer->getDataSize(), " with output size ",
+								   tx_buffer->getBufferSize() - tx_buffer->getDataSize());
+
 				// Try decompress buffer
 				int decompressed_size;
 				if (packet_header_option->format == PacketHeaderOptionFormatType::COMPRESSED_LZ4)
 					decompressed_size = compressorLZ4->decompress(packetBuffer->getData() + packet_pos, payload_length,
-																  tx_buffer->getData(), tx_buffer->getBufferSize() - packet_pos);
+																  tx_buffer->getData() + tx_buffer->getDataSize(),
+																  tx_buffer->getBufferSize() - tx_buffer->getDataSize());
 				else if (packet_header_option->format == PacketHeaderOptionFormatType::COMPRESSED_BLOSC2) {
 					decompressed_size = compressorBlosc2->decompress(packetBuffer->getData() + packet_pos, payload_length,
-																	 tx_buffer->getData(), tx_buffer->getBufferSize() - packet_pos);
+																	 tx_buffer->getData() + tx_buffer->getDataSize(),
+																	 tx_buffer->getBufferSize() - tx_buffer->getDataSize());
 				} else {
 					LOG_ERROR(sequence, ": Packet has invalid format ",
 							  std::format("{:02X}", static_cast<unsigned int>(packet_header_option->format)));

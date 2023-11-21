@@ -92,6 +92,8 @@ enum class PacketHeaderOptionFormatType : uint8_t {
 	COMPRESSED_BLOSC2 = 0x2,
 };
 
+#define SETH_DEFAULT_PACKET_FORMAT PacketHeaderOptionFormatType::COMPRESSED_LZ4
+
 #define SETH_PACKET_HEADER_OPTION_FORMAT_IS_VALID(packet_header_option)                                                            \
 	((static_cast<uint8_t>(packet_header_option->format) &                                                                         \
 	  ~(static_cast<uint8_t>(PacketHeaderOptionFormatType::COMPRESSED_LZ4) |                                                       \
@@ -105,3 +107,5 @@ struct PacketHeaderOption {
 		uint8_t part;
 		uint8_t reserved;
 } SETH_PACKED_ATTRIBUTES;
+
+extern std::string PacketHeaderOptionFormatTypeToString(PacketHeaderOptionFormatType type);
