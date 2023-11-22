@@ -11,6 +11,12 @@ configure_file(input: 'config.hpp.in', output: 'config.hpp', configuration: conf
 # Depdendencies
 #
 
+cc = meson.get_compiler('cpp')
+
+# if not cc.has_header('netinet/in.h')
+#   error('netinet/in.h not found, make sure you have the kernel headers installed')
+# endif
+
 deps = [dependency('liblz4')]
 deps += [dependency('libzstd')]
 

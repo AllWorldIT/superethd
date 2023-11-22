@@ -22,7 +22,6 @@
 #include <iostream>
 #include <memory>
 #include <netinet/in.h>
-#include <netinet/sctp.h>
 #include <set>
 #include <string.h>
 #include <sys/epoll.h>
