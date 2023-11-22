@@ -121,14 +121,16 @@ int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *d
 	/*
 	 * End thread data setup
 	 */
-	std::cerr << std::format("Setting packet format to {}...", PacketHeaderOptionFormatTypeToString(tdata.packet_format)) << std::endl;
+	std::cerr << std::format("Setting packet format to {}...", PacketHeaderOptionFormatTypeToString(tdata.packet_format))
+			  << std::endl;
 
 	// Allocate actual interface
 	create_tap_interface(ifname, &tdata);
 
 	std::cerr << std::format("Assigned MAC address: {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", tdata.tap_device.hwaddr[0],
 							 tdata.tap_device.hwaddr[1], tdata.tap_device.hwaddr[2], tdata.tap_device.hwaddr[3],
-							 tdata.tap_device.hwaddr[4], tdata.tap_device.hwaddr[5]) << std::endl;
+							 tdata.tap_device.hwaddr[4], tdata.tap_device.hwaddr[5])
+			  << std::endl;
 
 	// Create UDP socket
 	if (create_udp_socket(&tdata) != 0) {

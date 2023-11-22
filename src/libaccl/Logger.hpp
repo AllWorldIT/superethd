@@ -117,7 +117,6 @@ void Logger::log(const LogLevel level, const std::string file, const std::string
 #define LOG_WARNING(...) accl::logger.log(accl::LogLevel::WARNING, __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define LOG_ERROR(...) accl::logger.log(accl::LogLevel::ERROR, __FILE__, __func__, __LINE__, __VA_ARGS__);
 
-
 #ifdef UNIT_TESTING
 #define UT_ASSERT(...) assert(__VA_ARGS__)
 #else
