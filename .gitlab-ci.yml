@@ -24,6 +24,7 @@ test_job:
       catch2
       meson
       gcovr
+      pkgconf
   # Run tests and coverage
   - contrib/scripts/coverage
   # Save coverage report
