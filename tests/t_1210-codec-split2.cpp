@@ -98,6 +98,10 @@ TEST_CASE("Check encoding 2 packets, where the second is split between encapsula
 	auto enc_buffer1 = enc_buffer_pool.pop();
 	auto enc_buffer2 = enc_buffer_pool.pop();
 
+	std::cerr << "ENCODED PACKET 1 DUMP:" << std::endl << hex_dump(std::string(enc_buffer1->getData(), enc_buffer1->getDataSize())) << std::endl;
+	std::cerr << "ENCODED PACKET 2 DUMP:" << std::endl
+			  << hex_dump(std::string(enc_buffer2->getData(), enc_buffer2->getDataSize())) << std::endl;
+
 	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 	decoder.decode(std::move(enc_buffer1));
 	decoder.decode(std::move(enc_buffer2));
