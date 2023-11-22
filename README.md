@@ -47,8 +47,8 @@ If you find this project useful and want to see new features implemented, please
 
 ## What Super Ethernet Tunnel is not
 
-Super Ethernet Tunnel is NOT a VPN. It does not currently implement encryption, packet authentication or MiTM mitigations. Similar
-to other tunneling protocols such as GRE, GENEVE, L2TP ... etc.
+Super Ethernet Tunnel is NOT a VPN. It does not currently implement encryption, packet authentication or MiTM mitigations. It is
+however similar to other tunneling protocols such as GRE, GENEVE, L2TP ... etc.
 
 
 ## Getting started
