@@ -21,7 +21,7 @@ ARP, MPLS, VLANs ... etc.
 - **Packet stuffing:** Packet space is optimized by stuffing multiple payloads per packet and using stream compression to further
 improve compression ratios.
 - **IPv4 and IPv6 endpoints:** Both IPv4 and IPv6 endpints are supported.
-- **Out of order optimizations:** Super Ethernet Tunnel includes out of order packet optimizations.
+- **Multithreaded:** Super Ethernet Tunnel is multithreaded.
 
 Requirements:
 - Modern Linux system.
@@ -33,6 +33,8 @@ node and authenticate itself to the entire cluster allowing all nodes to communi
 domain. This would allow for a fully dynamic virtual ethernet cloud.
 - **Node authentication support:** It would be nice if nodes could authenticate themselves to the remote node so static IP's both
 sides are not required.
+- **Better use of threads:** It is technically possible we can compress data in parallel, this would be a nice feature to add so
+we can bump up the compression level.
 - **Add TCP support:** With TCP support we could probably implement a fully stream-based compression approach allowing the
 compression algorithm to adapt to the data being compressed an achieve much higher compression ratios.
 - **Kernel driver:** Implementing a new kernel driver that supports modern IOVEC access mechanisms would greatly improve performance
@@ -40,7 +42,7 @@ over the TAP inteface approach.
 - **RST documentation:** With additional features we'll need a proper site with RST based documentation.
 
 If you find this project useful and want to see new features implemented, please kindly consider supporting me on Patreon
-[https://www.patreon.com/opensourcecoder].
+[https://www.patreon.com/opensourcecoder]. Initial design and PoC of this project took me around 1,100 hours.
 
 
 ## What Super Ethernet Tunnel is not
