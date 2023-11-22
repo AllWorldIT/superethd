@@ -1,15 +1,15 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: 2023 AllWorldIT
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 set -eux
 
 rm -rf build
 
-meson build -Db_coverage=true -Db_werror=true -Dunit_testing=true --debug
-
+meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
 ninja -C build --verbose
 
-meson test --wrap="valgrind --leak-check=full --show-leak-kinds=all" -C build --verbose --num-processes=1
-
+meson test -C build --wrap="valgrind --leak-check=full --show-leak-kinds=all" --verbose --num-processes=1
 ninja -C build coverage-html
-
-

@@ -32,8 +32,8 @@ if debug
 endif
 
 
-unit_testing = get_option('unit_testing')
-if unit_testing
+with_tests = get_option('with_tests')
+if with_tests
 	add_global_arguments('-DUNIT_TESTING', language: 'cpp')
 	add_global_arguments('-fprofile-arcs', '-ftest-coverage', language: 'cpp')
 endif
@@ -42,9 +42,10 @@ endif
 add_global_arguments('-D_GNU_SOURCE', language: 'cpp')
 
 # Test suite options
-#valgrind_args = ['--error-exitcode=1', '--leak-check=full']
-valgrind_args = ['--error-exitcode=1']
+valgrind_args = ['--error-exitcode=1', '--leak-check=full', '--show-leak-kinds=all']
 
 
 subdir('src')
-subdir('tests')
+if with_tests
+	subdir('tests')
+endif

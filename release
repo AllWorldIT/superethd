@@ -1,11 +1,12 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: 2023 AllWorldIT
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 set -eux
 
 rm -rf build
 
-meson build --buildtype release
-
+meson setup --buildtype release build
 ninja -C build
-
-

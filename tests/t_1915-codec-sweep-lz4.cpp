@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2023 Conarx Ltd
+ * SPDX-FileCopyrightText: 2023 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -84,12 +84,10 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 
 	std::vector<uint8_t> ex(static_cast<uint8_t>('X'));
 
-	for (int i = 1; i <= 1391; ++i) {
-		CERR("");
-		CERR("");
+	accl::logger.setLogLevel(accl::LogLevel::INFO);
 
+	for (int i = 1; i <= 1391; ++i) {
 		ex.push_back(static_cast<uint8_t>('X'));
-		CERR("LOOPING WITH SWEEP: {} (size: {})", i, ex.size());
 
 		packet3.addPayload(ex);
 
@@ -114,13 +112,9 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 
 		PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 		encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_LZ4);
-		CERR("ENCODE 1");
 		encoder.encode(std::move(packet1_buffer));
-		CERR("ENCODE 2");
 		encoder.encode(std::move(packet2_buffer));
-		CERR("ENCODE 3");
 		encoder.encode(std::move(packet3_buffer));
-		CERR("FLUSHING");
 		encoder.flush();
 
 		/*

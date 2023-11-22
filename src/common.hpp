@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2023 Conarx Ltd
+ * SPDX-FileCopyrightText: 2023 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -25,13 +25,13 @@ inline constexpr uint32_t SETH_MAX_RECVMM_MESSAGES{256};
 inline constexpr uint16_t SETH_MIN_TXSIZE{1200};
 
 // Maximum transmission packet size, max minus L2 header, minus VLAN
-inline constexpr uint16_t SETH_MAX_TXSIZE(UINT16_MAX - 14 - 8);
+inline constexpr uint16_t SETH_MAX_TXSIZE(9218);
 
 // Minimum device MTU size
 inline constexpr uint16_t SETH_MIN_MTU_SIZE{1200};
 
 // Maximum device MTU size, max minus L2 header, minus VLAN
-inline constexpr uint16_t SETH_MAX_MTU_SIZE(UINT16_MAX - 14 - 8);
+inline constexpr uint16_t SETH_MAX_MTU_SIZE(9218);
 
 
 /*

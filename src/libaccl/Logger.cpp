@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2023 Conarx Ltd
+ * SPDX-FileCopyrightText: 2023 AllWorldIT
  *
  * SPDX-License-Identifier: MIT
  */
@@ -78,7 +78,7 @@ void Logger::_log(const LogLevel level, const std::string file, const std::strin
 }
 
 Logger::Logger() {
-#if defined(DEBUG) || defined(UT_TESTING)
+#if defined(DEBUG)
 	log_level_default = LogLevel::DEBUGGING;
 #else
 	log_level_default = LogLevel::NOTICE;

@@ -1,6 +1,6 @@
 # Licensing Options for Super Ethernet Tunnel
 
-The mail project is dual licensed under the AGPLv3 or commercial licensing terms.
+The main project is dual licensed under the AGPLv3 or commercial licensing terms.
 
 The libaccl library is licensed under the MIT license.
 
@@ -672,4 +672,5 @@ For more information on this, and how to apply and follow the GNU AGPL, see
 
 ## Commercial Licensing
 
-This software is also available under a commercial license. For more information on commercial licensing, please contact Conarx, Ltd at sales@conarx.tech.
+This software is also available under a commercial license. For more information on commercial licensing, please contact Conarx,
+Ltd on sales@conarx.tech.
