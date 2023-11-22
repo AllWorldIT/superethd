@@ -12,8 +12,8 @@
 #include "Codec.hpp"
 #include "PacketBuffer.hpp"
 #include "libaccl/BufferPool.hpp"
-#include "libaccl/SequenceDataGenerator.hpp"
 #include "libaccl/Logger.hpp"
+#include "libaccl/SequenceDataGenerator.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libsethnetkit/ICMPv4Packet.hpp"
 #include "libsethnetkit/ICMPv6Packet.hpp"
@@ -28,7 +28,5 @@
 #include <memory>
 
 #include "util.hpp"
-
-
 
 #endif

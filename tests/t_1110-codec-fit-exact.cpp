@@ -12,7 +12,6 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
-
 TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]") {
 	CERR("");
 	CERR("");
@@ -60,7 +59,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS", "[codec]"
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.encode(std::move(packet_buffer));
 	// NK: As we fill the packet, we should get automatically flushed
-	//encoder.flush();
+	// encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 1);

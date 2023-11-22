@@ -350,7 +350,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 																  tx_buffer->getData(), tx_buffer->getBufferSize());
 				else if (packet_header_option->format == PacketHeaderOptionFormatType::COMPRESSED_ZSTD) {
 					decompressed_size = compressorZSTD->decompress(packetBuffer->getData() + packet_pos, payload_length,
-																	 tx_buffer->getData(), tx_buffer->getBufferSize());
+																   tx_buffer->getData(), tx_buffer->getBufferSize());
 				} else {
 					LOG_ERROR("{seq=", sequence, "}: Packet has invalid format ",
 							  std::format("{:02X}", static_cast<unsigned int>(packet_header_option->format)));

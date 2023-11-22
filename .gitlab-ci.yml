@@ -1,14 +1,73 @@
 image: idmslinux/rolling
 
+
 include:
-  - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
+  - project: 'gitlab/templates/workflows'
+    ref: main
+    file: '/MergeRequest-Pipelines-MultiBranch.yml'
+
 
 # Stages we need to progress through
 stages:
+  - validate
   - test
   - prepare_release
   - release
   - pages
+
+
+# Run for merge requests and non-protected branches
+.rules_for_mrs_tempalate: &rules_for_mrs
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_REF_PROTECTED == "true"'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+
+commitlint:
+  stage: validate
+  image: registry.conarx.tech/containers/commitlint
+  script:
+    - cd "$CI_PROJECT_DIR"
+    - echo "CI_COMMIT_BEFORE_SHA -> $CI_COMMIT_BEFORE_SHA"
+    - |
+      if [ "$CI_COMMIT_BEFORE_SHA" == "0000000000000000000000000000000000000000" ]; then
+        START_COMMIT=HEAD^
+      else
+        START_COMMIT=$CI_MERGE_REQUEST_DIFF_BASE_SHA
+      fi
+    - run-commitlint --from "$START_COMMIT" --to HEAD
+  <<: *rules_for_mrs
+
+
+shellcheck:
+  stage: validate
+  image: registry.conarx.tech/containers/shellcheck
+  script:
+    - cd "$CI_PROJECT_DIR"
+    - run-shellcheck .
+  <<: *rules_for_mrs
+
+
+code_quality:
+  stage: validate
+  script:
+  # Create environment
+  - pacman -Syu --noconfirm
+  # Install dependencies
+  - pacman -S --noconfirm
+      gcc
+      lz4
+      zstd
+      catch2
+      meson
+      gcovr
+      pkgconf
+  # Test code quality
+  - meson build
+  - ninja -C build clang-format-check
+
 
 test_job:
   stage: test

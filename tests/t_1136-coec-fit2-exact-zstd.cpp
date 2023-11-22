@@ -33,8 +33,8 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	std::string payloadString(payloadBytes.begin(), payloadBytes.end());
 	// Second packet
 	std::vector<uint8_t> payloadBytes2;
-	const unsigned int seed2 = 54321;			   // Fixed seed for reproducibility
-	std::mt19937 eng2(seed2);						   // Seed the generator with a fixed value
+	const unsigned int seed2 = 54321;				// Fixed seed for reproducibility
+	std::mt19937 eng2(seed2);						// Seed the generator with a fixed value
 	std::uniform_int_distribution<> distr2(0, 255); // Define the range
 	for (int n = 0; n < payload_size; ++n) {
 		payloadBytes2.push_back(static_cast<uint8_t>(distr2(eng2))); // Generate a random byte and add to the vector

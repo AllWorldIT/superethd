@@ -60,7 +60,7 @@ TEST_CASE("Check sequence wrapping with LZ4 compression", "[codec]") {
 
 	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
 	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_LZ4);
-	
+
 	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
 
 	// Set encoder sequence close to the end
@@ -71,7 +71,6 @@ TEST_CASE("Check sequence wrapping with LZ4 compression", "[codec]") {
 		packet_buffer->clear();
 
 		packet_buffer->append(packet_bin.data(), packet_bin.length());
-
 
 		encoder.encode(std::move(packet_buffer));
 		encoder.flush();

@@ -39,9 +39,7 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::clear() {
 	UDPPacketTmpl<T>::_clear();
 }
 
-template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {
-	T::parse(data);
-}
+template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) { T::parse(data); }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getSrcPort() const { return seth_be_to_cpu_16(src_port); }
 template <UDPAllowedType T> void UDPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = seth_cpu_to_be_16(newSrcPort); }

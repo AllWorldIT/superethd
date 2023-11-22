@@ -7,9 +7,9 @@
 #pragma once
 
 #include "Codec.hpp"
+#include "PacketBuffer.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Statistic.hpp"
-#include "PacketBuffer.hpp"
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>

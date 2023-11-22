@@ -33,4 +33,4 @@ class StreamCompressorLZ4 : public StreamCompressor {
 		const std::string strerror(int err) override;
 };
 
-}
+} // namespace accl

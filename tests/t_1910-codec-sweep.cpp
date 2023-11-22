@@ -12,7 +12,6 @@
 #include "libsethnetkit/EthernetPacket.hpp"
 #include "libtests/framework.hpp"
 
-
 TEST_CASE("Check encoding of two packets into a single encapsulated packet with a sweeping third packet", "[codec]") {
 	CERR("");
 	CERR("");

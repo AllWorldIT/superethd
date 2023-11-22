@@ -31,7 +31,6 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS with ZSTD c
 	}
 	std::string payloadString(payloadBytes.begin(), payloadBytes.end());
 
-
 	UDPv4Packet packet;
 
 	packet.setDstMac(dst_mac);
@@ -66,7 +65,7 @@ TEST_CASE("Check encoding of a packet that will fit exactly into MSS with ZSTD c
 	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_ZSTD);
 	encoder.encode(std::move(packet_buffer));
 	// NK: As we fill the packet, we should get automatically flushed
-	//encoder.flush();
+	// encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 1);

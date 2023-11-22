@@ -85,7 +85,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet exact
 	encoder.encode(std::move(packet1_buffer));
 	encoder.encode(std::move(packet2_buffer));
 	// NK: we should get flushed automatically here
-	//encoder.flush();
+	// encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
 	REQUIRE(enc_buffer_pool.getBufferCount() == 1);

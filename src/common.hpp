@@ -33,7 +33,6 @@ inline constexpr uint16_t SETH_MIN_MTU_SIZE{1200};
 // Maximum device MTU size, max minus L2 header, minus VLAN
 inline constexpr uint16_t SETH_MAX_MTU_SIZE(9218);
 
-
 /*
  * Other useful constants
  */

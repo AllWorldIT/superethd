@@ -48,7 +48,6 @@ uint16_t IPv4Packet::_getIPv4Checksum() const {
 	std::copy(src_addr.begin(), src_addr.end(), header.src_addr);
 	std::copy(dst_addr.begin(), dst_addr.end(), header.dst_addr);
 
-
 	header.checksum = 0;
 	// TODO: the checksum should be calculated including optional headers
 	// We should copy this header into a buffer
@@ -72,9 +71,7 @@ void IPv4Packet::clear() {
 	IPv4Packet::_clear();
 }
 
-void IPv4Packet::parse(const std::vector<uint8_t> &data) {
-	setVersion(SETH_PACKET_IP_VERSION_IPV4);
-}
+void IPv4Packet::parse(const std::vector<uint8_t> &data) { setVersion(SETH_PACKET_IP_VERSION_IPV4); }
 
 uint8_t IPv4Packet::getIHL() const { return ihl; }
 
@@ -129,7 +126,6 @@ uint32_t IPv4Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 	return compute_checksum_partial((uint8_t *)&header, sizeof(ipv4_pseudo_header_t), 0);
 }
-
 
 uint16_t IPv4Packet::getHeaderSize() const { return ihl * 4; }
 uint16_t IPv4Packet::getHeaderSizeTotal() const { return IPv4Packet::getHeaderSize(); }

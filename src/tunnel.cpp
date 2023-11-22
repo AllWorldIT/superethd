@@ -17,15 +17,6 @@
 #include "util.hpp"
 #include <arpa/inet.h>
 #include <chrono>
-#include <deque>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <netinet/in.h>
-#include <set>
-#include <string.h>
-#include <sys/epoll.h>
-#include <unistd.h>
 
 /**
  * @brief Thread responsible for reading from the TAP interface.

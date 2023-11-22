@@ -32,8 +32,7 @@ void EthernetPacket::clear() {
 	EthernetPacket::_clear();
 }
 
-void EthernetPacket::parse(const std::vector<uint8_t> &data) {
-}
+void EthernetPacket::parse(const std::vector<uint8_t> &data) {}
 
 std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> EthernetPacket::getDstMac() const { return dst_mac; }
 void EthernetPacket::setDstMac(const std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> &newDstMac) { dst_mac = newDstMac; }
@@ -60,11 +59,13 @@ std::string EthernetPacket::asText() const {
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> mac;
 
 	mac = getDstMac();
-	oss << std::format("Destination MAC : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
+	oss << std::format("Destination MAC : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4],
+					   mac[5])
 		<< std::endl;
 
 	mac = getSrcMac();
-	oss << std::format("Source MAC      : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5])
+	oss << std::format("Source MAC      : {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4],
+					   mac[5])
 		<< std::endl;
 
 	oss << std::format("Ethernet Type   : 0x{:04X}", getEthertype()) << std::endl;

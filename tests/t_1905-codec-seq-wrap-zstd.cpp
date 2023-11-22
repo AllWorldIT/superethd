@@ -72,7 +72,6 @@ TEST_CASE("Check sequence wrapping with ZSTD compression", "[codec]") {
 
 		packet_buffer->append(packet_bin.data(), packet_bin.length());
 
-
 		encoder.encode(std::move(packet_buffer));
 		encoder.flush();
 

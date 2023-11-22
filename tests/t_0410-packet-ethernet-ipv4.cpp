@@ -64,7 +64,7 @@ TEST_CASE("Check clearing a packet works", "[ethernet-ipv4]") {
 
 	packet.clear();
 
-	REQUIRE(packet.getDstMac() == std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN>{0,0,0,0,0,0});
+	REQUIRE(packet.getDstMac() == std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN>{0, 0, 0, 0, 0, 0});
 	REQUIRE(packet.getSrcMac() == std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN>{0, 0, 0, 0, 0, 0});
 	REQUIRE(packet.getDstAddr() == std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN>{0, 0, 0, 0});
 	REQUIRE(packet.getSrcAddr() == std::array<uint8_t, SETH_PACKET_IPV4_IP_LEN>{0, 0, 0, 0});

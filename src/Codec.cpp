@@ -8,13 +8,13 @@
 
 std::string PacketHeaderOptionFormatTypeToString(PacketHeaderOptionFormatType type) {
 	switch (type) {
-		case PacketHeaderOptionFormatType::NONE:
-			return "none";
-		case PacketHeaderOptionFormatType::COMPRESSED_LZ4:
-			return "lz4";
-		case PacketHeaderOptionFormatType::COMPRESSED_ZSTD:
-			return "zstd";
-		default:
-			return "unknown";
+	case PacketHeaderOptionFormatType::NONE:
+		return "none";
+	case PacketHeaderOptionFormatType::COMPRESSED_LZ4:
+		return "lz4";
+	case PacketHeaderOptionFormatType::COMPRESSED_ZSTD:
+		return "zstd";
+	default:
+		return "unknown";
 	}
 }
