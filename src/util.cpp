@@ -5,48 +5,11 @@
  */
 
 #include "util.hpp"
-
 #include <arpa/inet.h>
-
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <string>
-
-int read_hex_dump_into_buffer(const char *hex_dump, uint8_t **buffer, size_t *length) {
-	*buffer = (uint8_t *)malloc(strlen(hex_dump)); // Maximum possible size
-	if (!*buffer) {
-		return -1; // Memory allocation failed
-	}
-
-	size_t offset = 0;
-	size_t byte_count = 0;
-	const char *cursor = hex_dump;
-
-	while (sscanf(cursor, "%4zx", &offset) == 1) {
-		cursor += 5; // Move past offset and space
-
-		for (int i = 0; i < 16 && *cursor && *cursor != '\n'; i++) {
-			if (sscanf(cursor, " %2hhx", &(*buffer)[byte_count]) != 1) {
-				break; // End of line or invalid data
-			}
-			byte_count++;
-			cursor += 3; // Move past hex byte and space
-		}
-
-		while (*cursor && *cursor != '\n') {
-			cursor++; // Move to next line
-		}
-		if (*cursor == '\n') {
-			cursor++; // Move past newline
-		}
-	}
-
-	*buffer = (uint8_t *)realloc(*buffer, byte_count); // Resize to actual size
-	*length = byte_count;
-
-	return 0; // Success
-}
 
 /**
  * @brief Convert a uint8_t array into a char buffer.

@@ -69,6 +69,7 @@ code_quality:
   # Test code quality
   - meson build
   - ninja -C build clang-format-check
+  - ninja -C build clang-tidy
   <<: *rules_for_mrs
 
 
@@ -95,7 +96,7 @@ test_job:
   - ninja -C build test
   # Create coverage reports
   - ninja -C build coverage
-  - cat build/meson-logs/coveragereport.txt
+  - cat build/meson-logs/coverage.txt
   # Save coverage report
   - mv build/meson-logs/coveragereport dist/
   artifacts:
@@ -118,7 +119,8 @@ prepare_release:
       meson
       gcovr
   # Build docs and packages
-  - contrib/scripts/dist
+  - meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
+  - ninja -C build dist
   # Move dist files
   - mv build/meson-dist/*.tar.xz* dist/
   # Work out commit range for changelog

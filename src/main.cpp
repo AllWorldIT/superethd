@@ -24,27 +24,35 @@ static struct option long_options[] = {
 	{"mtu", required_argument, 0, 'm'}, {"tsize", required_argument, 0, 't'}, {0, 0, 0, 0}};
 
 void print_help() {
-	CERR("Usage:");
-	CERR("    -v, --version                 Print version");
-	CERR("    -h, --help                    Print this help");
-	CERR("    -l, --log-level=<LOG_LEVEL>   Logging level, valid values: error, warning,");
-	CERR("                                  notice, info, debug (default: {})", accl::logger.getLogLevelDefaultString());
-	CERR("    -m, --mtu=<MTU>               Specify the interface MTU of between {} and", SETH_MIN_MTU_SIZE);
-	CERR("                                  {} (default is 1500)", SETH_MAX_MTU_SIZE);
-	CERR("    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size");
-	CERR("                                  of between {} and {} (default is 1500)", SETH_MIN_TXSIZE, SETH_MAX_TXSIZE);
-	CERR("    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address");
-	CERR("                                  (mandatory)");
-	CERR("    -d, --dst=<DESTINATION>       Specify the destination IPv4/IPv6 address");
-	CERR("                                  (mandatory)");
-	CERR("    -p, --port=<PORT>             Specify the UDP port, between 1 and 65535");
-	CERR("                                  (default is 58023)");
-	CERR("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ);
-	CERR("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME);
-	CERR("    -c, --compression=<COMPR>     Specify compression algorithm to use, valid");
-	CERR("                                  values: none, lz4, zstd (default: {})",
-		 PacketHeaderOptionFormatTypeToString(SETH_DEFAULT_PACKET_FORMAT));
-	CERR("");
+	std::cerr << "Usage:" << std::endl;
+	std::cerr << "    -v,    Print version information" << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "    -h, --help                    Print this help" << std::endl;
+	std::cerr << "    -l, --log-level=<LOG_LEVEL>   Logging level, valid values: error, warning," << std::endl;
+	std::cerr << std::format("                                  notice, info, debug (default is \"{}\")",
+							 accl::logger.getLogLevelDefaultString())
+			  << std::endl;
+	std::cerr << std::format("    -m, --mtu=<MTU>               Specify the interface MTU of between {} and", SETH_MIN_MTU_SIZE)
+			  << std::endl;
+	std::cerr << std::format("                                  {} (default is 1500)", SETH_MAX_MTU_SIZE) << std::endl;
+	std::cerr << "    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size" << std::endl;
+	std::cerr << std::format("                                  of between {} and {} (default is 1500)", SETH_MIN_TXSIZE,
+							 SETH_MAX_TXSIZE)
+			  << std::endl;
+	std::cerr << "    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address" << std::endl;
+	std::cerr << "                                  (mandatory)" << std::endl;
+	std::cerr << "    -d, --dst=<DESTINATION>       Specify the destination IPv4/IPv6 address" << std::endl;
+	std::cerr << "                                  (mandatory)" << std::endl;
+	std::cerr << "    -p, --port=<PORT>             Specify the UDP port, between 1 and 65535" << std::endl;
+	std::cerr << "                                  (default is 58023)" << std::endl;
+	std::cerr << std::format("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ) << std::endl;
+	std::cerr << std::format("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME)
+			  << std::endl;
+	std::cerr << "    -c, --compression=<COMPR>     Specify compression algorithm to use, valid" << std::endl;
+	std::cerr << std::format("                                  values: none, lz4, zstd (default: \"{}\")",
+							 PacketHeaderOptionFormatTypeToString(SETH_DEFAULT_PACKET_FORMAT))
+			  << std::endl;
+	std::cerr << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -58,8 +66,8 @@ int main(int argc, char *argv[]) {
 	std::string ifname_value = SETH_DEFAULT_TUNNEL_NAME;
 	PacketHeaderOptionFormatType packet_format = PacketHeaderOptionFormatType::COMPRESSED_LZ4;
 
-	CERR("Super Ethernet Tunnel v{} - Copyright (c) 2023, AllWorldIT.", VERSION);
-	CERR("");
+	std::cerr << std::format("Super Ethernet Tunnel v{} - Copyright (c) 2023, AllWorldIT.", VERSION) << std::endl;
+	std::cerr << std::endl;
 
 	while (1) {
 		c = getopt_long(argc, argv, "vhl:m:t:s:r:d:p:i:c:", long_options, &option_index);
@@ -74,12 +82,12 @@ int main(int argc, char *argv[]) {
 			std::cout << std::format("Version: {}", VERSION) << std::endl;
 			return 0;
 		case 'h':
-			CERR("");
+			std::cerr << std::endl;
 			print_help();
 			return 0;
 		case 'l': {
 			if (!accl::logger.setLogLevel(optarg)) {
-				CERR("ERROR: Invalid log level '{}'.", optarg);
+				std::cerr << std::format("ERROR: Invalid log level '{}'.", optarg) << std::endl;
 				return 1;
 			}
 			break;
@@ -87,14 +95,18 @@ int main(int argc, char *argv[]) {
 		case 'm':
 			mtu_value = atoi(optarg);
 			if (mtu_value < SETH_MIN_MTU_SIZE || mtu_value > SETH_MAX_MTU_SIZE) {
-				CERR("ERROR: Invalid MTU value. It should be between {} and {}.", SETH_MIN_MTU_SIZE, SETH_MAX_MTU_SIZE);
+				std::cerr << std::format("ERROR: Invalid MTU value. It should be between {} and {}.", SETH_MIN_MTU_SIZE,
+										 SETH_MAX_MTU_SIZE)
+						  << std::endl;
 				return 1;
 			}
 			break;
 		case 't':
 			txsize_value = atoi(optarg);
 			if (txsize_value < SETH_MIN_TXSIZE || txsize_value > SETH_MAX_TXSIZE) {
-				CERR("ERROR: Invalid TX_SIZE value. It should be between {} and {}.", SETH_MIN_TXSIZE, SETH_MAX_TXSIZE);
+				std::cerr << std::format("ERROR: Invalid TX_SIZE value. It should be between {} and {}.", SETH_MIN_TXSIZE,
+										 SETH_MAX_TXSIZE)
+						  << std::endl;
 				return 1;
 			}
 			break;
@@ -107,13 +119,14 @@ int main(int argc, char *argv[]) {
 		case 'p':
 			port_value = atoi(optarg);
 			if (port_value < 1 || port_value > 65535) {
-				CERR("Invalid port value. It should be between 1 and 65535.");
+				std::cerr << "Invalid port value. It should be between 1 and 65535." << std::endl;
 				return 1;
 			}
 			break;
 		case 'i': // Handling the ifname option
 			if (strlen(optarg) >= IFNAMSIZ) {
-				CERR("ERROR: Invalid interface name. It should be less than {} characters.", IFNAMSIZ);
+				std::cerr << std::format("ERROR: Invalid interface name. It should be less than {} characters.", IFNAMSIZ)
+						  << std::endl;
 				return 1;
 			}
 			ifname_value.assign(optarg);
@@ -129,7 +142,7 @@ int main(int argc, char *argv[]) {
 				packet_format = PacketHeaderOptionFormatType::COMPRESSED_ZSTD;
 				break;
 			} else {
-				CERR("ERROR: Invalid compression algorithm '{}'.", optarg);
+				std::cerr << std::format("ERROR: Invalid compression algorithm '{}'.", optarg) << std::endl;
 				return 1;
 			}
 		case '?':
@@ -141,8 +154,8 @@ int main(int argc, char *argv[]) {
 
 	// Check if mandatory options src and dst are provided
 	if (!src_value || !dst_value) {
-		CERR("ERROR: Both --src (-s) and --dst (-d) options are mandatory.");
-		CERR("");
+		std::cerr << "ERROR: Both --src (-s) and --dst (-d) options are mandatory." << std::endl;
+		std::cerr << std::endl;
 		print_help();
 		return 1;
 	}
@@ -152,11 +165,12 @@ int main(int argc, char *argv[]) {
 	char src_addr_str[INET6_ADDRSTRLEN];
 	if (to_sin6addr(src_value, &src_addr)) {
 		if (inet_ntop(AF_INET6, &src_addr, src_addr_str, sizeof(src_addr_str)) == NULL) {
-			CERR("ERROR: Failed to convert source address '{}' to IPv6 address: {}", src_value, strerror(errno));
+			std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address: {}", src_value, strerror(errno))
+					  << std::endl;
 			exit(EXIT_FAILURE);
 		}
 	} else {
-		CERR("ERROR: Failed to convert source address '{}' to IPv6 address", src_value);
+		std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address", src_value) << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -165,25 +179,28 @@ int main(int argc, char *argv[]) {
 	char dst_addr_str[INET6_ADDRSTRLEN];
 	if (to_sin6addr(dst_value, &dst_addr)) {
 		if (inet_ntop(AF_INET6, &dst_addr, dst_addr_str, sizeof(dst_addr_str)) == NULL) {
-			CERR("ERROR: Failed to convert destination address '{}' to IPv6 address: {}", dst_value, strerror(errno));
+			std::cerr << std::format("ERROR: Failed to convert destination address '{}' to IPv6 address: {}", dst_value,
+									 strerror(errno))
+					  << std::endl;
+
 			exit(EXIT_FAILURE);
 		}
 	} else {
-		CERR("ERROR: Failed to convert source address '{}' to IPv6 address", dst_value);
+		std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address", dst_value) << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Set our log level
-	CERR("Logging level set to ", accl::logger.getLogLevelString());
-	CERR("");
+	std::cerr << std::format("Logging level set to {}", accl::logger.getLogLevelString()) << std::endl;
+	std::cerr << std::endl;
 
-	CERR("Interface...: {}", ifname_value.c_str());
-	CERR("Source......: {}", src_addr_str);
-	CERR("Destination.: {}", dst_addr_str);
-	CERR("UDP Port....: {}", port_value);
-	CERR("MTU.........: {}", mtu_value);
-	CERR("TX Size.....: {}", txsize_value);
-	CERR("");
+	std::cerr << std::format("Interface...: {}", ifname_value.c_str()) << std::endl;
+	std::cerr << std::format("Source......: {}", src_addr_str) << std::endl;
+	std::cerr << std::format("Destination.: {}", dst_addr_str) << std::endl;
+	std::cerr << std::format("UDP Port....: {}", port_value) << std::endl;
+	std::cerr << std::format("MTU.........: {}", mtu_value) << std::endl;
+	std::cerr << std::format("TX Size.....: {}", txsize_value) << std::endl;
+	std::cerr << std::endl;
 
 	start_set(ifname_value, &src_addr, &dst_addr, port_value, mtu_value, txsize_value, packet_format);
 

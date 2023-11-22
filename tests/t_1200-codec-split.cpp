@@ -13,9 +13,6 @@
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check encoding of a packet that does not fit into MSS", "[codec]") {
-	CERR("");
-	CERR("");
-	CERR("TEST: Check encoding of a packet that does not fit into MSS");
 
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};

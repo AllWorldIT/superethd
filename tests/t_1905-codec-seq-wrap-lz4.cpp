@@ -14,9 +14,6 @@
 #include <cstdint>
 
 TEST_CASE("Check sequence wrapping with LZ4 compression", "[codec]") {
-	CERR("");
-	CERR("");
-	CERR("TEST: Check sequence wrapping");
 
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> dst_mac = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
 	std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> src_mac = {0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
