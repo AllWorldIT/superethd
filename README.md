@@ -42,7 +42,7 @@ over the TAP inteface approach.
 - **RST documentation:** With additional features we'll need a proper site with RST based documentation.
 
 If you find this project useful and want to see new features implemented, please kindly consider supporting me on Patreon
-[https://www.patreon.com/opensourcecoder]. Initial design and PoC of this project took me around 1,100 hours.
+(https://www.patreon.com/opensourcecoder). Initial design and PoC of this project took me around 1,100 hours.
 
 
 ## What Super Ethernet Tunnel is not
@@ -62,9 +62,20 @@ Prerequisites:
 
 ### Building
 
+Build Super Ethernet Tunnel with the release build type...
+
 ```bash
 meson setup --buildtype release build
 ninja -C build
+```
+
+
+### Installing
+
+To install Super Ethernet Tunnel you can use the following...
+
+```bash
+ninja -C build install
 ```
 
 
