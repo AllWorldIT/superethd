@@ -98,6 +98,7 @@ test_job:
   - ninja -C build coverage
   - cat build/meson-logs/coverage.txt
   # Save coverage report
+  - mkdir dist
   - mv build/meson-logs/coveragereport dist/
   artifacts:
     expire_in: 1 day
