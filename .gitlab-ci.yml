@@ -90,7 +90,7 @@ test_job:
   - pacman -S --noconfirm
       valgrind
   # Run tests and coverage
-  - limit descriptors=524288
+  - ulimit -n 524288
   - contrib/scripts/coverage
   # Save coverage report
   - mv build/meson-logs/coveragereport dist/
