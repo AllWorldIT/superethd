@@ -87,6 +87,8 @@ test_job:
       meson
       gcovr
       pkgconf
+  - pacman -S --noconfirm
+      valgrind
   # Run tests and coverage
   - contrib/scripts/coverage
   # Save coverage report
