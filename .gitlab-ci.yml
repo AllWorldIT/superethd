@@ -118,6 +118,7 @@ prepare_release:
       catch2
       meson
       gcovr
+      pkgconf
   # Build docs and packages
   - meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
   - ninja -C build dist
