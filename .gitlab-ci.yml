@@ -21,7 +21,7 @@ stages:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_REF_PROTECTED == "true"'
-      when: never
+#      when: never
     - if: '$CI_COMMIT_BRANCH'
 
 
@@ -64,9 +64,12 @@ code_quality:
       meson
       gcovr
       pkgconf
+  - pacman -S --noconfirm
+      clang
   # Test code quality
   - meson build
   - ninja -C build clang-format-check
+  <<: *rules_for_mrs
 
 
 test_job:
