@@ -8,6 +8,7 @@
 
 #include "Codec.hpp"
 #include "libaccl/BufferPool.hpp"
+#include "libaccl/Statistic.hpp"
 #include "PacketBuffer.hpp"
 #include <net/ethernet.h>
 #include <net/if.h>
@@ -44,6 +45,9 @@ struct ThreadData {
 		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
 		accl::BufferPool<PacketBuffer> *decoder_pool;
 		accl::BufferPool<PacketBuffer> *tap_write_pool;
+
+		// Statistics
+		accl::StatisticResult<float> statCompressionRatio;
 
 		int *stop_program;
 };

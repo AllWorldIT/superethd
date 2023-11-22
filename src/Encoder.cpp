@@ -151,7 +151,9 @@ void PacketEncoder::_pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer) {
  * @param tx_buffer_pool TX buffer pool.
  */
 PacketEncoder::PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
-							 accl::BufferPool<PacketBuffer> *tx_buffer_pool) {
+							 accl::BufferPool<PacketBuffer> *tx_buffer_pool)
+	: statCompressionRatio(1000) {
+
 	// As the constructor parameters have the same names as our data members, lets just use this-> for everything during init
 	this->l2mtu = l2mtu;
 	this->l4mtu = l4mtu;
@@ -235,6 +237,12 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> rawPacketBuffer) {
 			// Set the packet buffer we're working with
 			packetBuffer = std::move(rawPacketBuffer);
 		}
+
+		// Update compression ratio statistic percentage
+		statCompressionRatio.add(static_cast<float>(compressed_size) / static_cast<float>(original_size) * 100.0f);
+		LOG_DEBUG_INTERNAL("{seq=", sequence, "}:  - COMPRESSION RATIO: ", std::fixed, std::setprecision(2),
+						   static_cast<float>(compressed_size) / static_cast<float>(original_size) * 100.0f);
+
 	} else {
 		packetBuffer = std::move(rawPacketBuffer);
 	}
@@ -401,4 +409,13 @@ void PacketEncoder::setPacketFormat(PacketHeaderOptionFormatType format) {
 		LOG_ERROR("Unknown packet format ", static_cast<unsigned int>(format));
 		throw std::runtime_error("Unknown packet format");
 	}
+}
+
+/**
+ * @brief Get compression ratio statistic.
+ *
+ * @return accl::Statistic<float>& Compression ratio statistic.
+ */
+void PacketEncoder::getCompressionRatioStat(accl::StatisticResult<float> &result) {
+	statCompressionRatio.getStatisticResult(result);
 }

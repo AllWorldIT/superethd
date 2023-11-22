@@ -8,6 +8,7 @@ libaccl_sources = [
     'BufferPool.cpp',
     'Logger.cpp',
     'SequenceDataGenerator.cpp',
+    'Statistic.cpp',
     'StreamCompressor.cpp',
     'StreamCompressorLZ4.cpp',
     'StreamCompressorZSTD.cpp',

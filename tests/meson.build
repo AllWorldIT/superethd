@@ -56,6 +56,22 @@ test('0120-sequence-generator.cpp',
 		dependencies: deps,
 	)
 )
+test('0130-compressor-lz4.cpp',
+	executable('t_0130-compressor-lz4',
+		't_0130-compressor-lz4.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
+test('0140_compressor-zstd.cpp',
+	executable('t_0140_compressor-zstd',
+		't_0140_compressor-zstd.cpp',
+		include_directories: inc,
+		link_with: libs,
+		dependencies: deps,
+	)
+)
 test('0200-checksums.cpp',
 	executable('t_0200-checksums',
 		't_0200-checksums.cpp',

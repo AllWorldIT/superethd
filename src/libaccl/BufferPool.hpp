@@ -20,7 +20,7 @@ template <typename T> class BufferPool {
 	private:
 		std::deque<std::unique_ptr<T>> pool;
 		std::size_t buffer_size;
-		std::shared_mutex mtx;
+		mutable std::shared_mutex mtx;
 		std::condition_variable_any cv;
 
 		void _pop(std::deque<std::unique_ptr<T>> &result, size_t count);
@@ -40,7 +40,7 @@ template <typename T> class BufferPool {
 		void push(std::unique_ptr<T> buffer);
 		void push(std::deque<std::unique_ptr<T>> &buffers);
 
-		size_t getBufferCount();
+		size_t getBufferCount() const;
 
 		void wait(std::deque<std::unique_ptr<T>> &results);
 		std::deque<std::unique_ptr<T>> wait();
@@ -190,7 +190,7 @@ template <typename T> void BufferPool<T>::push(std::deque<std::unique_ptr<T>> &b
  * @tparam T Buffer class.
  * @return size_t Number of buffers in the pool.
  */
-template <typename T> size_t BufferPool<T>::getBufferCount() {
+template <typename T> size_t BufferPool<T>::getBufferCount() const {
 	std::shared_lock<std::shared_mutex> lock(mtx);
 	return pool.size();
 }

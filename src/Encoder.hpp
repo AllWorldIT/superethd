@@ -9,6 +9,7 @@
 #include "Codec.hpp"
 #include "PacketBuffer.hpp"
 #include "libaccl/Logger.hpp"
+#include "libaccl/Statistic.hpp"
 #include "libaccl/StreamCompressor.hpp"
 
 /*
@@ -44,6 +45,9 @@ class PacketEncoder {
 		// TX buffer pool queued to send via socket
 		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
 
+		// Statistics
+		accl::Statistic<float> statCompressionRatio;
+
 		void _flush();
 
 		void _getTxBuffer();
@@ -67,6 +71,8 @@ class PacketEncoder {
 
 		void setPacketFormat(PacketHeaderOptionFormatType format);
 		inline PacketHeaderOptionFormatType getPacketFormat() const;
+
+		void getCompressionRatioStat(accl::StatisticResult<float> &result);
 };
 
 /**
@@ -85,7 +91,6 @@ inline void PacketEncoder::setSequence(uint32_t seq) {
  * @return uint32_t Packet sequence.
  */
 inline uint32_t PacketEncoder::getSequence() const { return sequence; }
-
 
 /**
  * @brief Get current packet format.

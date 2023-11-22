@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <chrono>
 #include <deque>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <netinet/in.h>
@@ -67,6 +68,32 @@ void tunnel_tap_read_handler(void *arg) {
 }
 
 /**
+ * @brief Thread responsible for handling statistics.
+ *
+ * @param encoder Packet encoder.
+ * @param tdata Thread data.
+ */
+void tunnel_encoder_stats_handler(PacketEncoder *encoder, struct ThreadData *tdata) {
+	// struct ThreadData *tdata = (struct ThreadData *)arg;
+
+	while (true) {
+		// Check for program stop
+		if (*tdata->stop_program) {
+			break;
+		}
+
+		// Grab commpression ratio stat from the encoder
+		encoder->getCompressionRatioStat(tdata->statCompressionRatio);
+
+		LOG_INFO(std::fixed, std::setprecision(2), "STATS: Compression ratio: ", tdata->statCompressionRatio.mean,
+				 " (min: ", tdata->statCompressionRatio.min, ", max: ", tdata->statCompressionRatio.max, ")");
+
+		// Sleep for 5 seconds
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+	}
+}
+
+/**
  * @brief Thread responsible for encoding packets.
  *
  * @param arg Thread data.
@@ -81,6 +108,9 @@ void tunnel_encoder_handler(void *arg) {
 
 	// Set packet format
 	encoder.setPacketFormat(tdata->packet_format);
+
+	// Statistics thread
+	std::thread stats_thread(tunnel_encoder_stats_handler, &encoder, tdata);
 
 	// Loop pulling buffers off the encoder pool
 	std::chrono::milliseconds timeout = std::chrono::milliseconds(1);
@@ -109,6 +139,9 @@ void tunnel_encoder_handler(void *arg) {
 		// Set timeout to 1ms
 		timeout = std::chrono::milliseconds(1);
 	}
+
+	// Wait for stats thread to finish
+	stats_thread.join();
 }
 
 /**
