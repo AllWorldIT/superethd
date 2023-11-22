@@ -74,7 +74,7 @@ code_quality:
 
 test_job:
   stage: test
-  coverage: '/^  lines\.\.\.\.\.\.: (\d+\%) \(\d+ of \d+ lines\)$/'
+  coverage: '/^TOTAL\s+\d+\s+\d+\s+(\d+\%)$/'
   script:
   # Create environment
   - pacman -Syu --noconfirm
@@ -89,9 +89,13 @@ test_job:
       pkgconf
   - pacman -S --noconfirm
       valgrind
-  # Run tests and coverage
-  - ulimit -n 524288
-  - contrib/scripts/coverage
+  # Build
+  - meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
+  # Run tests
+  - ninja -C build test
+  # Create coverage reports
+  - ninja -C build coverage
+  - cat build/meson-logs/coveragereport.txt
   # Save coverage report
   - mv build/meson-logs/coveragereport dist/
   artifacts:
