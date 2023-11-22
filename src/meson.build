@@ -37,4 +37,4 @@ libsuperethd = static_library('superethd', libsuperethd_sources)
 # Executables
 #
 
-executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps)
+executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps, install: true, install_dir: 'bin')

@@ -28,17 +28,18 @@ Requirements:
 - Fixed IP's on both sides of the tunnel.
 
 Wishlist:
-- **Full mesh support:** I would like to add the capability to Super Ethernet Tunnel to support full mesh configurations, where any
-node can connect to any other node and authenticate itself to the cluster. This would allow for a dynamic virtual ethernet cloud.
+- **Full mesh support:** I would like to add automatic configuration of full mesh topologies, where any node can connect to any
+node and authenticate itself to the entire cluster allowing all nodes to communicate with eachother directly or part of a broadcast
+domain. This would allow for a fully dynamic virtual ethernet cloud.
 - **Node authentication support:** It would be nice if nodes could authenticate themselves to the remote node so static IP's both
 sides are not required.
 - **Add TCP support:** With TCP support we could probably implement a fully stream-based compression approach allowing the
 compression algorithm to adapt to the data being compressed an achieve much higher compression ratios.
 - **Kernel driver:** Implementing a new kernel driver that supports modern IOVEC access mechanisms would greatly improve performance
 over the TAP inteface approach.
+- **RST documentation:** With additional features we'll need a proper site with RST based documentation.
 
-If you find this project useful or want to see new features implemented, please kindly consider supporting it's development on
-OpenCollective [https://opencollective.com/super-ethernet-tunnel] or supporting me on Patreon
+If you find this project useful and want to see new features implemented, please kindly consider supporting me on Patreon
 [https://www.patreon.com/opensourcecoder].
 
 
@@ -54,6 +55,7 @@ Prerequisites:
 - Zstd
 - LZ4
 - Catch2 > 3.4.0 (for tests)
+- gcovr (for coverage report)
 
 
 ### Building
@@ -87,6 +89,8 @@ An example of using this would be...
 superethd -s 192.0.2.1 -d 192.0.2.100
 ```
 
+For multiple tunnels on a single host, specify a differnt port number per tunnel.
+
 
 ## Running tests
 
@@ -107,9 +111,11 @@ meson test -C build
 ## Support
 
   * [Issue Tracker](https://gitlab.conarx.tech/superethd/superethd/-/issues)
+  * [Discord](https://discord.gg/j5CngkSfYs)
+  * [Support my work on Patreon](https://www.patreon.com/opensourcecoder)
 
 
 ## License
 
 This project is licensed under AGPLv3 or a commercial license at your option. For the full AGPLv3 license text, see the `LICENSE`
-file in the repository. For commercial licensing options, please contact Conarx, Ltd at sales@conarx.tech.
+file in the repository. For commercial licensing options, please contact Conarx, Ltd on sales@conarx.tech.

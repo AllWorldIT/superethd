@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-project('Super Ethernet Tunnel',
+project('superethd',
 	'cpp',
 	version : '0.0.1',
 	default_options: ['werror=true', 'c_std=gnu17', 'cpp_std=gnu++20', 'b_pie=true'],

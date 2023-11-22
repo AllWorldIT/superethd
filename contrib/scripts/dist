@@ -8,5 +8,6 @@ set -eux
 
 rm -rf build
 
-meson setup --buildtype release build
-ninja -C build
+meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
+
+ninja -C build dist --verbose
