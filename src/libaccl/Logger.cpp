@@ -6,6 +6,7 @@
 
 #include "Logger.hpp"
 #include <chrono>
+#include <cmath>
 #include <iostream>
 
 namespace accl {
@@ -64,8 +65,12 @@ void Logger::_log(const LogLevel level, const std::string file, const std::strin
 		auto now_utc = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::tm *utc_tm = std::gmtime(&now_utc);
 
-		// Output time and log level
-		stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S") << " [" << _logLevelToString(level) << "] ";
+		// Output time
+		stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S");
+		// Output log level
+		std::string levelStr = _logLevelToString(level);
+		stream << std::setfill(' ') << " [" << levelStr << std::setw(7 - levelStr.size()) << ""
+			   << "] ";
 		// If we're debugging output the func, file and line
 		if (log_level == LogLevel::DEBUGGING) {
 			stream << "(" << func << ":" << file << ":" << line << ") ";

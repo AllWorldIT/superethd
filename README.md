@@ -56,6 +56,7 @@ however similar to other tunneling protocols such as GRE, GENEVE, L2TP ... etc.
 ## Getting started
 
 Prerequisites:
+- Boost
 - Zstd
 - LZ4
 - Catch2 > 3.4.0 (for tests)
@@ -103,6 +104,38 @@ An example of using this would be...
 ```bash
 superethd -s 192.0.2.1 -d 192.0.2.100
 ```
+
+One can also use a configuration file, typically located in `/etc/superethd/superethd.conf`...
+```ini
+# Log level: debug, info, notice, warning, error
+#loglevel=info
+
+# MTU size of the ethernet interface
+#mtu=1500
+
+# Maximum TX size that the path between both source and destination can accomodate
+#txsize=1500
+
+# Source IPv4/IPv6 of the host on which Super Ethernet Tunnel is running
+source=192.0.2.1
+
+# Destination IPv4/IPv6 of the host which we're tunneling traffic to
+destination=192.168.2.100
+
+# UDP port to use for our tunnel
+#port=58023
+
+# Ethernet interface name
+#interface=seth0
+
+# Compression algorithm to use: none, lz4, zstd
+#compression=lz4
+```
+
+If one is using the SystemdD superethd service, additional configuration files can be created in `/etc/superethd` with the name
+in the format of `superethd-<IFACE>.conf`, the `superethd@` serivce can then be used matching the interface name. eg.
+`superethd@seth1`.
+
 
 For multiple tunnels on a single host, specify a differnt port number per tunnel.
 

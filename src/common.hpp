@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 // Make the packed attribute easier to use
 #define SETH_PACKED_ATTRIBUTES __attribute__((packed))

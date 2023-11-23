@@ -6,4 +6,8 @@
 
 #pragma once
 
-#define VERSION "@version@"
+#include <string_view>
+
+constexpr std::string_view VERSION{"@version@"};
+
+constexpr std::string_view DEFAULT_CONFIGURATION_FILE{"@sysconfdir@/superethd/superethd.conf"};

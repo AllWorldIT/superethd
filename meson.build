@@ -46,6 +46,7 @@ valgrind_args = ['--error-exitcode=1', '--leak-check=full', '--show-leak-kinds=a
 
 
 subdir('src')
+subdir('systemd')
 if with_tests
 	subdir('tests')
 endif
