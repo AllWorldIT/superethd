@@ -1,6 +1,6 @@
 <img alt="Super Ethernet Tunnel Logo" src="https://gitlab.conarx.tech/uploads/-/system/project/avatar/92/logo.png" width="256px"/>
 
-A robust and effcient solution for creating virtual ethernet tunnels.
+A robust and efficient solution for creating virtual ethernet tunnels.
 
 [![License](https://img.shields.io/github/license/grafana/grafana)](LICENSE)
 [![pipeline status](https://gitlab.conarx.tech/superethd/superethd/badges/main/pipeline.svg)](https://gitlab.conarx.tech/superethd/superethd/commits/main)
