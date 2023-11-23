@@ -35,11 +35,13 @@ domain. This would allow for a fully dynamic virtual ethernet cloud.
 sides are not required.
 - **Better use of threads:** It is technically possible we can compress data in parallel, this would be a nice feature to add so
 we can bump up the compression level.
+- **Builtin web interface:** A builtin web interface would be amazing.
+- **RST documentation:** With additional features we'll need a proper site with RST based documentation.
 - **Add TCP support:** With TCP support we could probably implement a fully stream-based compression approach allowing the
 compression algorithm to adapt to the data being compressed an achieve much higher compression ratios.
 - **Kernel driver:** Implementing a new kernel driver that supports modern IOVEC access mechanisms would greatly improve performance
 over the TAP inteface approach.
-- **RST documentation:** With additional features we'll need a proper site with RST based documentation.
+
 
 If you find this project useful and want to see new features implemented, please kindly consider supporting me on Patreon
 (https://www.patreon.com/opensourcecoder). Initial design and PoC of this project took me around 1,100 hours.
