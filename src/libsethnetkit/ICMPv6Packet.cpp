@@ -5,9 +5,10 @@
  */
 
 #include "ICMPv6Packet.hpp"
-#include "IPPacket.hpp"
 #include "IPv6Packet.hpp"
 #include "checksum.hpp"
+#include <format>
+#include <sstream>
 
 void ICMPv6Packet::_clear() {
 	setNextHeader(SETH_PACKET_IP_PROTOCOL_ICMP6);
@@ -95,7 +96,7 @@ std::string ICMPv6Packet::asBinary() const {
 	header.unused1 = 0;
 	header.unused2 = 0;
 
-	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+	header.checksum = accl::cpu_to_be_16(getChecksumLayer4());
 
 	// Write out header to stream
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(icmp6_header_t));

@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <format>
-#include <iostream>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -24,6 +22,7 @@ class Logger {
 	private:
 		LogLevel log_level;
 		LogLevel log_level_default;
+		bool log_time;
 
 		std::mutex mutex_;
 

@@ -4,6 +4,7 @@ subdir('libsethnetkit')
 
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
+conf_data.set('sysconfdir', get_option('sysconfdir'))
 configure_file(input: 'config.hpp.in', output: 'config.hpp', configuration: conf_data)
 
 
@@ -44,3 +45,10 @@ libsuperethd = static_library('superethd', libsuperethd_sources)
 #
 
 executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependencies: deps, install: true, install_dir: 'bin')
+
+
+#
+# Configuration files
+#
+
+install_data('superethd.conf', install_dir: get_option('sysconfdir') / 'superethd')

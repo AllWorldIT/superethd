@@ -12,7 +12,7 @@
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_TCP{6};
 
 struct tcp_options_header_t {
-#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
+#if ACCL_BYTE_ORDER == ACCL_BIG_ENDIAN
 		uint8_t cwr : 1;
 		uint8_t ece : 1;
 		uint8_t urg : 1;
@@ -31,17 +31,17 @@ struct tcp_options_header_t {
 		uint8_t ece : 1;
 		uint8_t cwr : 1;
 #endif
-} SETH_PACKED_ATTRIBUTES;
+} ACCL_PACKED_ATTRIBUTES;
 
 struct tcp_header_t {
-		seth_be16_t src_port; // Source port
-		seth_be16_t dst_port; // Destination port
+		accl::be16_t src_port; // Source port
+		accl::be16_t dst_port; // Destination port
 
-		seth_be32_t sequence; // Sequence
+		accl::be32_t sequence; // Sequence
 
-		seth_be32_t ack; // Acknowledgment if ACK set
+		accl::be32_t ack; // Acknowledgment if ACK set
 
-#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
+#if ACCL_BYTE_ORDER == ACCL_BIG_ENDIAN
 		uint8_t data_offset : 4; // Data offset
 		uint8_t reserved : 4;	 // Reserved bits
 #else
@@ -50,21 +50,21 @@ struct tcp_header_t {
 #endif
 
 		tcp_options_header_t options; // TCP optoins
-		seth_be16_t window;			  // Window size
+		accl::be16_t window;		  // Window size
 
-		seth_be16_t checksum; // Checksum
-		seth_be16_t urgent;	  // Urgent pointer
-} SETH_PACKED_ATTRIBUTES;
+		accl::be16_t checksum; // Checksum
+		accl::be16_t urgent;   // Urgent pointer
+} ACCL_PACKED_ATTRIBUTES;
 
 template <typename T>
 concept TCPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;
 
 template <TCPAllowedType T> class TCPPacketTmpl : public T {
 	protected:
-		seth_be16_t src_port;
-		seth_be16_t dst_port;
-		seth_be32_t sequence;
-		seth_be32_t ack;
+		accl::be16_t src_port;
+		accl::be16_t dst_port;
+		accl::be32_t sequence;
+		accl::be32_t ack;
 		uint8_t offset; // Offset in 32-bit words, minimum 5
 
 		bool opt_cwr;
@@ -76,9 +76,9 @@ template <TCPAllowedType T> class TCPPacketTmpl : public T {
 		bool opt_syn;
 		bool opt_fin;
 
-		seth_be16_t window;
-		seth_be16_t checksum;
-		seth_be16_t urgent;
+		accl::be16_t window;
+		accl::be16_t checksum;
+		accl::be16_t urgent;
 
 	private:
 		void _clear();

@@ -20,7 +20,7 @@ struct ip_header_t {
 		uint8_t unused : 4;	 // Unused bits
 		uint8_t version : 4; // IP version (should be 4 for IPv4)
 #endif
-} SETH_PACKED_ATTRIBUTES;
+} ACCL_PACKED_ATTRIBUTES;
 
 class IPPacket : public EthernetPacket {
 	protected:

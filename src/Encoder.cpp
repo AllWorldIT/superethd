@@ -6,13 +6,14 @@
 
 #include "Encoder.hpp"
 #include "Codec.hpp"
-#include "Endian.hpp"
 #include "PacketBuffer.hpp"
+#include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
 #include "libaccl/StreamCompressorLZ4.hpp"
 #include "libaccl/StreamCompressorZSTD.hpp"
-#include "libsethnetkit/Packet.hpp"
 #include <cstdint>
+#include <iomanip>
+#include <memory>
 
 /*
  * Packet encoder
@@ -41,7 +42,7 @@ void PacketEncoder::_flush() {
 	packet_header->oam = 0;
 	packet_header->format = PacketHeaderFormat::ENCAPSULATED;
 	packet_header->channel = 0;
-	packet_header->sequence = seth_cpu_to_be_32(sequence++);
+	packet_header->sequence = accl::cpu_to_be_32(sequence++);
 
 	// Dump the header into the tx buffer
 	LOG_DEBUG_INTERNAL("{seq=", sequence - 1, "}:  - FLUSH: ADDING HEADER: opts=", opt_len);
@@ -273,9 +274,9 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> rawPacketBuffer) {
 			PacketHeaderOption *packet_header_option =
 				reinterpret_cast<PacketHeaderOption *>(tx_buffer->getData() + cur_buffer_size);
 			packet_header_option->type = PacketHeaderOptionType::PARTIAL_PACKET;
-			packet_header_option->packet_size = seth_cpu_to_be_16(original_size);
+			packet_header_option->packet_size = accl::cpu_to_be_16(original_size);
 			packet_header_option->format = static_cast<PacketHeaderOptionFormatType>(packet_header_option_format);
-			packet_header_option->payload_length = seth_cpu_to_be_16(part_size);
+			packet_header_option->payload_length = accl::cpu_to_be_16(part_size);
 			packet_header_option->part = part;
 			packet_header_option->reserved = 0;
 
@@ -330,9 +331,9 @@ void PacketEncoder::encode(std::unique_ptr<PacketBuffer> rawPacketBuffer) {
 
 		PacketHeaderOption *packet_header_option = reinterpret_cast<PacketHeaderOption *>(tx_buffer->getData() + cur_buffer_size);
 		packet_header_option->type = PacketHeaderOptionType::COMPLETE_PACKET;
-		packet_header_option->packet_size = seth_cpu_to_be_16(original_size);
+		packet_header_option->packet_size = accl::cpu_to_be_16(original_size);
 		packet_header_option->format = static_cast<PacketHeaderOptionFormatType>(packet_header_option_format);
-		packet_header_option->payload_length = seth_cpu_to_be_16(packetBuffer->getDataSize());
+		packet_header_option->payload_length = accl::cpu_to_be_16(packetBuffer->getDataSize());
 		packet_header_option->part = 0;
 		packet_header_option->reserved = 0;
 

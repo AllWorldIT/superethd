@@ -5,9 +5,10 @@
  */
 
 #include "ICMPv4Packet.hpp"
-#include "IPPacket.hpp"
 #include "IPv4Packet.hpp"
 #include "checksum.hpp"
+#include <format>
+#include <sstream>
 
 void ICMPv4Packet::_clear() {
 	setProtocol(SETH_PACKET_IP_PROTOCOL_ICMP4);
@@ -92,7 +93,7 @@ std::string ICMPv4Packet::asBinary() const {
 	header.code = code;
 	header.unused = 0;
 
-	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+	header.checksum = accl::cpu_to_be_16(getChecksumLayer4());
 
 	// Write out header to stream
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(icmp_header_t));

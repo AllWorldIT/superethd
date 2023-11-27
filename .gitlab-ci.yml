@@ -64,6 +64,7 @@ code_quality:
       meson
       gcovr
       pkgconf
+      boost
   - pacman -S --noconfirm
       clang
   # Test code quality
@@ -88,6 +89,7 @@ test_job:
       meson
       gcovr
       pkgconf
+      boost
   - pacman -S --noconfirm
       valgrind
   # Build
@@ -120,6 +122,7 @@ prepare_release:
       meson
       gcovr
       pkgconf
+      boost
   - pacman -S --noconfirm
       git
   # Build docs and packages

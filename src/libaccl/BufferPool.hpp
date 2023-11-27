@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "Buffer.hpp"
 #include <condition_variable>
 #include <deque>
 #include <shared_mutex>
+#include <sstream>
 
 namespace accl {
 

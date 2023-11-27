@@ -6,10 +6,6 @@
 
 #pragma once
 
-#include "Endian.hpp"
-#include "PacketBuffer.hpp"
-#include "common.hpp"
-#include "libaccl/BufferPool.hpp"
 #include "libsethnetkit/EthernetPacket.hpp"
 
 // Maximum packet size
@@ -62,8 +58,8 @@ struct PacketHeader {
 #endif
 		PacketHeaderFormat format;
 		uint8_t channel; // Set to 0 if channels are not used
-		seth_be32_t sequence;
-} SETH_PACKED_ATTRIBUTES;
+		accl::be32_t sequence;
+} ACCL_PACKED_ATTRIBUTES;
 
 /*
  *
@@ -112,11 +108,11 @@ inline constexpr PacketHeaderOptionFormatType SETH_DEFAULT_PACKET_FORMAT{PacketH
 
 struct PacketHeaderOption {
 		PacketHeaderOptionType type;
-		seth_be16_t packet_size;
+		accl::be16_t packet_size;
 		PacketHeaderOptionFormatType format;
-		seth_be16_t payload_length;
+		accl::be16_t payload_length;
 		uint8_t part;
 		uint8_t reserved;
-} SETH_PACKED_ATTRIBUTES;
+} ACCL_PACKED_ATTRIBUTES;
 
 extern std::string PacketHeaderOptionFormatTypeToString(PacketHeaderOptionFormatType type);

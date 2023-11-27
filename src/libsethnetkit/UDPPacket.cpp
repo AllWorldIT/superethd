@@ -7,6 +7,9 @@
 #include "UDPPacket.hpp"
 #include "checksum.hpp"
 #include "exceptions.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 #include <type_traits>
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::_clear() {
@@ -41,11 +44,11 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::clear() {
 
 template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) { T::parse(data); }
 
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getSrcPort() const { return seth_be_to_cpu_16(src_port); }
-template <UDPAllowedType T> void UDPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = seth_cpu_to_be_16(newSrcPort); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getSrcPort() const { return accl::be_to_cpu_16(src_port); }
+template <UDPAllowedType T> void UDPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = accl::cpu_to_be_16(newSrcPort); }
 
-template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getDstPort() const { return seth_be_to_cpu_16(dst_port); }
-template <UDPAllowedType T> void UDPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = seth_cpu_to_be_16(newDstPort); }
+template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getDstPort() const { return accl::be_to_cpu_16(dst_port); }
+template <UDPAllowedType T> void UDPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = accl::cpu_to_be_16(newDstPort); }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksumLayer4() const {
 	// Populate UDP header to add onto the layer 3 pseudo header
@@ -53,7 +56,7 @@ template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksumLayer4() const
 
 	header.src_port = src_port;
 	header.dst_port = dst_port;
-	header.length = seth_cpu_to_be_16(getLayer4Size());
+	header.length = accl::cpu_to_be_16(getLayer4Size());
 	header.checksum = 0;
 
 	// Grab the layer3 checksum
@@ -105,8 +108,8 @@ template <UDPAllowedType T> std::string UDPPacketTmpl<T>::asBinary() const {
 
 	header.src_port = src_port;
 	header.dst_port = dst_port;
-	header.length = seth_cpu_to_be_16(getLayer4Size());
-	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+	header.length = accl::cpu_to_be_16(getLayer4Size());
+	header.checksum = accl::cpu_to_be_16(getChecksumLayer4());
 
 	// Write out header to stream
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(udp_header_t));

@@ -13,7 +13,6 @@
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <thread>
 
 struct TAPInterface {
 		int fd;

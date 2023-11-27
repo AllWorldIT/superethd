@@ -5,6 +5,10 @@
  */
 
 #include "Packet.hpp"
+#include <format>
+#include <iostream>
+#include <ostream>
+#include <sstream>
 
 void Packet::_clear() { payload.clear(); }
 

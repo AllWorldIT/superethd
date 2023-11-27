@@ -6,4 +6,5 @@
 
 #pragma once
 
-#include "stats.hpp"
+// Make the packed attribute easier to use
+#define ACCL_PACKED_ATTRIBUTES __attribute__((packed))

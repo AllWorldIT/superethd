@@ -6,6 +6,9 @@
 
 #include "IPPacket.hpp"
 #include "EthernetPacket.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 
 void IPPacket::_clear() { version = 0; }
 

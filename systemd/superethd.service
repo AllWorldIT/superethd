@@ -1,0 +1,41 @@
+[Unit]
+Description=Super Ethernet Tunnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=10s
+ExecStart=/usr/bin/superethd
+
+DynamicUser=true
+User=superethd
+
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_NICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_NICE
+
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=no
+DeviceAllow=/dev/net/tun rw
+PrivateTmp=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=no
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=@system-service
+
+Nice=-10
+LimitRTPRIO=10
+
+[Install]
+WantedBy=multi-user.target

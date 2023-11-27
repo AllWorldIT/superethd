@@ -16,7 +16,7 @@
 
 project('superethd',
 	'cpp',
-	version : '0.0.1',
+	version : '0.1.0',
 	default_options: ['werror=true', 'c_std=gnu17', 'cpp_std=gnu++20', 'b_pie=true'],
 )
 
@@ -46,6 +46,7 @@ valgrind_args = ['--error-exitcode=1', '--leak-check=full', '--show-leak-kinds=a
 
 
 subdir('src')
+subdir('systemd')
 if with_tests
 	subdir('tests')
 endif

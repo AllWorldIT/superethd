@@ -14,26 +14,26 @@ inline constexpr uint16_t SETH_PACKET_IPV6_IP_LEN{16};
 
 // IPv6 header definition
 struct ipv6_header_t {
-#if SETH_BYTE_ORDER == SETH_BIG_ENDIAN
+#if ACCL_BYTE_ORDER == ACCL_BIG_ENDIAN
 		uint8_t version : 4;  // IP version (should be 6 for IPv6)
 		uint8_t priority : 4; // Traffic Class => priority
 #else
 		uint8_t priority : 4; // Traffic Class => priority
 		uint8_t version : 4;  // IP version (should be 6 for IPv6)
 #endif
-		uint32_t flow_label : 24;	// Flow Label
-		seth_be16_t payload_length; // Length of the payload
-		uint8_t next_header;		// Identifies the type of the next header
-		uint8_t hop_limit;			// Similar to TTL in IPv4
-		uint8_t src_addr[16];		// Source IP address
-		uint8_t dst_addr[16];		// Destination IP address
-} SETH_PACKED_ATTRIBUTES;
+		uint32_t flow_label : 24;	 // Flow Label
+		accl::be16_t payload_length; // Length of the payload
+		uint8_t next_header;		 // Identifies the type of the next header
+		uint8_t hop_limit;			 // Similar to TTL in IPv4
+		uint8_t src_addr[16];		 // Source IP address
+		uint8_t dst_addr[16];		 // Destination IP address
+} ACCL_PACKED_ATTRIBUTES;
 
 class IPv6Packet : public IPPacket {
 	protected:
 		uint8_t priority;
 		uint32_t flow_label;
-		//		seth_be16_t payload_length;
+		//		accl::be16_t payload_length;
 		uint8_t next_header; // Type
 		uint8_t hop_limit;
 		std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> src_addr;

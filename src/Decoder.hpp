@@ -7,9 +7,13 @@
 #pragma once
 
 #include "Codec.hpp"
-#include "libaccl/StreamCompressor.hpp"
+#include "PacketBuffer.hpp"
+#include "libaccl/BufferPool.hpp"
+#include "libaccl/Logger.hpp"
 #include "libaccl/StreamCompressorLZ4.hpp"
 #include "libaccl/StreamCompressorZSTD.hpp"
+#include <deque>
+#include <memory>
 
 /*
  * Packet decoder

@@ -168,7 +168,7 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 	}
 
 	// Decode sequence
-	uint32_t sequence = seth_be_to_cpu_32(packet_header->sequence);
+	uint32_t sequence = accl::be_to_cpu_32(packet_header->sequence);
 
 	// If this is not the first packet...
 	if (first_packet) {
@@ -289,8 +289,8 @@ void PacketDecoder::decode(std::unique_ptr<PacketBuffer> packetBuffer) {
 		// Packet header option
 		PacketHeaderOption *packet_header_option = (PacketHeaderOption *)(packetBuffer->getData() + packet_header_pos);
 
-		uint16_t orig_packet_size = seth_be_to_cpu_16(packet_header_option->packet_size);
-		uint16_t payload_length = seth_be_to_cpu_16(packet_header_option->payload_length);
+		uint16_t orig_packet_size = accl::be_to_cpu_16(packet_header_option->packet_size);
+		uint16_t payload_length = accl::be_to_cpu_16(packet_header_option->payload_length);
 
 		// Make sure final packet size does not exceed the l2mtu
 		if (orig_packet_size > l2mtu) {

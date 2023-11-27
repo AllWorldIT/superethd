@@ -5,10 +5,12 @@
  */
 
 #include "TCPPacket.hpp"
-#include "IPPacket.hpp"
 #include "IPv4Packet.hpp"
 #include "IPv6Packet.hpp"
 #include "checksum.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 
 template <TCPAllowedType T> void TCPPacketTmpl<T>::_clear() {
 
@@ -55,17 +57,17 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::clear() {
 
 template <TCPAllowedType T> void TCPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) {}
 
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getSrcPort() const { return seth_be_to_cpu_16(src_port); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = seth_cpu_to_be_16(newSrcPort); }
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getSrcPort() const { return accl::be_to_cpu_16(src_port); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = accl::cpu_to_be_16(newSrcPort); }
 
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getDstPort() const { return seth_be_to_cpu_16(dst_port); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = seth_cpu_to_be_16(newDstPort); }
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getDstPort() const { return accl::be_to_cpu_16(dst_port); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = accl::cpu_to_be_16(newDstPort); }
 
-template <TCPAllowedType T> uint32_t TCPPacketTmpl<T>::getSequence() const { return seth_be_to_cpu_32(sequence); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setSequence(uint32_t newSequence) { sequence = seth_be_to_cpu_32(newSequence); }
+template <TCPAllowedType T> uint32_t TCPPacketTmpl<T>::getSequence() const { return accl::be_to_cpu_32(sequence); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setSequence(uint32_t newSequence) { sequence = accl::be_to_cpu_32(newSequence); }
 
-template <TCPAllowedType T> uint32_t TCPPacketTmpl<T>::getAck() const { return seth_be_to_cpu_32(ack); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setAck(uint32_t newAck) { ack = seth_be_to_cpu_32(newAck); }
+template <TCPAllowedType T> uint32_t TCPPacketTmpl<T>::getAck() const { return accl::be_to_cpu_32(ack); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setAck(uint32_t newAck) { ack = accl::be_to_cpu_32(newAck); }
 
 template <TCPAllowedType T> uint8_t TCPPacketTmpl<T>::getOffset() const { return offset; }
 template <TCPAllowedType T> void TCPPacketTmpl<T>::setOffset(uint8_t newOffset) { ack = newOffset; }
@@ -94,11 +96,11 @@ template <TCPAllowedType T> void TCPPacketTmpl<T>::setOptSYN(bool newOptSyn) { o
 template <TCPAllowedType T> bool TCPPacketTmpl<T>::getOptFIN() const { return opt_fin; }
 template <TCPAllowedType T> void TCPPacketTmpl<T>::setOptFIN(bool newOptFin) { opt_fin = newOptFin; }
 
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getWindow() const { return seth_be_to_cpu_32(window); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setWindow(uint16_t newWindow) { ack = seth_be_to_cpu_32(newWindow); }
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getWindow() const { return accl::be_to_cpu_32(window); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setWindow(uint16_t newWindow) { ack = accl::be_to_cpu_32(newWindow); }
 
-template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getUrgent() const { return seth_be_to_cpu_32(urgent); }
-template <TCPAllowedType T> void TCPPacketTmpl<T>::setUrgent(uint16_t newUrgent) { ack = seth_be_to_cpu_32(newUrgent); }
+template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getUrgent() const { return accl::be_to_cpu_32(urgent); }
+template <TCPAllowedType T> void TCPPacketTmpl<T>::setUrgent(uint16_t newUrgent) { ack = accl::be_to_cpu_32(newUrgent); }
 
 template <TCPAllowedType T> uint16_t TCPPacketTmpl<T>::getChecksumLayer4() const {
 	// Populate UDP header to add onto the layer 3 pseudo header
@@ -199,7 +201,7 @@ template <TCPAllowedType T> std::string TCPPacketTmpl<T>::asBinary() const {
 	header.window = window;
 	header.urgent = urgent;
 
-	header.checksum = seth_cpu_to_be_16(getChecksumLayer4());
+	header.checksum = accl::cpu_to_be_16(getChecksumLayer4());
 
 	// Write out header to stream
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(tcp_header_t));
