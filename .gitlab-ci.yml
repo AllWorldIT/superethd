@@ -169,7 +169,8 @@ release_gitlab:
   - assets=()
   - |
     for p in $(find . -name "*.tar.*" | sort); do
-      assets+=("--assets-link={\"name\":\"${p}\",\"url\":\"${PACKAGE_REGISTRY_URL}/${p}\"}")
+      fn=$(basename "$p")
+      assets+=("--assets-link={\"name\":\"${fn}\",\"url\":\"${PACKAGE_REGISTRY_URL}/${fn}\"}")
     done
   - echo -e "ASSETS:\n${assets[@]}"
   # Upload assets
