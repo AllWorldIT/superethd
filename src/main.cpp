@@ -7,7 +7,6 @@
 #include "Codec.hpp"
 #include "common.hpp"
 #include "config.hpp"
-#include "debug.hpp"
 #include "libaccl/Logger.hpp"
 #include "superethd.hpp"
 #include "util.hpp"
