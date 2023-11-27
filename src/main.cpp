@@ -159,13 +159,13 @@ int main(int argc, char *argv[]) {
 		}
 		// If we have a config file, parse it
 		if (std::filesystem::exists(cfg_config_file)) {
-			std::cerr << std::format("Loading configuration file '{}'", cmdline_config_file) << std::endl;
+			std::cerr << std::format("Loading configuration file '{}'", cfg_config_file) << std::endl;
 			// Parse configuration file and check for errors
 			boost::property_tree::ptree pt;
 			try {
-				boost::property_tree::ini_parser::read_ini(cmdline_config_file, pt);
+				boost::property_tree::ini_parser::read_ini(cfg_config_file, pt);
 			} catch (boost::property_tree::ini_parser::ini_parser_error &e) {
-				std::cerr << std::format("ERROR: Failed to parse configuration file '{}': {}", cmdline_config_file, e.what())
+				std::cerr << std::format("ERROR: Failed to parse configuration file '{}': {}", cfg_config_file, e.what())
 						  << std::endl;
 				return 1;
 			}
