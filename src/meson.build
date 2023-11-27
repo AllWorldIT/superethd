@@ -2,11 +2,9 @@ subdir('libaccl')
 subdir('libsethnetkit')
 
 
-prefix = get_option('prefix')
-
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
-conf_data.set('sysconfdir', join_paths(prefix, get_option('sysconfdir')))
+conf_data.set('sysconfdir', get_option('sysconfdir'))
 configure_file(input: 'config.hpp.in', output: 'config.hpp', configuration: conf_data)
 
 
@@ -53,4 +51,4 @@ executable('superethd', 'main.cpp', link_with: [libsuperethd, libaccl], dependen
 # Configuration files
 #
 
-install_data('superethd.conf', install_dir: get_option('prefix') / 'etc/superethd')
+install_data('superethd.conf', install_dir: get_option('sysconfdir') / 'superethd')
