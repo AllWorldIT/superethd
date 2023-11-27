@@ -9,4 +9,4 @@
 #include "threads.hpp"
 
 int create_udp_socket(struct ThreadData *tdata);
-int destroy_udp_socket(struct ThreadData *tdata);
+void destroy_udp_socket(struct ThreadData *tdata);
