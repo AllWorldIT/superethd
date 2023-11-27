@@ -7,16 +7,14 @@
 #include "tunnel.hpp"
 #include "Decoder.hpp"
 #include "Encoder.hpp"
-#include "Endian.hpp"
 #include "PacketBuffer.hpp"
 #include "common.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
-#include "tap.hpp"
 #include "threads.hpp"
-#include "util.hpp"
 #include <arpa/inet.h>
 #include <chrono>
+#include <cstring>
 
 /**
  * @brief Thread responsible for reading from the TAP interface.
@@ -304,7 +302,7 @@ void tunnel_socket_read_handler(void *arg) {
 			}
 
 			// Add buffer node to the received list
-			recvmm_buffers[i]->setKey(seth_be_to_cpu_32(pkthdr->sequence));
+			recvmm_buffers[i]->setKey(accl::be_to_cpu_32(pkthdr->sequence));
 			// received_buffers.insert(std::move(recvmm_buffers[i]));
 			received_buffers.push_back(std::move(recvmm_buffers[i]));
 

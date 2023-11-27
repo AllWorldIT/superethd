@@ -5,10 +5,9 @@
  */
 
 #include "tap.hpp"
-#include "debug.hpp"
-#include "libaccl/Logger.hpp"
 #include "threads.hpp"
 #include <fcntl.h>
+#include <iostream>
 #include <libnetlink.h>
 #include <linux/if_tun.h>
 #include <string>

@@ -9,9 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 
-// Make the packed attribute easier to use
-#define SETH_PACKED_ATTRIBUTES __attribute__((packed))
-
 // Default tunnel name
 constexpr char SETH_DEFAULT_TUNNEL_NAME[]{"seth0"};
 

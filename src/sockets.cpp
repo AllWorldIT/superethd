@@ -6,7 +6,6 @@
 
 #include "common.hpp"
 #include "threads.hpp"
-#include "util.hpp"
 
 /**
  * @brief Create a udp socket.

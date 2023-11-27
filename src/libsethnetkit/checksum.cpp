@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "../Endian.hpp"
+#include "../libaccl/Endian.hpp"
 #include <cstddef>
 
 uint32_t compute_checksum_partial(uint8_t *addr8, size_t count, uint32_t sum) {
 	uint16_t *addr = (uint16_t *)addr8;
 
 	while (count > 1) {
-		sum += seth_be_to_cpu_16(*addr++);
+		sum += accl::be_to_cpu_16(*addr++);
 		count -= 2;
 	}
 

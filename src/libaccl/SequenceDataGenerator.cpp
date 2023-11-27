@@ -5,6 +5,7 @@
  */
 
 #include "SequenceDataGenerator.hpp"
+#include <sstream>
 
 namespace accl {
 

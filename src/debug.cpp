@@ -6,9 +6,8 @@
 #include "debug.hpp"
 #include <cstdint>
 #include <format>
-#include <iomanip>
-
-bool seth_debug{true};
+#include <ostream>
+#include <sstream>
 
 /**
  * @brief Dump a string as hex.

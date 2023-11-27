@@ -7,9 +7,8 @@
 #include "util.hpp"
 #include <arpa/inet.h>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
-#include <stdexcept>
-#include <string>
 
 /**
  * @brief Convert a uint8_t array into a char buffer.

@@ -12,20 +12,20 @@
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_UDP{17};
 
 struct udp_header_t {
-		seth_be16_t src_port; // Source port
-		seth_be16_t dst_port; // Destination port
-		seth_be16_t length;	  // Length of the UDP header and payload
-		seth_be16_t checksum; // Checksum
-} SETH_PACKED_ATTRIBUTES;
+		accl::be16_t src_port; // Source port
+		accl::be16_t dst_port; // Destination port
+		accl::be16_t length;   // Length of the UDP header and payload
+		accl::be16_t checksum; // Checksum
+} ACCL_PACKED_ATTRIBUTES;
 
 template <typename T>
 concept UDPAllowedType = std::is_same_v<T, IPv4Packet> || std::is_same_v<T, IPv6Packet>;
 
 template <UDPAllowedType T> class UDPPacketTmpl : public T {
 	protected:
-		seth_be16_t src_port;
-		seth_be16_t dst_port;
-		seth_be16_t checksum;
+		accl::be16_t src_port;
+		accl::be16_t dst_port;
+		accl::be16_t checksum;
 
 	private:
 		void _clear();

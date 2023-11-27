@@ -6,7 +6,6 @@
 
 #include "Logger.hpp"
 #include <chrono>
-#include <cmath>
 #include <iostream>
 
 namespace accl {

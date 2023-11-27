@@ -5,6 +5,9 @@
  */
 
 #include "EthernetPacket.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 
 void EthernetPacket::_clear() {
 	// Clear macs
@@ -40,8 +43,8 @@ void EthernetPacket::setDstMac(const std::array<uint8_t, SETH_PACKET_ETHERNET_MA
 std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> EthernetPacket::getSrcMac() const { return src_mac; }
 void EthernetPacket::setSrcMac(const std::array<uint8_t, SETH_PACKET_ETHERNET_MAC_LEN> &newDstMac) { src_mac = newDstMac; }
 
-uint16_t EthernetPacket::getEthertype() const { return seth_be_to_cpu_16(ethertype); }
-void EthernetPacket::setEthertype(const uint16_t newEthertype) { ethertype = seth_cpu_to_be_16(newEthertype); }
+uint16_t EthernetPacket::getEthertype() const { return accl::be_to_cpu_16(ethertype); }
+void EthernetPacket::setEthertype(const uint16_t newEthertype) { ethertype = accl::cpu_to_be_16(newEthertype); }
 
 uint16_t EthernetPacket::getHeaderOffset() const { return 0; }
 uint16_t EthernetPacket::getHeaderSize() const { return sizeof(ethernet_header_t); }

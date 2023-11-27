@@ -6,30 +6,31 @@
 
 #pragma once
 
+#include "../libaccl/Endian.hpp"
 #include "IPv4Packet.hpp"
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP4{1};
 
 struct icmp_header_t {
-		uint8_t type;		  // Type
-		uint8_t code;		  // Code
-		seth_be16_t checksum; // Checksum
-		uint32_t unused;	  // Unused
-} SETH_PACKED_ATTRIBUTES;
+		uint8_t type;		   // Type
+		uint8_t code;		   // Code
+		accl::be16_t checksum; // Checksum
+		uint32_t unused;	   // Unused
+} ACCL_PACKED_ATTRIBUTES;
 
 struct icmp_echo_header_t {
-		uint8_t type;			// Type
-		uint8_t code;			// Code
-		seth_be16_t checksum;	// Checksum
-		seth_be16_t identifier; // Identifier
-		seth_be16_t sequence;	// Sequence
-} SETH_PACKED_ATTRIBUTES;
+		uint8_t type;			 // Type
+		uint8_t code;			 // Code
+		accl::be16_t checksum;	 // Checksum
+		accl::be16_t identifier; // Identifier
+		accl::be16_t sequence;	 // Sequence
+} ACCL_PACKED_ATTRIBUTES;
 
 class ICMPv4Packet : public IPv4Packet {
 	protected:
 		uint8_t type;
 		uint8_t code;
-		seth_be16_t checksum;
+		accl::be16_t checksum;
 
 	private:
 		void _clear();

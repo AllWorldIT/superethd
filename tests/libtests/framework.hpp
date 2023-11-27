@@ -26,6 +26,7 @@
 #include "libsethnetkit/UDPPacket.hpp"
 #include "libsethnetkit/checksum.hpp"
 #include <catch2/catch_all.hpp>
+#include <iostream>
 #include <memory>
 
 #include "util.hpp"

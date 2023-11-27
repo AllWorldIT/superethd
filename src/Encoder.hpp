@@ -8,9 +8,11 @@
 
 #include "Codec.hpp"
 #include "PacketBuffer.hpp"
+#include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
 #include "libaccl/Statistic.hpp"
 #include "libaccl/StreamCompressor.hpp"
+#include <memory>
 
 /*
  * Packet encoder

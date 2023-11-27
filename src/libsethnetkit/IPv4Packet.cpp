@@ -7,6 +7,9 @@
 #include "IPv4Packet.hpp"
 #include "IPPacket.hpp"
 #include "checksum.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 
 void IPv4Packet::_clear() {
 	setEthertype(SETH_PACKET_ETHERTYPE_ETHERNET_IPV4);
@@ -39,9 +42,9 @@ uint16_t IPv4Packet::_getIPv4Checksum() const {
 	header.version = 4;
 	header.dscp = dscp;
 	header.ecn = ecn;
-	header.total_length = seth_cpu_to_be_16(getLayer3Size());
-	header.id = seth_cpu_to_be_16(id);
-	header.frag_off = seth_cpu_to_be_16(frag_off);
+	header.total_length = accl::cpu_to_be_16(getLayer3Size());
+	header.id = accl::cpu_to_be_16(id);
+	header.frag_off = accl::cpu_to_be_16(frag_off);
 	header.ttl = ttl;
 	header.protocol = protocol;
 
@@ -81,14 +84,14 @@ void IPv4Packet::setDSCP(uint8_t newDSCP) { dscp = newDSCP; }
 uint8_t IPv4Packet::getECN() const { return ecn; }
 void IPv4Packet::setECN(uint8_t newECN) { ecn = newECN; }
 
-// uint16_t IPv4Packet::getTotalLength() const { return seth_be_to_cpu_16(total_length); }
+// uint16_t IPv4Packet::getTotalLength() const { return accl::be_to_cpu_16(total_length); }
 // uint16_t IPv4Packet::getTotalLength() const { return (ihl * 4); }
 
-uint16_t IPv4Packet::getId() const { return seth_be_to_cpu_16(id); }
-void IPv4Packet::setId(uint16_t newId) { id = seth_cpu_to_be_16(newId); }
+uint16_t IPv4Packet::getId() const { return accl::be_to_cpu_16(id); }
+void IPv4Packet::setId(uint16_t newId) { id = accl::cpu_to_be_16(newId); }
 
-uint16_t IPv4Packet::getFragOff() const { return seth_be_to_cpu_16(frag_off); }
-void IPv4Packet::setFragOff(uint16_t newFragOff) { frag_off = seth_cpu_to_be_16(newFragOff); }
+uint16_t IPv4Packet::getFragOff() const { return accl::be_to_cpu_16(frag_off); }
+void IPv4Packet::setFragOff(uint16_t newFragOff) { frag_off = accl::cpu_to_be_16(newFragOff); }
 
 uint8_t IPv4Packet::getTtl() const { return ttl; }
 void IPv4Packet::setTtl(uint8_t newTTL) { ttl = newTTL; }
@@ -112,8 +115,8 @@ uint32_t IPv4Packet::getPseudoChecksumLayer3(uint16_t length) const {
 			uint8_t dst_addr[SETH_PACKET_IPV4_IP_LEN];
 			uint8_t zero;
 			uint8_t protocol;
-			seth_be16_t length;
-	} SETH_PACKED_ATTRIBUTES;
+			accl::be16_t length;
+	} ACCL_PACKED_ATTRIBUTES;
 
 	ipv4_pseudo_header_t header;
 
@@ -122,7 +125,7 @@ uint32_t IPv4Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 	header.zero = 0;
 	header.protocol = protocol;
-	header.length = seth_cpu_to_be_16(length);
+	header.length = accl::cpu_to_be_16(length);
 
 	return compute_checksum_partial((uint8_t *)&header, sizeof(ipv4_pseudo_header_t), 0);
 }
@@ -172,16 +175,16 @@ std::string IPv4Packet::asBinary() const {
 	header.version = 4;
 	header.dscp = dscp;
 	header.ecn = ecn;
-	header.total_length = seth_cpu_to_be_16(getLayer3Size());
-	header.id = seth_cpu_to_be_16(id);
-	header.frag_off = seth_cpu_to_be_16(frag_off);
+	header.total_length = accl::cpu_to_be_16(getLayer3Size());
+	header.id = accl::cpu_to_be_16(id);
+	header.frag_off = accl::cpu_to_be_16(frag_off);
 	header.ttl = ttl;
 	header.protocol = protocol;
 
 	std::copy(src_addr.begin(), src_addr.end(), header.src_addr);
 	std::copy(dst_addr.begin(), dst_addr.end(), header.dst_addr);
 
-	header.checksum = seth_cpu_to_be_16(_getIPv4Checksum());
+	header.checksum = accl::cpu_to_be_16(_getIPv4Checksum());
 
 	oss.write(reinterpret_cast<const char *>(&header), sizeof(ipv4_header_t));
 

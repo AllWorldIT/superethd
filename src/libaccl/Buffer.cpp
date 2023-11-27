@@ -4,6 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "Buffer.hpp"
-
 namespace accl {} // namespace accl

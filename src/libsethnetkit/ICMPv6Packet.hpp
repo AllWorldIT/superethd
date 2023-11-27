@@ -11,18 +11,18 @@
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6{58};
 
 struct icmp6_header_t {
-		uint8_t type;		  // Type
-		uint8_t code;		  // Code
-		seth_be16_t checksum; // Checksum
-		uint32_t unused1;	  // Unused
-		uint32_t unused2;	  // Unused
-} SETH_PACKED_ATTRIBUTES;
+		uint8_t type;		   // Type
+		uint8_t code;		   // Code
+		accl::be16_t checksum; // Checksum
+		uint32_t unused1;	   // Unused
+		uint32_t unused2;	   // Unused
+} ACCL_PACKED_ATTRIBUTES;
 
 class ICMPv6Packet : public IPv6Packet {
 	protected:
 		uint8_t type;
 		uint8_t code;
-		seth_be16_t checksum;
+		accl::be16_t checksum;
 
 	private:
 		void _clear();

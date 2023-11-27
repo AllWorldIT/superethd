@@ -7,6 +7,9 @@
 #include "IPv6Packet.hpp"
 #include "IPPacket.hpp"
 #include "checksum.hpp"
+#include <format>
+#include <ostream>
+#include <sstream>
 
 void IPv6Packet::_clear() {
 	setEthertype(SETH_PACKET_ETHERTYPE_ETHERNET_IPV6);
@@ -49,7 +52,7 @@ void IPv6Packet::setTrafficClass(uint8_t newTrafficClass) { priority = newTraffi
 uint8_t IPv6Packet::getFlowLabel() const { return flow_label; }
 void IPv6Packet::setFlowLabel(uint8_t newFlowLabel) { flow_label = newFlowLabel; }
 
-// seth_be16_t IPv6Packet::getPayloadLength() const { return seth_be_to_cpu_16(payload_length); }
+// accl::be16_t IPv6Packet::getPayloadLength() const { return accl::be_to_cpu_16(payload_length); }
 
 uint8_t IPv6Packet::getNextHeader() const { return next_header; }
 void IPv6Packet::setNextHeader(uint8_t newNextHeader) { next_header = newNextHeader; }
@@ -69,17 +72,17 @@ uint32_t IPv6Packet::getPseudoChecksumLayer3(uint16_t length) const {
 	struct ipv6_pseudo_header_t {
 			uint8_t src_addr[SETH_PACKET_IPV6_IP_LEN];
 			uint8_t dst_addr[SETH_PACKET_IPV6_IP_LEN];
-			seth_be32_t length;
+			accl::be32_t length;
 			uint32_t zero : 24;
 			uint8_t next_header; // AKA protocol
-	} SETH_PACKED_ATTRIBUTES;
+	} ACCL_PACKED_ATTRIBUTES;
 
 	ipv6_pseudo_header_t header;
 
 	std::copy(src_addr.begin(), src_addr.end(), header.src_addr);
 	std::copy(dst_addr.begin(), dst_addr.end(), header.dst_addr);
 
-	header.length = seth_cpu_to_be_16(length);
+	header.length = accl::cpu_to_be_16(length);
 	header.zero = 0;
 	header.next_header = next_header;
 
@@ -139,7 +142,7 @@ std::string IPv6Packet::asBinary() const {
 	header.flow_label = flow_label;
 	header.next_header = next_header;
 	header.hop_limit = hop_limit;
-	header.payload_length = seth_cpu_to_be_16(_ipv6HeaderPayloadLength());
+	header.payload_length = accl::cpu_to_be_16(_ipv6HeaderPayloadLength());
 
 	std::copy(src_addr.begin(), src_addr.end(), header.src_addr);
 	std::copy(dst_addr.begin(), dst_addr.end(), header.dst_addr);
