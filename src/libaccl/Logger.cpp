@@ -66,10 +66,12 @@ void Logger::_log(const LogLevel level, const std::string file, const std::strin
 		std::tm *utc_tm = std::gmtime(&now_utc);
 
 		// Output time
-		stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S");
+		if (log_time) {
+			stream << std::put_time(utc_tm, "%Y-%m-%d %H:%M:%S ");
+		}
 		// Output log level
 		std::string levelStr = _logLevelToString(level);
-		stream << std::setfill(' ') << " [" << levelStr << std::setw(7 - levelStr.size()) << ""
+		stream << std::setfill(' ') << "[" << levelStr << std::setw(7 - levelStr.size()) << ""
 			   << "] ";
 		// If we're debugging output the func, file and line
 		if (log_level == LogLevel::DEBUGGING) {
@@ -89,6 +91,12 @@ Logger::Logger() {
 	log_level_default = LogLevel::NOTICE;
 #endif
 	log_level = log_level_default;
+	// Only log time if we're not running under systemd
+	if (std::getenv("INVOCATION_ID") != nullptr) {
+		log_time = false;
+	} else {
+		log_time = true;
+	}
 }
 
 /**

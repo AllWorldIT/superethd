@@ -24,6 +24,7 @@ class Logger {
 	private:
 		LogLevel log_level;
 		LogLevel log_level_default;
+		bool log_time;
 
 		std::mutex mutex_;
 
