@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
 	int cfg_mtu{1500};
 	int cfg_txsize{1500};
 	int cfg_tunnel_port{58203};
-	std::string cfg_tunnel_src;
-	std::string cfg_tunnel_dst;
+	std::string cfg_tunnel_src{};
+	std::string cfg_tunnel_dst{};
 	std::string cfg_ifname{SETH_DEFAULT_TUNNEL_NAME};
 	std::string cfg_packet_format_str{"lz4"};
 	PacketHeaderOptionFormatType cfg_packet_format;
@@ -295,7 +295,6 @@ int main(int argc, char *argv[]) {
 			std::cerr << std::format("ERROR: Invalid interface name. It should be less than {} characters.", IFNAMSIZ) << std::endl;
 			return 1;
 		}
-		cfg_ifname.assign(optarg);
 
 		// Work out what compression algorithm we're using
 		if (cmdline_packet_format.length() > 0) {
