@@ -9,9 +9,9 @@
 
 #define CATCH_CONFIG_MAIN
 
-#include "debug.hpp"
 #include "Codec.hpp"
 #include "PacketBuffer.hpp"
+#include "debug.hpp"
 #include "libaccl/BufferPool.hpp"
 #include "libaccl/Logger.hpp"
 #include "libaccl/SequenceDataGenerator.hpp"
