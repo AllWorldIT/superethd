@@ -30,6 +30,7 @@ StreamCompressorLZ4::~StreamCompressorLZ4() {
 }
 
 void StreamCompressorLZ4::resetCompressionStream() { LZ4_resetStream_fast(lz4Stream); }
+
 void StreamCompressorLZ4::resetDecompressionStream() { LZ4_setStreamDecode(lz4StreamDecode, NULL, 0); }
 
 int StreamCompressorLZ4::compress(const char *input, size_t input_size, char *output, size_t max_output_size) {

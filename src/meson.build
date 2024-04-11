@@ -28,12 +28,15 @@ deps += [dependency('libzstd')]
 
 libsuperethd_sources = [
     'codec.cpp',
+    'debug.cpp',
     'decoder.cpp',
     'encoder.cpp',
-    'debug.cpp',
-    'sockets.cpp',
+    'fdb.cpp',
+    'fdb_entry.cpp',
+    'packet_switch.cpp',
+    'remote_node.cpp',
     'superethd.cpp',
-    'tap.cpp',
+    'tap_interface.cpp',
     'tunnel.cpp',
     'util.cpp',
 ]

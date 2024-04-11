@@ -30,6 +30,7 @@ StreamCompressorZSTD::~StreamCompressorZSTD() {
 }
 
 void StreamCompressorZSTD::resetCompressionStream() { ZSTD_CCtx_reset(cctx, ZSTD_reset_session_and_parameters); }
+
 void StreamCompressorZSTD::resetDecompressionStream() { ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters); }
 
 int StreamCompressorZSTD::compress(const char *input, size_t input_size, char *output, size_t max_output_size) {

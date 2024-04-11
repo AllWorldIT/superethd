@@ -5,8 +5,8 @@
  */
 
 #include "icmpv6_packet.hpp"
-#include "ipv6_packet.hpp"
 #include "checksum.hpp"
+#include "ipv6_packet.hpp"
 #include <format>
 #include <sstream>
 
@@ -35,9 +35,11 @@ void ICMPv6Packet::clear() {
 void ICMPv6Packet::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t ICMPv6Packet::getType() const { return type; }
+
 void ICMPv6Packet::setType(uint8_t newType) { type = newType; }
 
 uint8_t ICMPv6Packet::getCode() const { return code; }
+
 void ICMPv6Packet::setCode(uint8_t newCode) { code = newCode; }
 
 uint16_t ICMPv6Packet::getChecksumLayer4() const {
@@ -62,8 +64,11 @@ uint16_t ICMPv6Packet::getChecksumLayer4() const {
 }
 
 uint16_t ICMPv6Packet::getHeaderOffset() const { return IPv6Packet::getHeaderOffset() + IPv6Packet::getHeaderSize(); }
+
 uint16_t ICMPv6Packet::getHeaderSize() const { return sizeof(icmp6_header_t); }
+
 uint16_t ICMPv6Packet::getHeaderSizeTotal() const { return IPv6Packet::getHeaderSizeTotal() + getHeaderSize(); }
+
 uint16_t ICMPv6Packet::getLayer4Size() const { return getHeaderSize() + IPv6Packet::getPayloadSize(); }
 
 std::string ICMPv6Packet::asText() const {

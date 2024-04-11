@@ -13,28 +13,28 @@ effects of tunneling overheads and packet fragmenting while reducing the packet 
 devices.
 
 Features:
-- **Tunnel with virtually any modern MTU size:** Especially helpful in networks where MSS clamping is not possible either or the
-frames being transmitted are not TCP or even IP-based.
 - **Raw ethernet frame support:** Super Ethernet Tunnel works with raw ethernet frames and any ethernet protocol, ie. IPv4, IPv6,
-ARP, MPLS, VLANs ... etc.
-- **Compression support:** Support is available for both LZ4 and ZSTD packet compression.
+ARP, MPLS, VLANs (802.1q, 802.1ad) ... etc.
+- **Tunnel with virtually any modern MTU size:** Especially helpful in networks where MSS clamping is not possible either or the
+frames being transmitted are not TCP or even IP-based. The inner layer 2 frames are supported up to sizes of 9218 bytes.
+-- **Full mesh support:** Automatic full mesh networking is supported by simply pointing Super Ethernet Tunnel to all nodes you
+wish to be added to the same layer 2 network. Full mesh networking additionally uses split horizon switching which prevents loops
+of traffic between nodes.
+- **Compression support:** Support is available for both LZ4 and ZSTD packet compression. Parallel compression of stream data is
+implemented when dealing with mulitple nodes.
 - **Packet stuffing:** Packet space is optimized by stuffing multiple payloads per packet and using stream compression to further
 improve compression ratios.
 - **IPv4 and IPv6 endpoints:** Both IPv4 and IPv6 endpints are supported.
-- **Multithreaded:** Super Ethernet Tunnel is multithreaded.
+- **Multithreaded:** Super Ethernet Tunnel is multithreaded and takes advantage of multiple cores scaling linearly depending on the
+number of nodes being connected.
 
 Requirements:
-- Modern Linux system.
+- Modern Linux system. (GCC13.2+)
 - Fixed IP's on both sides of the tunnel.
 
 Wishlist:
-- **Full mesh support:** I would like to add automatic configuration of full mesh topologies, where any node can connect to any
-node and authenticate itself to the entire cluster allowing all nodes to communicate with eachother directly or part of a broadcast
-domain. This would allow for a fully dynamic virtual ethernet cloud.
 - **Node authentication support:** It would be nice if nodes could authenticate themselves to the remote node so static IP's both
 sides are not required.
-- **Better use of threads:** It is technically possible we can compress data in parallel, this would be a nice feature to add so
-we can bump up the compression level.
 - **Builtin web interface:** A builtin web interface would be amazing.
 - **RST documentation:** With additional features we'll need a proper site with RST based documentation.
 - **Add TCP support:** With TCP support we could probably implement a fully stream-based compression approach allowing the
@@ -50,12 +50,13 @@ If you find this project useful and want to see new features implemented, please
 ## What Super Ethernet Tunnel is not
 
 Super Ethernet Tunnel is NOT a VPN. It does not currently implement encryption, packet authentication or MiTM mitigations. It is
-however similar to other tunneling protocols such as GRE, GENEVE, L2TP ... etc.
+however similar to other tunneling protocols such as GRE, GENEVE, L2TP, VXLAN ... etc.
 
 
 ## Getting started
 
 Prerequisites:
+- GCC 13.2.1+
 - Boost
 - Zstd
 - LZ4
@@ -89,20 +90,21 @@ There are a number of options Super Ethernet Tunnel provides to customize its be
 
 Mandatory arguments:
 - **-s &lt;SOURCE&gt;:** Source IPv4 or IPv6 address. We will bind to this address to send traffic outbound.
-- **-d &lt;DESTINATION&gt;:** Destination IPv4 or IPv6 address. This is the IP address we will be sending tunnel traffic to.
+- **-d &lt;DESTINATION&gt;:** Destination IPv4 or IPv6 address. This is the IP address we will be sending tunnel traffic to. This
+can be a comma, semicolon or space separated list.
 
 Optional arguments:
 - **-l &lt;LOG_LEVEL&gt;:** Optional log level to specify.
 - **-m &lt;MTU&gt;:** Interface MTU. This the MTU of the ethernet tunnel interface. This defaults to 1500.
 - **-t &lt;TX_SIZE&gt;:** Maximum transmission unit size. This is the maximum size of the encapsulating packet that will be transmitted.
-This defaults to 1500.
+This must be the SAME on ALL nodes. This defaults to 1500.
 - **-p &lt;PORT&gt;:** Port number to use for traffic. Defaults to `58023`.
 - **-i &lt;IFNAME&gt;:** Interface name, defaults to `seth0`.
 - **-c &lt;COMPRESS_ALGO&gt;:** Compression algorithm to use, defaults to `lz4`.
 
-An example of using this would be...
+To establish a full mesh L2 network between two hosts one could use the following... (assuming the other two hosts are .100 and .200)
 ```bash
-superethd -s 192.0.2.1 -d 192.0.2.100
+superethd -d 192.0.2.100 -d 192.0.2.200
 ```
 
 One can also use a configuration file, typically located in `/etc/superethd/superethd.conf`...

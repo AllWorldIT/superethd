@@ -5,8 +5,8 @@
  */
 
 #include "icmpv4_packet.hpp"
-#include "ipv4_packet.hpp"
 #include "checksum.hpp"
+#include "ipv4_packet.hpp"
 #include <format>
 #include <sstream>
 
@@ -35,9 +35,11 @@ void ICMPv4Packet::clear() {
 void ICMPv4Packet::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t ICMPv4Packet::getType() const { return type; }
+
 void ICMPv4Packet::setType(uint8_t newType) { type = newType; }
 
 uint8_t ICMPv4Packet::getCode() const { return code; }
+
 void ICMPv4Packet::setCode(uint8_t newCode) { code = newCode; }
 
 uint16_t ICMPv4Packet::getChecksumLayer4() const {
@@ -60,8 +62,11 @@ uint16_t ICMPv4Packet::getChecksumLayer4() const {
 }
 
 uint16_t ICMPv4Packet::getHeaderOffset() const { return IPv4Packet::getHeaderOffset() + IPv4Packet::getHeaderSize(); }
+
 uint16_t ICMPv4Packet::getHeaderSize() const { return sizeof(icmp_header_t); }
+
 uint16_t ICMPv4Packet::getHeaderSizeTotal() const { return IPv4Packet::getHeaderSizeTotal() + getHeaderSize(); }
+
 uint16_t ICMPv4Packet::getLayer4Size() const { return getHeaderSize() + ICMPv4Packet::getPayloadSize(); }
 
 std::string ICMPv4Packet::asText() const {

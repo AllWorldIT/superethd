@@ -5,8 +5,8 @@
  */
 
 #include "ipv6_packet.hpp"
-#include "ip_packet.hpp"
 #include "checksum.hpp"
+#include "ip_packet.hpp"
 #include <format>
 #include <ostream>
 #include <sstream>
@@ -47,23 +47,29 @@ void IPv6Packet::clear() {
 void IPv6Packet::parse(const std::vector<uint8_t> &data) { setVersion(SETH_PACKET_IP_VERSION_IPV6); }
 
 uint8_t IPv6Packet::getTrafficClass() const { return priority; }
+
 void IPv6Packet::setTrafficClass(uint8_t newTrafficClass) { priority = newTrafficClass; }
 
 uint8_t IPv6Packet::getFlowLabel() const { return flow_label; }
+
 void IPv6Packet::setFlowLabel(uint8_t newFlowLabel) { flow_label = newFlowLabel; }
 
 // accl::be16_t IPv6Packet::getPayloadLength() const { return accl::be_to_cpu_16(payload_length); }
 
 uint8_t IPv6Packet::getNextHeader() const { return next_header; }
+
 void IPv6Packet::setNextHeader(uint8_t newNextHeader) { next_header = newNextHeader; }
 
 uint8_t IPv6Packet::getHopLimit() const { return hop_limit; }
+
 void IPv6Packet::setHopLimit(uint8_t newHopLimit) { hop_limit = newHopLimit; }
 
 std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> IPv6Packet::getDstAddr() const { return dst_addr; }
+
 void IPv6Packet::setDstAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newDstAddr) { dst_addr = newDstAddr; }
 
 std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> IPv6Packet::getSrcAddr() const { return src_addr; }
+
 void IPv6Packet::setSrcAddr(std::array<uint8_t, SETH_PACKET_IPV6_IP_LEN> newSrcAddr) { src_addr = newSrcAddr; }
 
 uint32_t IPv6Packet::getPseudoChecksumLayer3(uint16_t length) const {
@@ -91,7 +97,9 @@ uint32_t IPv6Packet::getPseudoChecksumLayer3(uint16_t length) const {
 
 // TODO: include header options size
 uint16_t IPv6Packet::getHeaderSize() const { return sizeof(ipv6_header_t); }
+
 uint16_t IPv6Packet::getHeaderSizeTotal() const { return IPv6Packet::getHeaderSize(); }
+
 uint16_t IPv6Packet::getLayer3Size() const { return getHeaderSizeTotal() + getPayloadSize(); }
 
 std::string IPv6Packet::asText() const {

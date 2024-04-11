@@ -7,11 +7,11 @@
 #pragma once
 
 #include "codec.hpp"
-#include "packet_buffer.hpp"
 #include "libaccl/buffer_pool.hpp"
 #include "libaccl/logger.hpp"
 #include "libaccl/stream_compressor_lz4.hpp"
 #include "libaccl/stream_compressor_zstd.hpp"
+#include "packet_buffer.hpp"
 #include <deque>
 #include <memory>
 
@@ -20,6 +20,17 @@
  */
 
 class PacketDecoder {
+
+	public:
+		PacketDecoder(uint16_t l2mtu, std::shared_ptr<accl::BufferPool<PacketBuffer>> tx_buffer_pool,
+					  std::shared_ptr<accl::BufferPool<PacketBuffer>> available_buffer_pool);
+		~PacketDecoder();
+
+		void decode(std::unique_ptr<PacketBuffer> packetBuffer);
+
+		inline void setLastSequence(uint32_t seq);
+		inline uint32_t getLastSequence() const;
+
 	private:
 		// Interface MTU
 		uint16_t l2mtu;
@@ -40,10 +51,10 @@ class PacketDecoder {
 		accl::StreamCompressorZSTD *compressorZSTD;
 		std::unique_ptr<PacketBuffer> dcomp_buffer;
 
-		// Buffer pool to get buffers from
-		accl::BufferPool<PacketBuffer> *buffer_pool;
 		// Buffer pool to push buffers to
-		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> tx_buffer_pool;
+		// Buffer pool to get buffers from
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> available_buffer_pool;
 
 		void _clearState();
 
@@ -52,16 +63,6 @@ class PacketDecoder {
 		void _flushInflight();
 		void _pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
 		void _clearStateAndFlushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
-
-	public:
-		PacketDecoder(uint16_t l2mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
-					  accl::BufferPool<PacketBuffer> *tx_buffer_pool);
-		~PacketDecoder();
-
-		void decode(std::unique_ptr<PacketBuffer> packetBuffer);
-
-		inline void setLastSequence(uint32_t seq);
-		inline uint32_t getLastSequence() const;
 };
 
 /**

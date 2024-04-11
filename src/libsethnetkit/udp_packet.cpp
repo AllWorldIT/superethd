@@ -45,9 +45,11 @@ template <UDPAllowedType T> void UDPPacketTmpl<T>::clear() {
 template <UDPAllowedType T> void UDPPacketTmpl<T>::parse(const std::vector<uint8_t> &data) { T::parse(data); }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getSrcPort() const { return accl::be_to_cpu_16(src_port); }
+
 template <UDPAllowedType T> void UDPPacketTmpl<T>::setSrcPort(uint16_t newSrcPort) { src_port = accl::cpu_to_be_16(newSrcPort); }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getDstPort() const { return accl::be_to_cpu_16(dst_port); }
+
 template <UDPAllowedType T> void UDPPacketTmpl<T>::setDstPort(uint16_t newDstPort) { dst_port = accl::cpu_to_be_16(newDstPort); }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksumLayer4() const {
@@ -71,10 +73,13 @@ template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getChecksumLayer4() const
 }
 
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderOffset() const { return T::getHeaderOffset() + T::getHeaderSize(); }
+
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSize() const { return sizeof(udp_header_t); }
+
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getHeaderSizeTotal() const {
 	return T::getHeaderSizeTotal() + getHeaderSize();
 }
+
 template <UDPAllowedType T> uint16_t UDPPacketTmpl<T>::getLayer4Size() const {
 	return getHeaderSize() + UDPPacketTmpl<T>::getPayloadSize();
 }

@@ -7,8 +7,11 @@
 #pragma once
 
 #include "codec.hpp"
+#include <memory>
 #include <netinet/in.h>
 #include <string>
+#include <vector>
 
-int start_set(const std::string ifname, struct in6_addr *src, struct in6_addr *dst, int port, int mtu, int tx_size,
-			  PacketHeaderOptionFormatType packet_format);
+int start_seth(const std::string ifname, int mtu, int tx_size, PacketHeaderOptionFormatType packet_format,
+			   std::shared_ptr<struct sockaddr_storage> src_addr, std::vector<std::shared_ptr<struct sockaddr_storage>> dst_addrs,
+			   int port);

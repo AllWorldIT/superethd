@@ -119,7 +119,7 @@ bool Logger::setLogLevel(const std::string level) {
 
 std::map<std::string, LogLevel> logLevelMap = {
 	{"debug", LogLevel::DEBUGGING}, {"info", LogLevel::INFO},	{"notice", LogLevel::NOTICE},
-	{"warn", LogLevel::WARNING},	{"error", LogLevel::ERROR},
+	{"warning", LogLevel::WARNING}, {"error", LogLevel::ERROR},
 };
 
 // Define the global logger instance

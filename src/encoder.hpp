@@ -7,11 +7,11 @@
 #pragma once
 
 #include "codec.hpp"
-#include "packet_buffer.hpp"
 #include "libaccl/buffer_pool.hpp"
 #include "libaccl/logger.hpp"
 #include "libaccl/statistic.hpp"
 #include "libaccl/stream_compressor.hpp"
+#include "packet_buffer.hpp"
 #include <memory>
 
 /*
@@ -43,9 +43,9 @@ class PacketEncoder {
 		uint32_t packet_count;
 
 		// Buffer pool to get buffers from
-		accl::BufferPool<PacketBuffer> *buffer_pool;
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> available_buffer_pool;
 		// TX buffer pool queued to send via socket
-		accl::BufferPool<PacketBuffer> *tx_buffer_pool;
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> tx_buffer_pool;
 
 		// Statistics
 		accl::Statistic<float> statCompressionRatio;
@@ -60,8 +60,8 @@ class PacketEncoder {
 		void _pushInflight(std::unique_ptr<PacketBuffer> &packetBuffer);
 
 	public:
-		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, accl::BufferPool<PacketBuffer> *available_buffer_pool,
-					  accl::BufferPool<PacketBuffer> *tx_buffer_pool);
+		PacketEncoder(uint16_t l2mtu, uint16_t l4mtu, std::shared_ptr<accl::BufferPool<PacketBuffer>> tx_buffer_pool,
+					  std::shared_ptr<accl::BufferPool<PacketBuffer>> available_buffer_pool);
 		~PacketEncoder();
 
 		void encode(std::unique_ptr<PacketBuffer> packetBuffer);

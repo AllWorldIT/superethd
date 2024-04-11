@@ -17,18 +17,9 @@ namespace accl {
 inline constexpr size_t BUFFER_POOL_POP_ALL{0};
 
 template <typename T> class BufferPool {
-	private:
-		std::deque<std::unique_ptr<T>> pool;
-		std::size_t buffer_size;
-		mutable std::shared_mutex mtx;
-		std::condition_variable_any cv;
-
-		void _pop(std::deque<std::unique_ptr<T>> &result, size_t count);
-		std::deque<std::unique_ptr<T>> _pop(size_t count);
-
 	public:
-		BufferPool(std::size_t buffer_size) : buffer_size(buffer_size){};
-		BufferPool(std::size_t buffer_size, std::size_t num_buffers);
+		inline BufferPool(std::size_t buffer_size);
+		inline BufferPool(std::size_t buffer_size, std::size_t num_buffers);
 
 		~BufferPool() = default;
 
@@ -47,7 +38,51 @@ template <typename T> class BufferPool {
 
 		bool wait_for(std::chrono::milliseconds duration, std::deque<std::unique_ptr<T>> &results);
 		std::deque<std::unique_ptr<T>> wait_for(std::chrono::milliseconds duration);
+
+	private:
+		std::deque<std::unique_ptr<T>> pool;
+		std::size_t buffer_size;
+		mutable std::shared_mutex mtx;
+		std::condition_variable_any cv;
+
+		void _pop(std::deque<std::unique_ptr<T>> &result, size_t count);
+		std::deque<std::unique_ptr<T>> _pop(size_t count);
 };
+
+/**
+ * @brief Construct a new Buffer Pool:: Buffer Pool object
+ *
+ * @param buffer_size
+ */
+template <typename T> BufferPool<T>::BufferPool(std::size_t buffer_size) : buffer_size(buffer_size) {}
+
+/**
+ * @brief Construct a new Buffer Pool< T>:: Buffer Pool object
+ *
+ * @tparam T Buffer class.
+ * @param buffer_size Size of the buffers we'll be using.
+ * @param num_buffers Number of buffers to place in the pool apon construction.
+ */
+template <typename T> BufferPool<T>::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : BufferPool(buffer_size) {
+	// Allocate the number of buffers specified
+	for (std::size_t i = 0; i < num_buffers; ++i) {
+		auto buffer = std::make_unique<T>(buffer_size);
+		pool.push_back(std::move(buffer));
+	}
+}
+
+/**
+ * @brief Internal method to pop a number of buffers without locking.
+ *
+ * @tparam T Buffer class.
+ * @param count Number of buffers to pop.
+ * @return std::deque<std::unique_ptr<T>> Buffers that were popped.
+ */
+template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::_pop(size_t count) {
+	std::deque<std::unique_ptr<T>> result;
+	_pop(result, count);
+	return result;
+}
 
 /**
  * @brief Internal method to pop a number of buffers or all buffers without locking.
@@ -67,34 +102,6 @@ template <typename T> void BufferPool<T>::_pop(std::deque<std::unique_ptr<T>> &r
 
 	// Erase the buffers that we moved from the list
 	pool.erase(pool.begin(), iterator);
-}
-
-/**
- * @brief Internal method to pop a number of buffers without locking.
- *
- * @tparam T Buffer class.
- * @param count Number of buffers to pop.
- * @return std::deque<std::unique_ptr<T>> Buffers that were popped.
- */
-template <typename T> std::deque<std::unique_ptr<T>> BufferPool<T>::_pop(size_t count) {
-	std::deque<std::unique_ptr<T>> result;
-	_pop(result, count);
-	return result;
-}
-
-/**
- * @brief Construct a new Buffer Pool< T>:: Buffer Pool object
- *
- * @tparam T Buffer class.
- * @param buffer_size Size of the buffers we'll be using.
- * @param num_buffers Number of buffers to place in the pool apon construction.
- */
-template <typename T> BufferPool<T>::BufferPool(std::size_t buffer_size, std::size_t num_buffers) : BufferPool(buffer_size) {
-	// Allocate the number of buffers specified
-	for (std::size_t i = 0; i < num_buffers; ++i) {
-		auto buffer = std::make_unique<T>(buffer_size);
-		pool.push_back(std::move(buffer));
-	}
 }
 
 /**

@@ -17,7 +17,12 @@ class Buffer {
 		std::size_t dataSize;
 
 	public:
-		inline Buffer(std::size_t size) : content(size), dataSize(0){};
+		inline Buffer(std::size_t size);
+
+		// Copy constructor
+		inline Buffer(const Buffer &other);
+		// Copy assignment operator
+		inline Buffer &operator=(const Buffer &other);
 
 		// Add data to buffer
 		inline void append(const char *data, std::size_t size);
@@ -36,6 +41,34 @@ class Buffer {
 		// Clear the buffer
 		inline void clear();
 };
+
+/**
+ * @brief Construct a new Buffer object
+ *
+ * @param size Size of buffer.
+ */
+inline Buffer::Buffer(std::size_t size) : content(size), dataSize(0) {}
+
+/**
+ * @brief Construct a new Buffer object
+ *
+ * @param other Buffer to copy.
+ */
+inline Buffer::Buffer(const Buffer &other) : content(other.content), dataSize(other.dataSize) {}
+
+/**
+ * @brief Copy assignment operator.
+ *
+ * @param other Buffer to copy.
+ * @return Buffer& Reference to this buffer.
+ */
+inline Buffer &Buffer::operator=(const Buffer &other) {
+	if (this != &other) {
+		content = other.content;
+		dataSize = other.dataSize;
+	}
+	return *this;
+}
 
 /**
  * @brief Append data to buffer.

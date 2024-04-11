@@ -24,7 +24,9 @@ using le64_t = uint64_t;
 
 // Pull in compiler optimized byte swapping
 inline uint16_t bswap16(uint16_t x) { return __builtin_bswap16(x); }
+
 inline uint32_t bswap32(uint32_t x) { return __builtin_bswap32(x); }
+
 inline uint64_t bswap64(uint64_t x) { return __builtin_bswap64(x); }
 
 /*
@@ -48,37 +50,53 @@ inline uint64_t bswap64(uint64_t x) { return __builtin_bswap64(x); }
 #if ACCL_BYTE_ORDER == ACCL_BIG_ENDIAN
 
 inline le16_t cpu_to_le_16(uint16_t x) { return bswap16(x); }
+
 inline le32_t cpu_to_le_32(uint32_t x) { return bswap32(x); }
+
 inline le64_t cpu_to_le_64(uint64_t x) { return bswap64(x); }
 
 inline uint16_t le_to_cpu_16(le16_t x) { return bswap16(x); }
+
 inline uint32_t le_to_cpu_32(le32_t x) { return bswap32(x); }
+
 inline uint64_t le_to_cpu_64(le64_t x) { return bswap64(x); }
 
 inline be16_t cpu_to_be_16(uint16_t x) { return x; }
+
 inline be32_t cpu_to_be_32(uint32_t x) { return x; }
+
 inline be64_t cpu_to_be_64(uint64_t x) { return x; }
 
 inline uint16_t be_to_cpu_16(be16_t x) { return x; }
+
 inline uint32_t be_to_cpu_32(be32_t x) { return x; }
+
 inline uint64_t be_to_cpu_64(be64_t x) { return x; }
 
 #elif ACCL_BYTE_ORDER == ACCL_LITTLE_ENDIAN
 
 inline le16_t cpu_to_le_16(uint16_t x) { return x; }
+
 inline le32_t cpu_to_le_32(uint32_t x) { return x; }
+
 inline le64_t cpu_to_le_64(uint64_t x) { return x; }
 
 inline uint16_t le_to_cpu_16(le16_t x) { return x; }
+
 inline uint32_t le_to_cpu_32(le32_t x) { return x; }
+
 inline uint64_t le_to_cpu_64(le64_t x) { return x; }
 
 inline be16_t cpu_to_be_16(uint16_t x) { return bswap16(x); }
+
 inline be32_t cpu_to_be_32(uint32_t x) { return bswap32(x); }
+
 inline be64_t cpu_to_be_64(uint64_t x) { return bswap64(x); }
 
 inline uint16_t be_to_cpu_16(be16_t x) { return bswap16(x); }
+
 inline uint32_t be_to_cpu_32(be32_t x) { return bswap32(x); }
+
 inline uint64_t be_to_cpu_64(be64_t x) { return bswap64(x); }
 
 #else

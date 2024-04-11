@@ -30,13 +30,17 @@ void Packet::parse(const std::vector<uint8_t> &data) {}
 void Packet::addPayload(const std::vector<uint8_t> &data) { payload = data; }
 
 const uint8_t *Packet::getPayloadPointer() const { return payload.data(); }
+
 const std::vector<uint8_t> &Packet::getPayload() const { return payload; };
 
 uint16_t Packet::getPayloadSize() const { return payload.size(); }
+
 void Packet::resizePayload(uint16_t newSize) { payload.resize(newSize); }
 
 uint16_t Packet::getHeaderOffset() const { return 0; }
+
 uint16_t Packet::getHeaderSize() const { return 0; }
+
 uint16_t Packet::getPacketSize() const { return getHeaderOffset() + getHeaderSize(); }
 
 // Print packet handling

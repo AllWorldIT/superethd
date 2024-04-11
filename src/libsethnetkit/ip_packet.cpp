@@ -29,6 +29,7 @@ void IPPacket::clear() {
 void IPPacket::parse(const std::vector<uint8_t> &data) {}
 
 uint8_t IPPacket::getVersion() const { return version; }
+
 void IPPacket::setVersion(uint8_t newVersion) { version = newVersion; }
 
 uint16_t IPPacket::getHeaderOffset() const { return EthernetPacket::getHeaderOffset() + EthernetPacket::getHeaderSize(); }

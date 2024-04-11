@@ -5,10 +5,18 @@
  */
 
 #include "util.hpp"
+#include "exceptions.hpp"
+#include "libaccl/logger.hpp"
 #include <arpa/inet.h>
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <memory>
+#include <regex>
+#include <string>
+#include <sys/socket.h>
 
 /**
  * @brief Convert a uint8_t array into a char buffer.
@@ -36,85 +44,67 @@ char *uint8_array_to_char_buffer(const uint8_t *array, size_t length) {
 }
 
 /**
- * @brief Convert a string to an in6_addr.
+ * @brief Convert a string to an sockaddr_storage
  *
- * @param str String to convert into an in6_addr.
- * @param result Pointer to the in6_addr to store the result in.
- * @return int Returns 1 on success and 0 on failure.
+ * @param str String to convert into a sockaddr_storage structure.
+ * @param port Port number to set.
+ * @throw SuperEthernetTunnelConfigurationException If the conversion fails.
  */
-int to_sin6addr(const char *str, struct in6_addr *result) {
+std::shared_ptr<struct sockaddr_storage> to_sockaddr_storage(const std::string &str, uint16_t port) {
+	std::shared_ptr<struct sockaddr_storage> result = std::make_shared<struct sockaddr_storage>();
+
 	// Try converting as IPv6 address
-	if (inet_pton(AF_INET6, str, result) > 0) {
-		return 1; // Successfully converted as IPv6
+	sockaddr_in6 addr6;
+	memset(&addr6, 0, sizeof(addr6));
+	if (inet_pton(AF_INET6, str.data(), &addr6.sin6_addr) > 0) {
+		addr6.sin6_family = AF_INET6;
+		if (port) {
+			addr6.sin6_port = htons(port);
+		}
+		memcpy(result.get(), &addr6, sizeof(addr6));
+		return result;
 	}
 
-	// Try converting as IPv4 address and map it to IPv6
-	struct in_addr ipv4_addr;
-	if (inet_pton(AF_INET, str, &ipv4_addr) > 0) {
-		// Convert IPv4 address to IPv6-mapped IPv6 address
-		memset(result, 0, sizeof(struct in6_addr));
-		result->s6_addr[10] = 0xFF;
-		result->s6_addr[11] = 0xFF;
-		memcpy(&result->s6_addr[12], &ipv4_addr.s_addr, sizeof(ipv4_addr.s_addr));
-		return 1; // Successfully converted as IPv4-mapped IPv6
+	// Try converting as IPv4 address
+	sockaddr_in addr4;
+	if (inet_pton(AF_INET, str.data(), &addr4.sin_addr) > 0) {
+		addr4.sin_family = AF_INET;
+		if (port) {
+			addr4.sin_port = htons(port);
+		}
+		memcpy(result.get(), &addr4, sizeof(addr4));
+		return result;
 	}
 
 	// Conversion failed
-	return 0;
+	throw SuperEthernetTunnelConfigException("Invalid IP address: " + std::string(str));
 }
 
 /**
- * @brief Return if the provided in6_addr is an IPv4 mapped IPv6 address.
+ * @brief Return true if IPv4 or false if IPv6
  *
- * @param ipv6Addr IPv6 address to check.
- * @return int Returns `true` on IPv4 and `false` on IPv6.
+ * @param addr IPv6 address to check.
+ * @return bool Returns `true` on IPv4 and `false` on IPv6.
  */
 
-inline int is_ipv4_mapped_ipv6(const struct in6_addr *addr) {
-	const uint16_t *addrBlocks = (const uint16_t *)(addr->s6_addr);
+bool is_ipv4(const std::shared_ptr<sockaddr_storage> addr) {
 
-	// Check the pattern for IPv4-mapped IPv6 addresses
-	return (addrBlocks[0] == 0x0000 && addrBlocks[1] == 0x0000 && addrBlocks[2] == 0x0000 && addrBlocks[3] == 0x0000 &&
-			addrBlocks[4] == 0x0000 && addrBlocks[5] == 0xffff);
-}
+	if (addr->ss_family == AF_INET) {
+		// It's IPv4
+		return 0; // Not an IPv4-mapped IPv6 address
+	} else if (addr->ss_family == AF_INET6) {
+		// It's IPv6, now check if it's an IPv4-mapped IPv6 address
+		const struct sockaddr_in6 *addr6 = reinterpret_cast<const struct sockaddr_in6 *>(addr.get());
+		if (addr6->sin6_addr.s6_addr[10] == 0xFF && addr6->sin6_addr.s6_addr[11] == 0xFF) {
+			return 1;
+		}
 
-/**
- * @brief Get the max payload size from MSS and the destination IP type.
- *
- * @param max_packet_size Maximum packet size.
- * @param dest_addr6 Destination IP address in in6_addr.
- * @return uint16_t Maximum payload size.
- */
+		return 0; // Not an IPv4-mapped IPv6 address
 
-uint16_t get_l4mtu(uint16_t max_packet_size, struct in6_addr *dest_addr6) {
-	// Set the initial maximum payload size to the specified max packet size
-	uint16_t max_payload_size = max_packet_size;
-
-	// Reduce by IP header size
-	if (is_ipv4_mapped_ipv6(dest_addr6))
-		max_payload_size -= 20; // IPv4 header
-	else
-		max_payload_size -= 40; // IPv6 header
-	max_payload_size -= 8;		// UDP frame
-
-	return max_payload_size;
-}
-
-/**
- * @brief Get the max ethernet frame size based on MTU size. This is the raw L2MTU we support.
- *
- * @param mtu Device MTU.
- * @return uint16_t Maximum packet size.
- */
-
-uint16_t get_l2mtu_from_mtu(uint16_t mtu) {
-	// Set the initial maximum frame size to the specified MTU
-	uint16_t frame_size = mtu;
-
-	// Maximum ethernet frame size is 22 bytes, ethernet header + 802.1ad (8 bytes)
-	frame_size += 14 + 8;
-
-	return frame_size;
+	} else {
+		// Unsupported address family
+		return -1; // Error or unsupported type
+	}
 }
 
 /**
@@ -128,4 +118,148 @@ int is_sequence_wrapping(uint32_t cur, uint32_t prev) {
 	// Check if the current sequence number is less than the previous one
 	// while accounting for wrapping
 	return cur < prev && (prev - cur) > (UINT32_MAX / 2);
+}
+
+/**
+ * @brief Get the string representation of an IP.
+ *
+ * @param addr sockaddr_storage structure.
+ * @return std::string
+ */
+std::string get_ipstr(const sockaddr_storage *addr) {
+	if (addr->ss_family == AF_INET) {
+		sockaddr_in *addr_in = (sockaddr_in *)addr;
+		return get_ipv4_str(addr_in);
+	} else if (addr->ss_family == AF_INET6) {
+		sockaddr_in6 *addr_in6 = (sockaddr_in6 *)addr;
+		return get_ipv6_str(addr_in6);
+	} else {
+		return "Unknown";
+	}
+}
+
+/**
+ * @brief Get the ipv4 str object.
+ *
+ * @param addr
+ * @return std::string
+ */
+std::string get_ipv4_str(const sockaddr_in *addr) {
+	// Get string from address
+	char ipv4_str[INET_ADDRSTRLEN];
+	if (inet_ntop(AF_INET, &(addr->sin_addr), ipv4_str, sizeof(ipv4_str)) == NULL) {
+		throw SuperEthernetTunnelRuntimeException("Cannot convert address to string");
+	}
+	return std::string(ipv4_str);
+}
+
+/**
+ * @brief Get the ipv6 str object from a sockaddr_in6 structure.
+ *
+ * @param addr6
+ * @return std::string
+ */
+std::string get_ipv6_str(const sockaddr_in6 *addr6) {
+	// Get string from address
+	char ipv6_str[INET6_ADDRSTRLEN];
+	if (inet_ntop(AF_INET6, &(addr6->sin6_addr), ipv6_str, sizeof(ipv6_str)) == NULL) {
+		throw SuperEthernetTunnelRuntimeException("Cannot convert address to string");
+	}
+	return std::string(ipv6_str);
+}
+
+/**
+ * @brief Split a string by delimiters.
+ *
+ * @param input Input string.
+ * @param delimiters Delimiters to split by.
+ * @return std::vector<std::string>
+ */
+std::vector<std::string> splitByDelimiters(const std::string &input, const std::string &delimiters) {
+	// Create a regex based on delimiters
+	std::regex regexPattern("[" + delimiters + "]+");
+	std::sregex_token_iterator iter(input.begin(), input.end(), regexPattern, -1);
+	std::sregex_token_iterator end;
+
+	std::vector<std::string> result(iter, end);
+
+	// Remove possible empty strings at the end
+	result.erase(std::remove_if(result.begin(), result.end(), [](const std::string &s) { return s.empty(); }), result.end());
+
+	return result;
+}
+
+/**
+ * @brief Get the key from a sockaddr_storage structure.
+ *
+ * @param addr sockaddr_storage structure.
+ * @return std::array<uint8_t, 16> Key.
+ */
+std::array<uint8_t, 16> get_key_from_sockaddr(sockaddr_storage *addr) {
+	std::array<uint8_t, 16> key;
+
+	// Check if it's an IPv4 or IPv6 address
+	if (addr->ss_family == AF_INET) {
+		sockaddr_in *addr_in = (sockaddr_in *)addr;
+		memset(key.data(), 0, 10); // Zero out the first 10 bytes (IPv4-mapped IPv6 address prefix)
+		key[10] = 0xFF;
+		key[11] = 0xFF;
+		memcpy(key.data() + 12, &addr_in->sin_addr, 4);
+
+	} else if (addr->ss_family == AF_INET6) {
+		sockaddr_in6 *addr_in6 = (sockaddr_in6 *)addr;
+		memcpy(key.data(), &addr_in6->sin6_addr, 16);
+	}
+
+	return key;
+}
+
+void dumpSockaddr(const sockaddr *sa) {
+	if (sa->sa_family == AF_INET) { // IPv4
+		char ip[INET_ADDRSTRLEN] = {0};
+		sockaddr_in *addr_in = (sockaddr_in *)sa;
+
+		inet_ntop(AF_INET, &(addr_in->sin_addr), ip, INET_ADDRSTRLEN);
+		LOG_DEBUG("IPv4 Address: ", ip, ", Port: ", ntohs(addr_in->sin_port));
+
+	} else if (sa->sa_family == AF_INET6) { // IPv6
+		char ip[INET6_ADDRSTRLEN] = {0};
+		sockaddr_in6 *addr_in6 = (sockaddr_in6 *)sa;
+
+		inet_ntop(AF_INET6, &(addr_in6->sin6_addr), ip, INET6_ADDRSTRLEN);
+		LOG_DEBUG("IPv6 Address: ", ip, ", Port: ", ntohs(addr_in6->sin6_port));
+
+	} else {
+		std::cerr << "Unknown AF family" << std::endl;
+	}
+}
+
+/**
+ * @brief Convert a sockaddr_storage structure to an IPv6 sockaddr_storage structure.
+ *
+ * @param addr sockaddr_storage structure.
+ * @return std::shared_ptr<struct sockaddr_storage>
+ */
+std::shared_ptr<struct sockaddr_storage> to_sockaddr_storage_ipv6(const std::shared_ptr<sockaddr_storage> addr) {
+	std::shared_ptr<struct sockaddr_storage> result = std::make_shared<struct sockaddr_storage>();
+
+	if (addr->ss_family == AF_INET6) {
+		memcpy(result.get(), addr.get(), sizeof(struct sockaddr_storage));
+
+	} else if (addr->ss_family == AF_INET) {
+		struct sockaddr_in *addr4 = (struct sockaddr_in *)addr.get();
+		struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)result.get();
+
+		memset(&addr6->sin6_addr.s6_addr[0], 0, 10);
+		memset(&addr6->sin6_addr.s6_addr[10], 0xff, 2);
+		// Set family, port, flowinfo, scope_id
+		addr6->sin6_family = AF_INET6;
+		addr6->sin6_port = addr4->sin_port;
+		addr6->sin6_flowinfo = 0;
+		addr6->sin6_scope_id = 0;
+		// Copy in IPv4 address portion
+		memcpy(&addr6->sin6_addr.s6_addr[12], &addr4->sin_addr.s_addr, 4);
+	}
+
+	return result;
 }

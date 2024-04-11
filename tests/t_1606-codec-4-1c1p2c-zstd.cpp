@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#include "debug.hpp"
 #include "decoder.hpp"
 #include "encoder.hpp"
-#include "debug.hpp"
 #include "libaccl/buffer_pool.hpp"
 #include "libaccl/logger.hpp"
 #include "libsethnetkit/ethernet_packet.hpp"
 #include "libtests/framework.hpp"
+#include "packet_switch.hpp"
 
 TEST_CASE("TEST: Check encoding 4 packets, 1 complete, 1 partial, 2 complete with ZSTD compression", "[codec]") {
 
@@ -115,8 +116,9 @@ TEST_CASE("TEST: Check encoding 4 packets, 1 complete, 1 partial, 2 complete wit
 	uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 	uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
 	uint16_t buffer_size = l2mtu + (l2mtu / 10);
-	accl::BufferPool<PacketBuffer> avail_buffer_pool(buffer_size, 8);
-	accl::BufferPool<PacketBuffer> enc_buffer_pool(buffer_size);
+	std::shared_ptr<accl::BufferPool<PacketBuffer>> avail_buffer_pool =
+		std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, 8);
+	std::shared_ptr<accl::BufferPool<PacketBuffer>> enc_buffer_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 	std::string packet1_bin = packet1.asBinary();
 	std::unique_ptr<PacketBuffer> packet1_buffer = std::make_unique<PacketBuffer>(buffer_size);
@@ -134,7 +136,7 @@ TEST_CASE("TEST: Check encoding 4 packets, 1 complete, 1 partial, 2 complete wit
 	std::unique_ptr<PacketBuffer> packet4_buffer = std::make_unique<PacketBuffer>(buffer_size);
 	packet4_buffer->append(packet4_bin.data(), packet4_bin.length());
 
-	PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+	PacketEncoder encoder(l2mtu, l4mtu, enc_buffer_pool, avail_buffer_pool);
 	encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_ZSTD);
 	encoder.encode(std::move(packet1_buffer));
 	encoder.encode(std::move(packet2_buffer));
@@ -143,34 +145,34 @@ TEST_CASE("TEST: Check encoding 4 packets, 1 complete, 1 partial, 2 complete wit
 	encoder.flush();
 
 	// Make sure we now have a packet in the enc_buffer_pool
-	REQUIRE(enc_buffer_pool.getBufferCount() == 2);
+	REQUIRE(enc_buffer_pool->getBufferCount() == 2);
 	// We should have 9 left in the available pool
-	REQUIRE(avail_buffer_pool.getBufferCount() == 8);
+	REQUIRE(avail_buffer_pool->getBufferCount() == 8);
 
 	/*
 	 * Test decoding
 	 */
 
-	accl::BufferPool<PacketBuffer> dec_buffer_pool(buffer_size);
+	std::shared_ptr<accl::BufferPool<PacketBuffer>> dec_buffer_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 	// Grab single packet from the encoder buffer pool
-	auto enc_buffer1 = enc_buffer_pool.pop();
-	auto enc_buffer2 = enc_buffer_pool.pop();
+	auto enc_buffer1 = enc_buffer_pool->pop();
+	auto enc_buffer2 = enc_buffer_pool->pop();
 
-	PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
+	PacketDecoder decoder(l2mtu, dec_buffer_pool, avail_buffer_pool);
 	decoder.decode(std::move(enc_buffer1));
 	decoder.decode(std::move(enc_buffer2));
 
 	// Our decoded buffer pool should now have 2 packets in it
-	REQUIRE(dec_buffer_pool.getBufferCount() == 4);
+	REQUIRE(dec_buffer_pool->getBufferCount() == 4);
 	// Our encoder buffer pool should have 0 packets in it
-	REQUIRE(enc_buffer_pool.getBufferCount() == 0);
+	REQUIRE(enc_buffer_pool->getBufferCount() == 0);
 
 	// Grab buffer from dec_buffer_pool
-	auto dec_buffer1 = dec_buffer_pool.pop();
-	auto dec_buffer2 = dec_buffer_pool.pop();
-	auto dec_buffer3 = dec_buffer_pool.pop();
-	auto dec_buffer4 = dec_buffer_pool.pop();
+	auto dec_buffer1 = dec_buffer_pool->pop();
+	auto dec_buffer2 = dec_buffer_pool->pop();
+	auto dec_buffer3 = dec_buffer_pool->pop();
+	auto dec_buffer4 = dec_buffer_pool->pop();
 
 	// Now lets convert the buffer into a std::string and compare them
 	std::string buffer1_string(reinterpret_cast<const char *>(dec_buffer1->getData()), dec_buffer1->getDataSize());
