@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "libaccl/StreamCompressorZSTD.hpp"
+#include "libaccl/stream_compressor_zstd.hpp"
 
 TEST_CASE("StreamCompressorZSTD Compression", "[compressor]") {
 	accl::StreamCompressorZSTD compressor;

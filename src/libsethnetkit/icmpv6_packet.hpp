@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "IPv6Packet.hpp"
+#include "ipv6_packet.hpp"
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP6{58};
 

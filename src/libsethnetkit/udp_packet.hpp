@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "IPv4Packet.hpp"
-#include "IPv6Packet.hpp"
+#include "ipv4_packet.hpp"
+#include "ipv6_packet.hpp"
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_UDP{17};
 

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "UDPPacket.hpp"
+#include "udp_packet.hpp"
 #include "checksum.hpp"
 #include "exceptions.hpp"
 #include <format>

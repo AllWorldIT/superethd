@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Packet.hpp"
+#include "packet.hpp"
 #include <format>
 #include <iostream>
 #include <ostream>

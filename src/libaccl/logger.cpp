@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "Logger.hpp"
+#include "logger.hpp"
 #include <chrono>
 #include <iostream>
 
@@ -117,11 +117,10 @@ bool Logger::setLogLevel(const std::string level) {
 	return false;
 }
 
-std::map<std::string, LogLevel> logLevelMap = {{"debug", LogLevel::DEBUGGING},
-											   {"info", LogLevel::INFO},
-											   {"notice", LogLevel::NOTICE},
-											   {"warn", LogLevel::WARNING},
-											   {"error", LogLevel::ERROR}};
+std::map<std::string, LogLevel> logLevelMap = {
+	{"debug", LogLevel::DEBUGGING}, {"info", LogLevel::INFO},	{"notice", LogLevel::NOTICE},
+	{"warn", LogLevel::WARNING},	{"error", LogLevel::ERROR},
+};
 
 // Define the global logger instance
 Logger logger;

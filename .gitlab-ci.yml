@@ -93,7 +93,7 @@ test_job:
   - pacman -S --noconfirm
       valgrind
   # Build
-  - meson setup build -Db_coverage=true -Db_werror=true -Dwith_tests=true
+  - meson setup build -Db_coverage=true --werror -Dwith_tests=true
   # Run tests
   - ninja -C build test
   # Create coverage reports

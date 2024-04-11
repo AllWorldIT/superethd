@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "StreamCompressor.hpp"
+#include "stream_compressor.hpp"
 
 extern "C" {
 #include <zstd.h>

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "IPv4Packet.hpp"
-#include "IPPacket.hpp"
+#include "ipv4_packet.hpp"
+#include "ip_packet.hpp"
 #include "checksum.hpp"
 #include <format>
 #include <ostream>

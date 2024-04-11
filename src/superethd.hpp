@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Codec.hpp"
+#include "codec.hpp"
 #include <netinet/in.h>
 #include <string>
 

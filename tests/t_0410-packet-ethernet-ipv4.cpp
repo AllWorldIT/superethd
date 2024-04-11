@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "libsethnetkit/EthernetPacket.hpp"
+#include "libsethnetkit/ethernet_packet.hpp"
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check creating IPv4 packets used with IPv4 ethertype", "[ethernet-ipv4]") {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "../libaccl/Endian.hpp"
+#include "../libaccl/endian.hpp"
 #include <cstddef>
 
 uint32_t compute_checksum_partial(uint8_t *addr8, size_t count, uint32_t sum) {

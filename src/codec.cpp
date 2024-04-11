@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Codec.hpp"
+#include "codec.hpp"
 
 std::string PacketHeaderOptionFormatTypeToString(PacketHeaderOptionFormatType type) {
 	switch (type) {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "StreamCompressor.hpp"
+#include "stream_compressor.hpp"
 
 namespace accl {
 

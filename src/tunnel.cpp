@@ -5,12 +5,12 @@
  */
 
 #include "tunnel.hpp"
-#include "Decoder.hpp"
-#include "Encoder.hpp"
-#include "PacketBuffer.hpp"
+#include "decoder.hpp"
+#include "encoder.hpp"
+#include "packet_buffer.hpp"
 #include "common.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
 #include "threads.hpp"
 #include <arpa/inet.h>
 #include <chrono>

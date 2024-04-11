@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "../libaccl/Compiler.hpp"
-#include "../libaccl/Endian.hpp"
-#include "Packet.hpp"
+#include "../libaccl/compiler.hpp"
+#include "../libaccl/endian.hpp"
+#include "packet.hpp"
 #include <array>
 
 inline constexpr uint16_t SETH_PACKET_ETHERNET_HEADER_LEN{14};

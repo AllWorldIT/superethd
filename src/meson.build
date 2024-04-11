@@ -27,9 +27,9 @@ deps += [dependency('libzstd')]
 #
 
 libsuperethd_sources = [
-    'Codec.cpp',
-    'Decoder.cpp',
-    'Encoder.cpp',
+    'codec.cpp',
+    'decoder.cpp',
+    'encoder.cpp',
     'debug.cpp',
     'sockets.cpp',
     'superethd.cpp',

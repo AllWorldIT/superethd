@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "../libaccl/Endian.hpp"
-#include "IPv4Packet.hpp"
+#include "../libaccl/endian.hpp"
+#include "ipv4_packet.hpp"
 
 inline constexpr uint8_t SETH_PACKET_IP_PROTOCOL_ICMP4{1};
 

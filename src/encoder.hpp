@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include "Codec.hpp"
-#include "PacketBuffer.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
-#include "libaccl/Statistic.hpp"
-#include "libaccl/StreamCompressor.hpp"
+#include "codec.hpp"
+#include "packet_buffer.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
+#include "libaccl/statistic.hpp"
+#include "libaccl/stream_compressor.hpp"
 #include <memory>
 
 /*

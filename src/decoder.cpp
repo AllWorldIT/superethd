@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Decoder.hpp"
-#include "Codec.hpp"
-#include "libaccl/Logger.hpp"
-#include "libaccl/StreamCompressorLZ4.hpp"
+#include "decoder.hpp"
+#include "codec.hpp"
+#include "libaccl/logger.hpp"
+#include "libaccl/stream_compressor_lz4.hpp"
 #include "util.hpp"
 #include <cassert>
 

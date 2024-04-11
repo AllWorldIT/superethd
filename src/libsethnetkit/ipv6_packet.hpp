@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "IPPacket.hpp"
+#include "ip_packet.hpp"
 
 inline constexpr uint16_t SETH_PACKET_ETHERTYPE_ETHERNET_IPV6{0x86DD};
 

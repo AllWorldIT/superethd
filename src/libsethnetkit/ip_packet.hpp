@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "EthernetPacket.hpp"
+#include "ethernet_packet.hpp"
 
 inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV4{0x4};
 inline constexpr uint8_t SETH_PACKET_IP_VERSION_IPV6{0x6};

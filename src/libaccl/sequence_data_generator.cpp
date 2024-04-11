@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "SequenceDataGenerator.hpp"
+#include "sequence_data_generator.hpp"
 #include <sstream>
 
 namespace accl {

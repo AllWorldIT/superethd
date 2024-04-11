@@ -132,7 +132,7 @@ destination=192.168.2.100
 #compression=lz4
 ```
 
-If one is using the SystemdD superethd service, additional configuration files can be created in `/etc/superethd` with the name
+If one is using the systemd service, additional configuration files can be created in `/etc/superethd` with the name
 in the format of `superethd-<IFACE>.conf`, the `superethd@` serivce can then be used matching the interface name. eg.
 `superethd@seth1`.
 

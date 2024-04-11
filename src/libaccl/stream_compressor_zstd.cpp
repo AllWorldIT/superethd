@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "StreamCompressorZSTD.hpp"
+#include "stream_compressor_zstd.hpp"
 #include <stdexcept>
 
 extern "C" {

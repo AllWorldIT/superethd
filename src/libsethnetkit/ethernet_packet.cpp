@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "EthernetPacket.hpp"
+#include "ethernet_packet.hpp"
 #include <format>
 #include <ostream>
 #include <sstream>

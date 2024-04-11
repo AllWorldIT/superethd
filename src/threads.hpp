@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "Codec.hpp"
-#include "PacketBuffer.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Statistic.hpp"
+#include "codec.hpp"
+#include "packet_buffer.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/statistic.hpp"
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>

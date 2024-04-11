@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "libsethnetkit/EthernetPacket.hpp"
+#include "libsethnetkit/ethernet_packet.hpp"
 
 // Maximum packet size
 inline constexpr uint16_t SETH_PACKET_MAX_SIZE = UINT16_MAX - SETH_PACKET_ETHERNET_HEADER_LEN;

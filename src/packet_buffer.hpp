@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "libaccl/Buffer.hpp"
+#include "libaccl/buffer.hpp"
 #include <cstdint>
 
 class PacketBuffer : public accl::Buffer {

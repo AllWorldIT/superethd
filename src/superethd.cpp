@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Codec.hpp"
+#include "codec.hpp"
 #include "common.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
 #include "sockets.hpp"
 #include "tap.hpp"
 #include "threads.hpp"

@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Decoder.hpp"
-#include "Encoder.hpp"
+#include "decoder.hpp"
+#include "encoder.hpp"
 #include "debug.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
-#include "libsethnetkit/EthernetPacket.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
+#include "libsethnetkit/ethernet_packet.hpp"
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check encoding 2 packets, where the second is split between encapsulated packets with ZSTD compression", "[codec]") {
