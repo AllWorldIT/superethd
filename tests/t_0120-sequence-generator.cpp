@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: MIT
  */
