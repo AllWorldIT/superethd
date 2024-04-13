@@ -124,7 +124,7 @@ void FDB::dumpDebug() {
 			ip_str = get_ipstr(entry.second->getDestination()->getNodeAddr().get());
 		}
 
-		auto diff = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->getLastSeen()).count();
-		LOG_DEBUG_INTERNAL("    - ", mac_str, " => ", ip_str, " (last seen: ", diff, "s)");
+		LOG_DEBUG_INTERNAL("    - ", mac_str, " => ", ip_str, " (last seen: ",
+						   std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->getLastSeen()).count(), "s)");
 	}
 }
