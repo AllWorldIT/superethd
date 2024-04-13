@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "libaccl/StreamCompressorLZ4.hpp"
+#include "libaccl/stream_compressor_lz4.hpp"
 
 TEST_CASE("StreamCompressorLZ4 Compression", "[compressor]") {
 	accl::StreamCompressorLZ4 compressor;

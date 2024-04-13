@@ -1,13 +1,14 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Codec.hpp"
+#include "codec.hpp"
 #include "common.hpp"
 #include "config.hpp"
-#include "libaccl/Logger.hpp"
+#include "exceptions.hpp"
+#include "libaccl/logger.hpp"
 #include "superethd.hpp"
 #include "util.hpp"
 #include <arpa/inet.h>
@@ -21,17 +22,12 @@
 #include <string.h>
 #include <string>
 
-static struct option long_options[] = {{"version", no_argument, 0, 'v'},
-									   {"help", no_argument, 0, 'h'},
-									   {"config-file", required_argument, 0, 'c'},
-									   {"ifname", required_argument, 0, 'i'},
-									   {"src", required_argument, 0, 's'},
-									   {"dst", required_argument, 0, 'd'},
-									   {"port", required_argument, 0, 'p'},
-									   {"mtu", required_argument, 0, 'm'},
-									   {"tsize", required_argument, 0, 't'},
-									   {"compression", required_argument, 0, 'a'},
-									   {0, 0, 0, 0}};
+static struct option long_options[] = {{"version", no_argument, 0, 'v'},		   {"help", no_argument, 0, 'h'},
+									   {"config-file", required_argument, 0, 'c'}, {"log-level", required_argument, 0, 'l'},
+									   {"ifname", required_argument, 0, 'i'},	   {"src", required_argument, 0, 's'},
+									   {"dst", required_argument, 0, 'd'},		   {"port", required_argument, 0, 'p'},
+									   {"mtu", required_argument, 0, 'm'},		   {"tsize", required_argument, 0, 't'},
+									   {"compression", required_argument, 0, 'a'}, {0, 0, 0, 0}};
 
 void print_help() {
 	std::cerr << "Usage:" << std::endl;
@@ -46,14 +42,16 @@ void print_help() {
 	std::cerr << std::format("    -m, --mtu=<MTU>               Specify the interface MTU of between {} and", SETH_MIN_MTU_SIZE)
 			  << std::endl;
 	std::cerr << std::format("                                  {} (default is 1500)", SETH_MAX_MTU_SIZE) << std::endl;
-	std::cerr << "    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size" << std::endl;
-	std::cerr << std::format("                                  of between {} and {} (default is 1500)", SETH_MIN_TXSIZE,
+	std::cerr << "    -t, --txsize=<TSIZE>          Specify the maximum transmissions packet size," << std::endl;
+	std::cerr << "                                  this must be the same on all nodes and" << std::endl;
+	std::cerr << std::format("                                  between {} and {} (default is 1500)", SETH_MIN_TXSIZE,
 							 SETH_MAX_TXSIZE)
 			  << std::endl;
-	std::cerr << "    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address" << std::endl;
-	std::cerr << "                                  (mandatory)" << std::endl;
-	std::cerr << "    -d, --dst=<DESTINATION>       Specify the destination IPv4/IPv6 address" << std::endl;
-	std::cerr << "                                  (mandatory)" << std::endl;
+	std::cerr << "    -s, --src=<SOURCE>            Specify the source IPv4/IPv6 address." << std::endl;
+	std::cerr << "    -d, --dst=<DESTINATION>       Specify the destination IPv4/IPv6 address." << std::endl;
+	std::cerr << "                                  Multiple values can be specified using a" << std::endl;
+	std::cerr << "                                  comma, semicolon, space or using this option" << std::endl;
+	std::cerr << "                                  multiple times. (mandatory)" << std::endl;
 	std::cerr << "    -p, --port=<PORT>             Specify the UDP port, between 1 and 65535" << std::endl;
 	std::cerr << "                                  (default is 58023)" << std::endl;
 	std::cerr << std::format("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ) << std::endl;
@@ -73,13 +71,13 @@ int main(int argc, char *argv[]) {
 	int cfg_mtu{1500};
 	int cfg_txsize{1500};
 	int cfg_tunnel_port{58203};
-	std::string cfg_tunnel_src{};
-	std::string cfg_tunnel_dst{};
+	std::string cfg_tunnel_src{"::"};
+	std::vector<std::string> cfg_tunnel_dst{};
 	std::string cfg_ifname{SETH_DEFAULT_TUNNEL_NAME};
 	std::string cfg_packet_format_str{"lz4"};
 	PacketHeaderOptionFormatType cfg_packet_format;
 
-	std::cerr << std::format("Super Ethernet Tunnel v{} - Copyright (c) 2023, AllWorldIT.", VERSION) << std::endl;
+	std::cerr << std::format("Super Ethernet Tunnel v{} - Copyright (c) 2023-2024, AllWorldIT.", VERSION) << std::endl;
 	std::cerr << std::endl;
 
 	{
@@ -92,7 +90,7 @@ int main(int argc, char *argv[]) {
 		int cmdline_txsize{0}, conffile_txsize{0};
 		int cmdline_tunnel_port{0}, conffile_tunnel_port{0};
 		std::string cmdline_tunnel_src, conffile_tunnel_src;
-		std::string cmdline_tunnel_dst, conffile_tunnel_dst;
+		std::vector<std::string> cmdline_tunnel_dst, conffile_tunnel_dst;
 		std::string cmdline_ifname, conffile_ifname;
 		std::string cmdline_packet_format, conffile_packet_format;
 
@@ -133,7 +131,10 @@ int main(int argc, char *argv[]) {
 				cmdline_tunnel_src.assign(optarg);
 				break;
 			case 'd':
-				cmdline_tunnel_dst.assign(optarg);
+				// Loop with results from splitByDelimiters and add each of them to the tunnel destination vector
+				for (auto &dst : splitByDelimiters(optarg, ",; ")) {
+					cmdline_tunnel_dst.push_back(dst);
+				}
 				break;
 			case 'p':
 				cmdline_tunnel_port = atoi(optarg);
@@ -197,7 +198,9 @@ int main(int argc, char *argv[]) {
 			}
 			// Check if the destination address is available in the config
 			try {
-				conffile_tunnel_dst = pt.get<std::string>("destination").c_str();
+				std::string conffile_tunnel_dst_str = pt.get<std::string>("destination").c_str();
+				conffile_tunnel_dst = splitByDelimiters(conffile_tunnel_dst_str, ",; ");
+
 			} catch (boost::property_tree::ptree_bad_path &e) {
 				// Ignore if its not found
 			}
@@ -263,16 +266,22 @@ int main(int argc, char *argv[]) {
 			cfg_tunnel_src = conffile_tunnel_src;
 		}
 		// Work out what tunnel dst we're using
-		if (cmdline_tunnel_dst.length() > 0) {
+		if (cmdline_tunnel_dst.size() > 0) {
 			cfg_tunnel_dst = cmdline_tunnel_dst;
-		} else if (conffile_tunnel_dst.length() > 0) {
+		} else if (conffile_tunnel_dst.size() > 0) {
 			cfg_tunnel_dst = conffile_tunnel_dst;
 		}
 		// Check if mandatory options src and dst are provided
-		if (!(cfg_tunnel_src.length() > 0 && cfg_tunnel_dst.length() > 0)) {
-			std::cerr << "ERROR: Tunnel source and destination are mandatory and must be present" << std::endl;
-			std::cerr << "       in either the config file or on the command line." << std::endl;
+		if (!cfg_tunnel_dst.size()) {
+			std::cerr << "ERROR: Tunnel destination(s) are mandatory and must be present in" << std::endl;
+			std::cerr << "       either the config file or on the command line." << std::endl;
 			return 1;
+		}
+		// Ensure the tunnel destinations are unique
+		{
+			std::sort(cfg_tunnel_dst.begin(), cfg_tunnel_dst.end());
+			auto last = std::unique(cfg_tunnel_dst.begin(), cfg_tunnel_dst.end());
+			cfg_tunnel_dst.erase(last, cfg_tunnel_dst.end());
 		}
 
 		// Work out what tunnel port we're uwing
@@ -322,34 +331,31 @@ int main(int argc, char *argv[]) {
 	 */
 
 	// Convert local address to a IPv6 sockaddr
-	struct in6_addr src_addr;
-	char src_addr_str[INET6_ADDRSTRLEN];
-	if (to_sin6addr(cfg_tunnel_src.data(), &src_addr)) {
-		if (inet_ntop(AF_INET6, &src_addr, src_addr_str, sizeof(src_addr_str)) == NULL) {
-			std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address: {}", cfg_tunnel_src,
-									 strerror(errno))
-					  << std::endl;
-			exit(EXIT_FAILURE);
-		}
-	} else {
-		std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address", cfg_tunnel_src) << std::endl;
+	std::shared_ptr<struct sockaddr_storage> src_addr;
+	try {
+		src_addr = to_sockaddr_storage(cfg_tunnel_src, cfg_tunnel_port);
+	} catch (SuperEthernetTunnelException &e) {
+		std::cerr << std::format("ERROR: Failed to convert source address '{}': {}", cfg_tunnel_src, e.what()) << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	// Make sure we can convert it to a string
+	std::string src_addr_str = get_ipstr(src_addr.get());
 
 	// Convert remote address to a IPv6 sockaddr
-	struct in6_addr dst_addr;
-	char dst_addr_str[INET6_ADDRSTRLEN];
-	if (to_sin6addr(cfg_tunnel_dst.data(), &dst_addr)) {
-		if (inet_ntop(AF_INET6, &dst_addr, dst_addr_str, sizeof(dst_addr_str)) == NULL) {
-			std::cerr << std::format("ERROR: Failed to convert destination address '{}' to IPv6 address: {}", cfg_tunnel_dst,
-									 strerror(errno))
-					  << std::endl;
-
+	std::vector<std::shared_ptr<struct sockaddr_storage>> dst_addrs;
+	std::vector<std::string> dst_addr_strs;
+	for (auto &dst : cfg_tunnel_dst) {
+		std::shared_ptr<struct sockaddr_storage> dst_addr;
+		try {
+			dst_addr = to_sockaddr_storage(dst, cfg_tunnel_port);
+		} catch (SuperEthernetTunnelException &e) {
+			std::cerr << std::format("ERROR: Failed to convert destination address '{}': {}", dst, e.what()) << std::endl;
 			exit(EXIT_FAILURE);
 		}
-	} else {
-		std::cerr << std::format("ERROR: Failed to convert source address '{}' to IPv6 address", cfg_tunnel_dst) << std::endl;
-		exit(EXIT_FAILURE);
+		// Add to destination address list
+		dst_addrs.push_back(dst_addr);
+		// Add to string list too
+		dst_addr_strs.push_back(get_ipstr(dst_addr.get()));
 	}
 
 	// Set our log level
@@ -358,13 +364,18 @@ int main(int argc, char *argv[]) {
 
 	std::cerr << std::format("Interface...: {}", cfg_ifname) << std::endl;
 	std::cerr << std::format("Source......: {}", src_addr_str) << std::endl;
-	std::cerr << std::format("Destination.: {}", dst_addr_str) << std::endl;
+	std::cerr << std::format("Destinations:") << std::endl;
+	for (auto &ipstr : dst_addr_strs) {
+		std::cerr << std::format("    - {}", ipstr) << std::endl;
+	}
 	std::cerr << std::format("UDP Port....: {}", cfg_tunnel_port) << std::endl;
 	std::cerr << std::format("MTU.........: {}", cfg_mtu) << std::endl;
 	std::cerr << std::format("TX Size.....: {}", cfg_txsize) << std::endl;
+	std::cerr << std::format("Format......: {}", PacketHeaderOptionFormatTypeToString(cfg_packet_format)) << std::endl;
 	std::cerr << std::endl;
 
-	start_set(cfg_ifname, &src_addr, &dst_addr, cfg_tunnel_port, cfg_mtu, cfg_txsize, cfg_packet_format);
+	// Start SETH
+	start_seth(cfg_ifname, cfg_mtu, cfg_txsize, cfg_packet_format, src_addr, dst_addrs, cfg_tunnel_port);
 
 	return 0;
 }

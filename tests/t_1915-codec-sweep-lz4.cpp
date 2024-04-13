@@ -1,16 +1,17 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "Decoder.hpp"
-#include "Encoder.hpp"
 #include "debug.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
-#include "libsethnetkit/EthernetPacket.hpp"
+#include "decoder.hpp"
+#include "encoder.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
+#include "libsethnetkit/ethernet_packet.hpp"
 #include "libtests/framework.hpp"
+#include "packet_switch.hpp"
 
 TEST_CASE("Check encoding of two packets into a single encapsulated packet with a sweeping third packet with LZ4 compression",
 		  "[codec]") {
@@ -92,8 +93,10 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		uint16_t l2mtu = get_l2mtu_from_mtu(1500);
 		uint16_t l4mtu = 1500 - 20 - 8; // IPv6 is 40
 		uint16_t buffer_size = l2mtu + (l2mtu / 10);
-		accl::BufferPool<PacketBuffer> avail_buffer_pool(buffer_size, 8);
-		accl::BufferPool<PacketBuffer> enc_buffer_pool(buffer_size);
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> avail_buffer_pool =
+			std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, 8);
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> enc_buffer_pool =
+			std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 		std::string packet1_bin = packet1.asBinary();
 		std::unique_ptr<PacketBuffer> packet1_buffer = std::make_unique<PacketBuffer>(buffer_size);
@@ -107,7 +110,7 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		std::unique_ptr<PacketBuffer> packet3_buffer = std::make_unique<PacketBuffer>(buffer_size);
 		packet3_buffer->append(packet3_bin.data(), packet3_bin.length());
 
-		PacketEncoder encoder(l2mtu, l4mtu, &avail_buffer_pool, &enc_buffer_pool);
+		PacketEncoder encoder(l2mtu, l4mtu, enc_buffer_pool, avail_buffer_pool);
 		encoder.setPacketFormat(PacketHeaderOptionFormatType::COMPRESSED_LZ4);
 		encoder.encode(std::move(packet1_buffer));
 		encoder.encode(std::move(packet2_buffer));
@@ -118,25 +121,26 @@ TEST_CASE("Check encoding of two packets into a single encapsulated packet with 
 		 * Test decoding
 		 */
 
-		accl::BufferPool<PacketBuffer> dec_buffer_pool(buffer_size);
+		std::shared_ptr<accl::BufferPool<PacketBuffer>> dec_buffer_pool =
+			std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 		// Grab single packet from the encoder buffer pool
-		auto buffers = enc_buffer_pool.pop(0);
+		auto buffers = enc_buffer_pool->pop(0);
 
-		PacketDecoder decoder(l2mtu, &avail_buffer_pool, &dec_buffer_pool);
+		PacketDecoder decoder(l2mtu, dec_buffer_pool, avail_buffer_pool);
 		for (auto &buffer : buffers) {
 			decoder.decode(std::move(buffer));
 		}
 
 		// Our decoded buffer pool should now have 2 packets in it
-		REQUIRE(dec_buffer_pool.getBufferCount() == 3);
+		REQUIRE(dec_buffer_pool->getBufferCount() == 3);
 		// Our encoder buffer pool should have 0 packets in it
-		REQUIRE(enc_buffer_pool.getBufferCount() == 0);
+		REQUIRE(enc_buffer_pool->getBufferCount() == 0);
 
 		// Grab buffer from dec_buffer_pool
-		auto dec_buffer1 = dec_buffer_pool.pop();
-		auto dec_buffer2 = dec_buffer_pool.pop();
-		auto dec_buffer3 = dec_buffer_pool.pop();
+		auto dec_buffer1 = dec_buffer_pool->pop();
+		auto dec_buffer2 = dec_buffer_pool->pop();
+		auto dec_buffer3 = dec_buffer_pool->pop();
 
 		// Now lets convert the buffer into a std::string and compare them
 		std::string buffer1_string(reinterpret_cast<const char *>(dec_buffer1->getData()), dec_buffer1->getDataSize());

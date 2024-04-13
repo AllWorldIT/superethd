@@ -22,7 +22,7 @@
     TabWidth: 4,
     #AccessModifierOffset: 0,
     IndentAccessModifiers: true,
-#    SeparateDefinitionBlocks: Always,
-#    EmptyLineBeforeAccessModifier: LogicalBlock,
-#    ReflowComments: true,
+    SeparateDefinitionBlocks: Always,
+    EmptyLineBeforeAccessModifier: LogicalBlock,
+    ReflowComments: true,
 }

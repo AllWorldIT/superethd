@@ -1,11 +1,11 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "libsethnetkit/EthernetPacket.hpp"
-#include "libsethnetkit/IPv4Packet.hpp"
+#include "libsethnetkit/ethernet_packet.hpp"
+#include "libsethnetkit/ipv4_packet.hpp"
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check creating ethernet packets with IPv4 ethertype", "[ethernet-packets]") {

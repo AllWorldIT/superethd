@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "libaccl/SequenceDataGenerator.hpp"
+#include "libaccl/sequence_data_generator.hpp"
 #include "libtests/framework.hpp"
 
 TEST_CASE("Check checksum generation using compute_checksum", "[checksums]") {

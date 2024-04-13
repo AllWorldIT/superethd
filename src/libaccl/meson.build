@@ -4,13 +4,13 @@
 #
 
 libaccl_sources = [
-    'Buffer.cpp',
-    'BufferPool.cpp',
-    'Logger.cpp',
-    'SequenceDataGenerator.cpp',
-    'StreamCompressor.cpp',
-    'StreamCompressorLZ4.cpp',
-    'StreamCompressorZSTD.cpp',
+    'buffer.cpp',
+    'buffer_pool.cpp',
+    'logger.cpp',
+    'sequence_data_generator.cpp',
+    'stream_compressor.cpp',
+    'stream_compressor_lz4.cpp',
+    'stream_compressor_zstd.cpp',
 ]
 
 libaccl = static_library('accl', libaccl_sources)

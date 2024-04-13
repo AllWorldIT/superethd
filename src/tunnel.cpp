@@ -1,20 +1,24 @@
 /*
- * SPDX-FileCopyrightText: 2023 AllWorldIT
+ * SPDX-FileCopyrightText: 2023-2024 AllWorldIT
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#if 0
 #include "tunnel.hpp"
-#include "Decoder.hpp"
-#include "Encoder.hpp"
-#include "PacketBuffer.hpp"
 #include "common.hpp"
-#include "libaccl/BufferPool.hpp"
-#include "libaccl/Logger.hpp"
+#include "decoder.hpp"
+#include "encoder.hpp"
+#include "libaccl/buffer_pool.hpp"
+#include "libaccl/logger.hpp"
+#include "packet_buffer.hpp"
 #include "threads.hpp"
 #include <arpa/inet.h>
 #include <chrono>
 #include <cstring>
+
+
+
 
 /**
  * @brief Thread responsible for reading from the TAP interface.
@@ -38,7 +42,7 @@ void tunnel_tap_read_handler(void *arg) {
 		auto buffer = tdata->rx_buffer_pool->pop_wait();
 
 		// Read data from TAP interface
-		ssize_t bytes_read = read(tdata->tap_device.fd, buffer->getData(), buffer->getBufferSize());
+		ssize_t bytes_read = read(tdata->tap_interface.fd, buffer->getData(), buffer->getBufferSize());
 		if (bytes_read == -1) {
 			LOG_ERROR("Got an error read()'ing TAP device: ", strerror(errno));
 			exit(EXIT_FAILURE);
@@ -303,7 +307,6 @@ void tunnel_socket_read_handler(void *arg) {
 
 			// Add buffer node to the received list
 			recvmm_buffers[i]->setKey(accl::be_to_cpu_32(pkthdr->sequence));
-			// received_buffers.insert(std::move(recvmm_buffers[i]));
 			received_buffers.push_back(std::move(recvmm_buffers[i]));
 
 			// Replenish the buffer
@@ -376,7 +379,7 @@ void tunnel_tap_write_handler(void *arg) {
 		for (auto &buffer : buffers) {
 
 			// Write data to TAP interface
-			ssize_t bytes_written = write(tdata->tap_device.fd, buffer->getData(), buffer->getDataSize());
+			ssize_t bytes_written = write(tdata->tap_interface.fd, buffer->getData(), buffer->getDataSize());
 			if (bytes_written == -1) {
 				LOG_ERROR("Error writing TAP device: ", strerror(errno));
 				exit(EXIT_FAILURE);
@@ -391,3 +394,5 @@ void tunnel_tap_write_handler(void *arg) {
 		buffers.clear();
 	}
 }
+
+#endif
