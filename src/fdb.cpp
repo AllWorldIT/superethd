@@ -108,8 +108,9 @@ const std::shared_ptr<FDBEntry> FDB::getRemoteNode(const FDBMACAddress *mac) con
 void FDB::dumpDebug() {
 	LOG_DEBUG_INTERNAL("@@@@@@@@@@@@@@@@@@@@ FDB: Dumping FDB @@@@@@@@@@@@@@@@@@@@");
 
+#ifdef DEBUG
 	auto now = std::chrono::steady_clock::now();
-
+#endif
 	for (auto &entry : this->fdb) {
 		const FDBMACAddress *mac = entry.second->getMAC();
 		// Build string from mac address .bytes
@@ -123,8 +124,9 @@ void FDB::dumpDebug() {
 		} else {
 			ip_str = get_ipstr(entry.second->getDestination()->getNodeAddr().get());
 		}
-
-		LOG_DEBUG_INTERNAL("    - ", mac_str, " => ", ip_str, " (last seen: ",
-						   std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->getLastSeen()).count(), "s)");
+#ifdef DEBUG
+		auto diff = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->getLastSeen()).count();
+#endif
+		LOG_DEBUG_INTERNAL("    - ", mac_str, " => ", ip_str, " (last seen: ", diff, "s)");
 	}
 }
