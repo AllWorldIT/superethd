@@ -20,6 +20,7 @@
 #include <memory>
 #include <sched.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -609,15 +610,8 @@ void PacketSwitch::_create_udp_socket() {
 		throw SuperEthernetTunnelRuntimeException(std::format("ERROR: Failed to set receive buffer size: {}", strerror(res)));
 	}
 
-	// Initialize address structure
-	struct sockaddr_in6 listen_addr;
-	memset(&listen_addr, 0, sizeof(listen_addr));
-	listen_addr.sin6_family = AF_INET6;
-	listen_addr.sin6_port = htons(this->port);
-	listen_addr.sin6_addr = in6addr_any;
-
 	// Bind UDP socket source address
-	if (bind(this->udp_socket, (struct sockaddr *)&listen_addr, sizeof(listen_addr)) == -1) {
+	if (bind(this->udp_socket, (struct sockaddr *)this->src_addr.get(), sizeof(sockaddr_storage)) == -1) {
 		int res = errno;
 		close(this->udp_socket);
 		throw SuperEthernetTunnelRuntimeException(std::format("ERROR: Failed to bind UDP socket: {}", strerror(res)));
