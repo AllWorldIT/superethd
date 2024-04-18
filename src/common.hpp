@@ -12,6 +12,9 @@
 // Default tunnel name
 constexpr char SETH_DEFAULT_TUNNEL_NAME[]{"seth0"};
 
+// Default port to use
+constexpr uint16_t SETH_DEFAULT_PORT{58023};
+
 // Default buffer count
 inline constexpr size_t SETH_BUFFER_COUNT{5000};
 

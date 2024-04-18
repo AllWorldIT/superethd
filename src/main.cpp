@@ -53,7 +53,7 @@ void print_help() {
 	std::cerr << "                                  comma, semicolon, space or using this option" << std::endl;
 	std::cerr << "                                  multiple times. (mandatory)" << std::endl;
 	std::cerr << "    -p, --port=<PORT>             Specify the UDP port, between 1 and 65535" << std::endl;
-	std::cerr << "                                  (default is 58023)" << std::endl;
+	std::cerr << std::format("                                  (default is {})", SETH_DEFAULT_PORT) << std::endl;
 	std::cerr << std::format("    -i, --ifname=<IFNAME>         Specify interface name to use up to {}", IFNAMSIZ) << std::endl;
 	std::cerr << std::format("                                  characters (default is \"{}\")", SETH_DEFAULT_TUNNEL_NAME)
 			  << std::endl;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 	std::string cfg_log_level;
 	int cfg_mtu{1500};
 	int cfg_txsize{1500};
-	int cfg_tunnel_port{58203};
+	int cfg_tunnel_port{SETH_DEFAULT_PORT};
 	std::string cfg_tunnel_src{"::"};
 	std::vector<std::string> cfg_tunnel_dst{};
 	std::string cfg_ifname{SETH_DEFAULT_TUNNEL_NAME};
