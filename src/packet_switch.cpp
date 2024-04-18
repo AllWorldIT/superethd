@@ -73,14 +73,22 @@ PacketSwitch::PacketSwitch(const std::string ifname, int mtu, int tx_size, Packe
 	this->l2mtu = get_l2mtu_from_mtu(mtu);
 
 	// Add on 10% of the buffer size to cater for compression overhead
-	int bufferSize = this->l2mtu + (this->l2mtu / 10);
+	int buffer_size = this->l2mtu + (this->l2mtu / 10);
+
+	// Work out buffer count
+	int buffer_count = SETH_BUFFER_COUNT * dst_addrs.size();
+
+	// Multiply buffer size by the number of packets taken to construct the interface MTU size
+	if (int mtu_mutiplier = this->mtu / this->tx_size > 0) {
+		buffer_count *= mtu_mutiplier;
+	}
 
 	// Available RX and TX buffer pools
 	this->available_rx_buffer_pool =
-		std::make_shared<accl::BufferPool<PacketBuffer>>(bufferSize, SETH_BUFFER_COUNT * dst_addrs.size());
+		std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
 	this->available_tx_buffer_pool =
-		std::make_shared<accl::BufferPool<PacketBuffer>>(bufferSize, SETH_BUFFER_COUNT * dst_addrs.size());
-	this->tap_write_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(bufferSize);
+		std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
+	this->tap_write_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 	// Create UDP socket
 	this->_create_udp_socket();
@@ -88,7 +96,7 @@ PacketSwitch::PacketSwitch(const std::string ifname, int mtu, int tx_size, Packe
 	// Loop with dst_addrs and crate RemoteNodes to be added to our remote_nodes map
 	for (auto &dst_addr : dst_addrs) {
 		// Create remote node
-		auto remote_node = std::make_shared<RemoteNode>(this->udp_socket, dst_addr, this->tx_size, this->l2mtu, bufferSize,
+		auto remote_node = std::make_shared<RemoteNode>(this->udp_socket, dst_addr, this->tx_size, this->l2mtu, buffer_size,
 														this->packet_format, this->tap_write_pool, this->available_rx_buffer_pool,
 														this->available_tx_buffer_pool, &this->stop_flag);
 		// Add to our remote nodes map
