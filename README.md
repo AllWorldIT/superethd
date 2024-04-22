@@ -33,18 +33,22 @@ Requirements:
 - Fixed IP's on both sides of the tunnel.
 
 Wishlist:
-- **Node authentication support:** It would be nice if nodes could authenticate themselves to the remote node so static IP's both
-sides are not required.
-- **Builtin web interface:** A builtin web interface would be amazing.
 - **RST documentation:** With additional features we'll need a proper site with RST based documentation.
+- **Detailed statistics:** Would be nice to see RTT on each node, compression ratio to/from each node, dropped packet count, pps,
+bps to/from each node. Export via JSON configurable (eg. 30s).
+- **CLI tool:** Display things like the statistics and FDB table. Export via JSON.
+- **Node authentication support:** It would be nice if nodes could authenticate themselves to the remote node so static IP's both
+sides are not required, or in other words dynamic endpoint registration.
 - **Add TCP support:** With TCP support we could probably implement a fully stream-based compression approach allowing the
-compression algorithm to adapt to the data being compressed an achieve much higher compression ratios.
+compression algorithm to adapt to the data being compressed and achieve much higher compression ratios.
+- **TAP:** Investigate use of other IOCTL options, especially multiqueue, our next performance target is 10Gbit/s.
 - **Kernel driver:** Implementing a new kernel driver that supports modern IOVEC access mechanisms would greatly improve performance
 over the TAP inteface approach.
+- **Builtin web interface:** A builtin web interface would be amazing.
 
 
 If you find this project useful and want to see new features implemented, please kindly consider supporting me on Patreon
-(https://www.patreon.com/opensourcecoder). Initial design and PoC of this project took me around 1,100 hours.
+(https://www.patreon.com/opensourcecoder). Initial design and PoC of this project took me around 1,250 hours.
 
 
 ## What Super Ethernet Tunnel is not
