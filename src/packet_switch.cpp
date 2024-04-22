@@ -84,10 +84,8 @@ PacketSwitch::PacketSwitch(const std::string ifname, int mtu, int tx_size, Packe
 	}
 
 	// Available RX and TX buffer pools
-	this->available_rx_buffer_pool =
-		std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
-	this->available_tx_buffer_pool =
-		std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
+	this->available_rx_buffer_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
+	this->available_tx_buffer_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size, buffer_count);
 	this->tap_write_pool = std::make_shared<accl::BufferPool<PacketBuffer>>(buffer_size);
 
 	// Create UDP socket
