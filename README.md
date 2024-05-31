@@ -24,7 +24,7 @@ of traffic between nodes.
 implemented when dealing with mulitple nodes.
 - **Packet stuffing:** Packet space is optimized by stuffing multiple payloads per packet and using stream compression to further
 improve compression ratios.
-- **IPv4 and IPv6 endpoints:** Both IPv4 and IPv6 endpints are supported.
+- **IPv4 and IPv6 endpoints:** Both IPv4 and IPv6 endpoints are supported.
 - **Multithreaded:** Super Ethernet Tunnel is multithreaded and takes advantage of multiple cores scaling linearly depending on the
 number of nodes being connected.
 
